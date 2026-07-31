@@ -1,0 +1,60 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--ink);
+  color: var(--haze);
+  font-family: var(--font-book);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* Stops iOS rubber-banding the whole page while dragging a card. */
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-4);
+  background: var(--slate-raised);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
+button[data-variant='primary'] {
+  background: var(--verdigris);
+  color: var(--ink);
+  border-color: transparent;
+  font-family: var(--font-label);
+  text-transform: uppercase;
+  letter-spacing: var(--label-tracking);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

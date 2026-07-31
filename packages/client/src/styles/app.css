@@ -1,0 +1,239 @@
+@import './base.css';
+
+.app {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* The 3D world sits underneath every overlay and never moves in the layout. */
+.app__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.app__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--inset-top) + var(--space-4)) calc(var(--inset-right) + var(--space-4))
+    calc(var(--inset-bottom) + var(--space-4)) calc(var(--inset-left) + var(--space-4));
+  /* Overlays are click-through by default; panels opt back in. */
+  pointer-events: none;
+}
+
+.app__overlay > * {
+  pointer-events: auto;
+}
+
+/*
+ * Signature element: the certification label. Every panel is headed by the same
+ * strip a graded slab carries - condensed uppercase title, verdigris seal rule,
+ * monospace serial - so the interface reads as a continuation of the object the
+ * game is about.
+ */
+.label-strip {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid var(--verdigris);
+}
+
+.label-strip__title {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
+.label-strip__serial {
+  font-family: var(--font-serial);
+  font-size: var(--text-xs);
+  color: var(--haze-dim);
+}
+
+.label-strip[data-seal='gilt'] {
+  border-bottom-color: var(--gilt);
+}
+
+.panel {
+  background: var(--slate);
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-slab);
+  padding: var(--space-4);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.boot {
+  margin: auto;
+  width: min(30rem, 100%);
+}
+
+.boot__lede {
+  margin: var(--space-4) 0 var(--space-6);
+  color: var(--haze-dim);
+  font-size: var(--text-sm);
+}
+
+.boot__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.boot__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  color: var(--haze-dim);
+}
+
+.boot__step[data-status='done'] {
+  color: var(--haze);
+}
+
+.boot__step[data-status='failed'] {
+  color: var(--alarm);
+}
+
+.boot__marker {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.boot__step[data-status='done'] .boot__marker {
+  background: var(--verdigris);
+  border-color: var(--verdigris);
+}
+
+.boot__step[data-status='active'] .boot__marker {
+  background: var(--haze);
+  border-color: var(--haze);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.boot__step[data-status='failed'] .boot__marker {
+  background: var(--alarm);
+  border-color: var(--alarm);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.readout {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) auto;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-sm);
+}
+
+.readout dt {
+  font-family: var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--haze-dim);
+  font-size: var(--text-xs);
+  align-self: center;
+}
+
+.readout dd {
+  margin: 0;
+  font-family: var(--font-serial);
+  text-align: right;
+}
+
+.readout dd[data-tone='good'] {
+  color: var(--verdigris);
+}
+
+.readout dd[data-tone='bad'] {
+  color: var(--alarm);
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  align-self: flex-start;
+  padding: var(--space-2) var(--space-3);
+  background: rgba(17, 22, 29, 0.72);
+  backdrop-filter: blur(8px);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-serial);
+  font-size: var(--text-xs);
+  color: var(--haze-dim);
+}
+
+.status-bar__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--haze-dim);
+}
+
+.status-bar__dot[data-status='open'] {
+  background: var(--verdigris);
+}
+
+.status-bar__dot[data-status='reconnecting'],
+.status-bar__dot[data-status='connecting'] {
+  background: var(--gilt);
+}
+
+.status-bar__dot[data-status='closed'] {
+  background: var(--alarm);
+}
+
+.fault {
+  margin: auto;
+  width: min(30rem, 100%);
+  border-color: rgba(208, 82, 74, 0.4);
+}
+
+.fault__detail {
+  font-family: var(--font-serial);
+  font-size: var(--text-xs);
+  color: var(--haze-dim);
+  word-break: break-word;
+}
+
+@media (orientation: landscape) and (max-height: 480px) {
+  /* Short landscape: the world is the content, so chrome compresses. */
+  .app__overlay {
+    padding: var(--space-2) calc(var(--inset-right) + var(--space-3)) var(--space-2)
+      calc(var(--inset-left) + var(--space-3));
+  }
+
+  .boot,
+  .fault {
+    width: min(36rem, 100%);
+  }
+}

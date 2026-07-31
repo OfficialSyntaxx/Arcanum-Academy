@@ -1,0 +1,41 @@
+{
+  "name": "arcanum-academy",
+  "private": true,
+  "version": "0.1.0",
+  "description": "The Arcanum Academy - mobile-first web PWA fantasy RPG/TCG/sim hybrid.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -b packages/shared packages/sim packages/server packages/client",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "boundaries": "node tools/scripts/check-boundaries.mjs",
+    "build": "npm run typecheck && npm run build --workspace @arcanum/client && npm run build --workspace @arcanum/server",
+    "dev": "npm run dev --workspace @arcanum/client",
+    "dev:server": "npm run dev --workspace @arcanum/server",
+    "verify": "npm run format:check && npm run lint && npm run boundaries && npm run typecheck && npm run test",
+    "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo node_modules/.vite"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "@eslint/js": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "typescript-eslint": "^8.18.0",
+    "@vitest/coverage-v8": "^2.1.8"
+  }
+}

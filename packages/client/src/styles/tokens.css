@@ -1,0 +1,61 @@
+/*
+ * Design tokens.
+ *
+ * Direction: the card slab. The academy's most prestigious object is a graded
+ * card sealed in acrylic behind a certification label, so the interface borrows
+ * that object's materials - cool acrylic haze, oxidised verdigris seals, gilt
+ * reserved strictly for grade 9 and 10 - rather than the usual purple-and-cyan
+ * "magic" palette.
+ *
+ * Type is one superfamily in three voices: serif for reading, condensed sans for
+ * labels, mono for serials and numbers. Serials are the game's proof of
+ * ownership, so they get a face where every digit is unambiguous.
+ */
+
+:root {
+  /* Palette */
+  --ink: #11161d; /* slab shadow, app background */
+  --slate: #1b2531; /* panel ground */
+  --slate-raised: #24303f; /* raised control */
+  --haze: #c6cfd8; /* acrylic, primary text */
+  --haze-dim: #8496a8; /* secondary text */
+  --verdigris: #3fa88e; /* certification seal, primary action */
+  --gilt: #c9a227; /* reserved: grade 9-10 only */
+  --alarm: #d0524a; /* faults, destructive actions */
+
+  /* Type */
+  --font-book: 'IBM Plex Serif', Georgia, serif;
+  --font-label: 'IBM Plex Sans Condensed', 'Helvetica Neue', sans-serif;
+  --font-serial: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-md: 1rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.875rem;
+
+  --label-tracking: 0.14em;
+
+  /* Space: a 4px base, because touch targets are multiples of it */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* A thumb needs 44px. Nothing interactive is smaller. */
+  --touch-min: 44px;
+
+  --radius-sm: 2px;
+  --radius-md: 6px;
+
+  --border-hairline: 1px solid rgba(198, 207, 216, 0.14);
+  --shadow-slab: 0 1px 0 rgba(198, 207, 216, 0.08), 0 12px 32px rgba(0, 0, 0, 0.45);
+
+  /* Safe areas: the duel HUD must clear the notch and the home indicator. */
+  --inset-top: env(safe-area-inset-top, 0px);
+  --inset-bottom: env(safe-area-inset-bottom, 0px);
+  --inset-left: env(safe-area-inset-left, 0px);
+  --inset-right: env(safe-area-inset-right, 0px);
+}
