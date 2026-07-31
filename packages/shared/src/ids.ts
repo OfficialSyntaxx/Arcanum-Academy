@@ -20,6 +20,11 @@ export type NodeId = Brand<string, 'NodeId'>;
 export type MatchId = Brand<string, 'MatchId'>;
 export type ListingId = Brand<string, 'ListingId'>;
 export type SlabSerial = Brand<string, 'SlabSerial'>;
+export type ZoneId = Brand<string, 'ZoneId'>;
+export type WaypointId = Brand<string, 'WaypointId'>;
+export type InteractableId = Brand<string, 'InteractableId'>;
+export type NpcDefinitionId = Brand<string, 'NpcDefinitionId'>;
+export type ActorId = Brand<string, 'ActorId'>;
 
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // Crockford base32: no I, L, O, U.
 const RANDOM_LENGTH = 16;

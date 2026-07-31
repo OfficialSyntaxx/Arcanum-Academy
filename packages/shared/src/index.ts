@@ -14,3 +14,4 @@ export * from './logger.js';
 export * from './config/index.js';
 export * from './protocol/index.js';
 export * from './persistence/index.js';
+export * from './world/index.js';

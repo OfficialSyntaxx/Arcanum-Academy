@@ -1,7 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../state/app-store.js';
 import { bootstrap } from './bootstrap.js';
-import { resolveScreen } from '../screens/registry.js';
+import { isHubPhase, resolveScreen } from '../screens/registry.js';
+import { HubScreen } from '../screens/HubScreen.js';
+import type { HubController } from './hub-controller.js';
 import { StatusBar } from '../ui/StatusBar.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.js';
 import { GamePhase } from '@arcanum/sim';
@@ -18,6 +20,7 @@ export function App() {
   const phase = useAppStore((state) => state.phase);
   const setFault = useAppStore((state) => state.setFault);
   const setPhase = useAppStore((state) => state.setPhase);
+  const [hub, setHub] = useState<HubController | null>(null);
   const Screen = resolveScreen(phase);
 
   useEffect(() => {
@@ -36,6 +39,7 @@ export function App() {
           void container.dispose();
           return;
         }
+        setHub(container.resolve('hub'));
         dispose = () => container.dispose();
       })
       .catch((error: unknown) => {
@@ -45,6 +49,7 @@ export function App() {
 
     return () => {
       disposed = true;
+      setHub(null);
       void dispose?.();
     };
   }, [setFault, setPhase]);
@@ -55,7 +60,16 @@ export function App() {
       <div className="app__overlay">
         <StatusBar />
         <ErrorBoundary onError={(error) => setFault(error.message)}>
-          <Screen />
+          {hub !== null && isHubPhase(phase) ? (
+            <HubScreen
+              joystick={hub.joystick}
+              onEngage={() => {
+                hub.engagePrompt();
+              }}
+            />
+          ) : (
+            <Screen />
+          )}
         </ErrorBoundary>
       </div>
     </div>

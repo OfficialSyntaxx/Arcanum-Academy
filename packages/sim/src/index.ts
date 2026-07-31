@@ -11,3 +11,7 @@ export * from './clock.js';
 export * from './fsm.js';
 export * from './phases.js';
 export * from './kernel.js';
+export * from './nav.js';
+export * from './locomotion.js';
+export * from './schedule.js';
+export * from './npc.js';

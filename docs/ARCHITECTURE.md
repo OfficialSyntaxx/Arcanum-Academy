@@ -138,3 +138,25 @@ rather than from a console the player cannot open.
 
 Nothing is mocked that could be injected instead. A test that mocks the thing it is
 testing proves nothing.
+
+## Client layers added in Phase 2
+
+| Layer    | May import | Owns                                              |
+| -------- | ---------- | ------------------------------------------------- |
+| `world`  | `core`     | Zone loading, geometry, actor pool, lighting      |
+| `camera` | —          | The follow rig and shot framing                   |
+| `player` | `world`    | The player's mover and control scheme arbitration |
+| `npc`    | `world`    | Named and ambient agent population                |
+| `a11y`   | —          | Preference model and its projection onto the root |
+
+`screens` may not import `app`: the hub screen takes the two values it needs as
+props rather than the controller that owns them, so the screen layer never
+depends on the composition root.
+
+## Where world rules live
+
+Navigation, locomotion, schedules and NPC stepping are all in `@arcanum/sim`, not
+in the client. They are pure, deterministic and free of `three`, which is what
+lets the server validate a player's movement against the same graph and the same
+integrator the client used to produce it. The client layers above contain wiring
+and presentation only.

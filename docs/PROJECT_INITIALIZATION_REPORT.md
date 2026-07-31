@@ -163,6 +163,26 @@ approval. Each is implemented and covered by tests.
 
 ---
 
+## 7a. Decisions taken since this report
+
+**7.1 — grade and combat power. Resolved.** V2 §12 asks for grade bonuses that
+are small rather than absent. Recording the outcome here because it differs from
+the recommendation above: grade now affects post-match rewards and nothing read
+during duel resolution, enforced by splitting card data into `CardDefinition`
+(rules, read by the resolver) and `CardInstance` (provenance, never read by it).
+See ADR 0004.
+
+**7.2 — deck size. Resolved by GDD §13:** exactly 20.
+
+**7.4 — shared hub in the MVP. Resolved:** single-player hub with an ambient
+crowd and AI rivals ships first. The architecture still assumes multiplayer per
+V2 §14 — the transport, gateway, session resume and server-authoritative kernel
+are all built — but the hub does not require other humans to feel populated.
+
+**Still open:** 7.3 (grading consumes only earned materials), 7.5 (tool
+durability as a sink that never interrupts an idle session), 7.6 (offline accrual
+rate and cap). All three are Phase 3 decisions and none block Phase 2.
+
 ## 7. Changes that need your approval
 
 These alter gameplay or scope, so they are recommendations only. Nothing has been

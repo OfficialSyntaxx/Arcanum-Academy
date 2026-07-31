@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { GamePhase } from '@arcanum/sim';
 import type { QualityTier } from '../core/device.js';
 import type { TransportStatus } from '../net/transport.js';
+import { DEFAULT_ACCESSIBILITY, type AccessibilityPreferences } from '../a11y/preferences.js';
 
 /**
  * UI-facing state.
@@ -20,6 +21,15 @@ export interface BootStep {
   readonly detail?: string;
 }
 
+/** The interactable the player is currently standing next to, if any. */
+export interface InteractionPromptState {
+  readonly id: string;
+  readonly label: string;
+  readonly verb: string;
+  readonly kind: string;
+  readonly approach: string;
+}
+
 export interface AppState {
   readonly phase: GamePhase;
   readonly bootSteps: readonly BootStep[];
@@ -30,6 +40,11 @@ export interface AppState {
   readonly simulationTick: number;
   readonly faultMessage: string | null;
   readonly updateAvailable: boolean;
+  readonly interactionPrompt: InteractionPromptState | null;
+  /** Minute of the in-world day, 0-1439. */
+  readonly worldMinute: number;
+  readonly ambientPopulation: number;
+  readonly accessibility: AccessibilityPreferences;
 
   setPhase(phase: GamePhase): void;
   setBootStep(id: string, patch: Partial<Omit<BootStep, 'id'>>): void;
@@ -40,6 +55,10 @@ export interface AppState {
   setFrameStats(fps: number, simulationTick: number): void;
   setFault(message: string | null): void;
   setUpdateAvailable(available: boolean): void;
+  setInteractionPrompt(prompt: InteractionPromptState | null): void;
+  setWorldMinute(minute: number): void;
+  setAmbientPopulation(count: number): void;
+  setAccessibility(patch: Partial<AccessibilityPreferences>): void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -52,6 +71,10 @@ export const useAppStore = create<AppState>((set) => ({
   simulationTick: 0,
   faultMessage: null,
   updateAvailable: false,
+  interactionPrompt: null,
+  worldMinute: 0,
+  ambientPopulation: 0,
+  accessibility: DEFAULT_ACCESSIBILITY,
 
   setPhase: (phase) => set({ phase }),
   registerBootSteps: (steps) => set({ bootSteps: steps }),
@@ -65,4 +88,9 @@ export const useAppStore = create<AppState>((set) => ({
   setFrameStats: (fps, simulationTick) => set({ fps, simulationTick }),
   setFault: (faultMessage) => set({ faultMessage }),
   setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),
+  setInteractionPrompt: (interactionPrompt) => set({ interactionPrompt }),
+  setWorldMinute: (worldMinute) => set({ worldMinute }),
+  setAmbientPopulation: (ambientPopulation) => set({ ambientPopulation }),
+  setAccessibility: (patch) =>
+    set((state) => ({ accessibility: { ...state.accessibility, ...patch } })),
 }));

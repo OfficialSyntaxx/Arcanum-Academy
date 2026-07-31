@@ -58,3 +58,35 @@ button[data-variant='primary'] {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Accessibility preference hooks.
+   The preferences module writes these onto <html>; nothing in the component
+   tree needs to know a preference exists.
+   --------------------------------------------------------------------------- */
+
+html {
+  --text-scale: 1;
+  font-size: calc(100% * var(--text-scale));
+}
+
+[data-reduced-motion='true'] *,
+[data-reduced-motion='true'] *::before,
+[data-reduced-motion='true'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+[data-high-contrast='true'] {
+  --hairline: rgba(198, 207, 216, 0.42);
+  --hairline-strong: rgba(198, 207, 216, 0.68);
+  --haze-dim: #b3c1cd;
+}
+
+/* Every focusable control keeps a visible ring, including on touch builds:
+   switch and keyboard users navigate the same UI. */
+:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}

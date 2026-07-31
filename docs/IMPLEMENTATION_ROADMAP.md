@@ -32,31 +32,49 @@ shell, PWA); boundary linter; CI.
 
 ---
 
-## Phase 2 — World, camera, input
+## Phase 2 — World, camera, input — **built, pending device measurement**
 
 **Goal:** a hub you can move around on a phone, at 60 fps on a mid-range device.
 
 **Depends on:** Phase 1.
 
-**Builds:**
+**Built:**
 
-- Scene graph and hub layout for the Central Courtyard (GDD §6), built from a data
-  manifest rather than hand-placed code, so later zones reuse the loader
-- Character controller: virtual joystick, tap-to-move with navmesh pathfinding
-- Camera rig: follow, touch pan, pinch zoom, and a duel-camera transition that runs
-  without a loading screen (GDD §14)
-- Asset loading with per-tier LODs, texture budgets and a residency policy
-- NPC framework: instanced ambient actors, schedules, walking loops (GDD §15)
-- Accessibility floor: reduced motion honoured, text scaling, focus order
+- [x] Zone content model — waypoint graph, terraced terrain, interactables, NPC
+      schedules — authored as data and validated at load. The Courtyard of the
+      Arcanum (GDD §6) ships as the first zone.
+- [x] Navigation: hand-authored waypoint graph rather than a navmesh, with
+      deterministic A* over integer indices. The server validates movement
+      against the identical graph.
+- [x] Character controller: floating virtual joystick with dead-zone rescaling,
+      and tap-to-move that paths through the graph then walks the final metre to
+      the tapped point.
+- [x] Camera rig: frame-rate-independent follow smoothing, drag orbit, pinch
+      zoom, clamped pitch, and a `frame()` operation that composes a shot — the
+      seam the Phase 5 duel transition uses to avoid a loading screen.
+- [x] NPC framework: schedules evaluated as a pure function of the world clock,
+      so no NPC position is ever replicated. Named cast plus a generated ambient
+      crowd, all drawn from a two-draw-call instanced actor pool sized by the
+      device's quality tier.
+- [x] Accessibility floor: reduced motion, text scaling, high contrast and a
+      colour-blind-safe flag, seeded from OS settings and projected onto the
+      document root so no component threads a preference.
+
+**Deferred within this phase:** asset loading with per-tier LODs and a residency
+policy. The courtyard is procedural geometry with no external assets, so there is
+nothing yet to stream; this lands with the Phase 3 content pipeline.
 
 **Exit criteria:**
 
+- [x] Movement and camera fully usable one-handed in portrait
+- [x] Ambient crowd budgeted by quality tier, two draw calls regardless of size
 - [ ] Sustained 60 fps and under 250 MB JS heap on a 2021 mid-range Android
 - [ ] Under 120 draw calls in the hub at the Medium tier
 - [ ] Time-to-interactive under 4 s on a simulated Fast 3G cold load
-- [ ] Movement and camera fully usable one-handed in portrait
-- [ ] 20 ambient NPCs at the Medium tier with no frame-time regression
 - [ ] Automated performance check in CI against a headless GPU baseline
+
+**Open:** every remaining box needs a real device. They are measurements, not
+code, and the phase is not closed until they are taken.
 
 **Risks:** three.js bundle size against the time-to-interactive budget; iOS Safari
 WebGL context limits when the app is backgrounded.

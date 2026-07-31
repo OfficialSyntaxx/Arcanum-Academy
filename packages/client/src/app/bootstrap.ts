@@ -2,6 +2,7 @@ import {
   createLogger,
   createMemorySink,
   consoleSink,
+  COURTYARD,
   DEFAULT_TUNABLES,
   LogLevel,
   generateId,
@@ -22,6 +23,7 @@ import {
   type KeyValueStore,
 } from '../persistence/local-store.js';
 import { useAppStore } from '../state/app-store.js';
+import { HubController } from './hub-controller.js';
 
 /**
  * Composition root.
@@ -43,6 +45,7 @@ export interface ClientServices {
   render: RenderService;
   input: InputService;
   transport: Transport;
+  hub: HubController;
   engine: Engine;
 }
 
@@ -54,6 +57,7 @@ const BOOT_STEPS = [
   { id: 'identity', label: 'Restoring your enrolment', status: 'pending' as const },
   { id: 'render', label: 'Starting the renderer', status: 'pending' as const },
   { id: 'network', label: 'Contacting the academy', status: 'pending' as const },
+  { id: 'world', label: 'Raising the courtyard', status: 'pending' as const },
   { id: 'engine', label: 'Starting the frame loop', status: 'pending' as const },
 ];
 
@@ -152,14 +156,37 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
   });
   transport.connect();
 
-  // 6. Frame loop.
+  // 6. The world. A zone that fails content validation is a hard failure: the
+  // alternative is a courtyard the player can walk out of.
+  store.setBootStep('world', { status: 'active' });
+  const hubResult = HubController.create({
+    render,
+    input,
+    quality,
+    tunables: DEFAULT_TUNABLES,
+    canvas: options.canvas,
+  });
+  if (!hubResult.ok) {
+    store.setBootStep('world', { status: 'failed', detail: hubResult.error.reason });
+    logger.error('zone failed validation', {
+      reason: hubResult.error.reason,
+      detail: hubResult.error.detail ?? '',
+    });
+    throw new Error(hubResult.error.detail ?? hubResult.error.reason);
+  }
+  const hub = hubResult.value;
+  container.register('hub', () => hub);
+  store.setBootStep('world', { status: 'done', detail: COURTYARD.name });
+
+  // 7. Frame loop.
   store.setBootStep('engine', { status: 'active' });
   const engine = new Engine({
     logger: logger.child('engine'),
     tickHz: DEFAULT_TUNABLES.network.simulationTickHz,
     seed: playerId,
     hooks: {
-      onRender: () => {
+      onRender: (_alpha, deltaSeconds) => {
+        hub.update(deltaSeconds);
         render.render();
         const stats = engine.stats;
         store.setFrameStats(stats.fps, stats.simulationTick);
@@ -188,6 +215,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     'render',
     'input',
     'transport',
+    'hub',
     'engine',
   ] as const) {
     container.resolve(key);

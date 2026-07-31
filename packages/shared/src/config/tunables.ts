@@ -35,6 +35,13 @@ export interface GradingTunables {
   readonly baseVariance: number;
   readonly varianceReductionPerSkillLevel: number;
   readonly regradeMaxAttempts: number;
+  /**
+   * Grade never touches duel resolution (ADR 0004). It scales post-match
+   * rewards instead, interpolated linearly from grade 1 to grade 10 between
+   * `rewardMultiplierMinBasisPoints` and `rewardMultiplierMaxBasisPoints`.
+   */
+  readonly rewardMultiplierMinBasisPoints: number;
+  readonly rewardMultiplierMaxBasisPoints: number;
 }
 
 export interface EconomyTunables {
@@ -65,6 +72,32 @@ export interface GatheringTunables {
   readonly maxInventorySlots: number;
 }
 
+export interface WorldTunables {
+  /** Metres per second at full joystick deflection, before modifiers. */
+  readonly playerWalkSpeed: number;
+  readonly playerRunSpeed: number;
+  /** Radians per second the avatar may turn; caps visual snapping. */
+  readonly playerTurnRate: number;
+  /** Distance at which a tap-to-move path node counts as reached. */
+  readonly waypointArrivalRadius: number;
+  /** Distance within which an interactable shows its prompt. */
+  readonly interactionRadius: number;
+  readonly cameraFollowDistance: number;
+  readonly cameraMinDistance: number;
+  readonly cameraMaxDistance: number;
+  readonly cameraHeight: number;
+  /** Fraction of the gap closed per second by the camera's smoothing. */
+  readonly cameraSmoothing: number;
+  readonly cameraMinPitch: number;
+  readonly cameraMaxPitch: number;
+  /** Ambient NPC pause range at a schedule destination, in milliseconds. */
+  readonly npcDwellMinMs: number;
+  readonly npcDwellMaxMs: number;
+  readonly npcWalkSpeed: number;
+  /** Real milliseconds per in-world day. Drives NPC schedules and lighting. */
+  readonly worldDayLengthMs: number;
+}
+
 export interface NetworkTunables {
   readonly simulationTickHz: number;
   readonly hubPresenceBroadcastHz: number;
@@ -83,6 +116,7 @@ export interface Tunables {
   readonly economy: EconomyTunables;
   readonly progression: ProgressionTunables;
   readonly gathering: GatheringTunables;
+  readonly world: WorldTunables;
   readonly network: NetworkTunables;
 }
 
@@ -110,6 +144,8 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     baseVariance: 40,
     varianceReductionPerSkillLevel: 3,
     regradeMaxAttempts: 2,
+    rewardMultiplierMinBasisPoints: 10_000,
+    rewardMultiplierMaxBasisPoints: 12_500,
   }),
   economy: Object.freeze({
     marketListingTaxBasisPoints: 500,
@@ -132,6 +168,24 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     offlineAccrualCapMs: 28_800_000,
     baseInventorySlots: 60,
     maxInventorySlots: 240,
+  }),
+  world: Object.freeze({
+    playerWalkSpeed: 2.6,
+    playerRunSpeed: 4.4,
+    playerTurnRate: 9,
+    waypointArrivalRadius: 0.35,
+    interactionRadius: 2.2,
+    cameraFollowDistance: 9,
+    cameraMinDistance: 5,
+    cameraMaxDistance: 15,
+    cameraHeight: 5.5,
+    cameraSmoothing: 8,
+    cameraMinPitch: 0.18,
+    cameraMaxPitch: 1.15,
+    npcDwellMinMs: 4_000,
+    npcDwellMaxMs: 20_000,
+    npcWalkSpeed: 1.5,
+    worldDayLengthMs: 3_600_000,
   }),
   network: Object.freeze({
     simulationTickHz: 20,

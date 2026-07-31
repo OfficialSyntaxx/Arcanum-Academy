@@ -21,3 +21,11 @@ export const SCREEN_REGISTRY: Partial<Record<GamePhase, ComponentType>> = {
 export function resolveScreen(phase: GamePhase): ComponentType {
   return SCREEN_REGISTRY[phase] ?? SystemsScreen;
 }
+
+/**
+ * Phases rendered by the hub overlay rather than by a registry screen, because
+ * they need the live controller rather than only store state.
+ */
+export function isHubPhase(phase: GamePhase): boolean {
+  return phase === GamePhase.WorldExploration || phase === GamePhase.SocialHub;
+}
