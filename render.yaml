@@ -20,11 +20,15 @@ services:
     region: oregon
     branch: main
     healthCheckPath: /healthz
-    buildCommand: npm ci
+    # npm install rather than npm ci: esbuild was added to the server package
+    # after the lockfile was last generated, and no machine with Node attached
+    # has regenerated it yet. Switch this back to `npm ci` the moment
+    # package-lock.json is refreshed and committed - ci is reproducible and
+    # install is not.
+    buildCommand: npm install && npm run build --workspace @arcanum/server
     startCommand: npm run start --workspace @arcanum/server
     envVars:
-      # Must match .nvmrc. The server runs TypeScript directly through
-      # --experimental-strip-types, which needs Node 22.6 or newer.
+      # Must match .nvmrc.
       - key: NODE_VERSION
         value: '22'
       - key: NODE_ENV
