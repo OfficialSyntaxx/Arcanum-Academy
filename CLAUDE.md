@@ -259,6 +259,42 @@ the app — never silently applied — so nothing is lost to an unopened session
 
 ---
 
+## Deployment
+
+Live as of 2026-08-01. Both services redeploy automatically on every push to `main`.
+
+- **Client** — https://arcanum-academy.netlify.app (Netlify, config in `netlify.toml`)
+- **Server** — https://arcanum-server-be28.onrender.com (Render free plan, config in `render.yaml`)
+
+The split is forced by architecture, not preference: the gateway holds persistent
+WebSocket connections for session resume and heartbeats, so it needs a long-running
+process. No serverless platform can host it, Netlify Functions included.
+
+**Two environment variables tie them together, and both are easy to get wrong:**
+
+- `VITE_SERVER_URL` on Netlify — read at build time by `App.tsx`, so **changing it
+  requires a rebuild, not just a save**. Must be `wss://`, never `ws://`: a page served
+  over HTTPS is forbidden by the browser from opening an insecure WebSocket.
+- `ALLOWED_ORIGINS` on Render — must exactly match the client origin. A wrong value
+  silently refuses every browser connection in production and looks like a network
+  fault rather than a config error.
+
+Unset, `VITE_SERVER_URL` falls back to `ws://localhost:8787`, so local development
+needs no configuration at all.
+
+**The server is bundled, and that is deliberate.** `packages/server/scripts/bundle.mjs`
+produces a single ESM file via esbuild. The workspace sets `moduleResolution: "Bundler"`
+and `@arcanum/shared` publishes TypeScript source, which Node cannot resolve at runtime -
+it does not rewrite the `.js` specifiers the NodeNext convention requires into the `.ts`
+files that exist. Bundling follows that decision instead of forcing a second module
+strategy onto half the monorepo, and the single-file artifact starts fast on a free
+instance. Runtime dependencies (fastify, ws, zod) stay external.
+
+The free Render instance sleeps after roughly fifteen minutes idle and cold starts in
+30-60 seconds. Fine for a demo link; revisit before real players arrive.
+
+---
+
 ## Phase 3 — what to build next
 
 **Goal:** The first economic loop, server-side authoritative.

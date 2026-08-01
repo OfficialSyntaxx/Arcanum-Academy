@@ -12,6 +12,14 @@ No economic or combat systems exist yet - that is deliberate, and the order is s
 out in [`docs/IMPLEMENTATION_ROADMAP.md`](docs/IMPLEMENTATION_ROADMAP.md). Phase 3
 is next: inventory, gathering, crafting and skills, server-authoritative.
 
+## Play it
+
+- **Client** - https://arcanum-academy.netlify.app
+- **Server health** - https://arcanum-server-be28.onrender.com/healthz
+
+Both redeploy on every push to `main`. The server runs on a free instance that sleeps
+after inactivity, so the first connection after a quiet period takes 30-60 seconds.
+
 ## Getting started
 
 ```bash
