@@ -5,8 +5,13 @@ import {
   createLogger,
   createMemorySink,
   encodeFrame,
+  err,
+  failure,
+  FailureCode,
   LogLevel,
+  ok,
   ServerOpcode,
+  type Failure,
   type PlayerId,
 } from '@arcanum/shared';
 import { CloseCode, Gateway, RegistryCommandRouter, type GatewaySocket } from '../net/gateway.js';
@@ -109,13 +114,62 @@ describe('Gateway', () => {
 
   it('dispatches a registered command and acknowledges it', async () => {
     const h = harness();
-    const handler = vi.fn().mockResolvedValue(undefined);
+    const handler = vi.fn().mockResolvedValue(ok(undefined));
     h.router.register('debug.ping', handler);
     const connection = h.gateway.accept(h.socket)!;
     connection.receive(h.frame(ClientOpcode.Handshake, { playerId: 'player-1' }));
     connection.receive(h.frame(ClientOpcode.Command, { kind: 'debug.ping' }));
     await vi.waitFor(() => expect(h.lastOf(ServerOpcode.CommandAck)).toBeDefined());
     expect(handler).toHaveBeenCalledTimes(1);
+    // An Ok carrying no value is an acknowledgement and nothing more.
+    expect(h.lastOf(ServerOpcode.Patch)).toBeUndefined();
+  });
+
+  it('follows the acknowledgement with a patch when a handler returns state', async () => {
+    const h = harness();
+    h.router.register('debug.echo', () => Promise.resolve(ok({ pips: 3 })));
+    const connection = h.gateway.accept(h.socket)!;
+    connection.receive(h.frame(ClientOpcode.Handshake, { playerId: 'player-1' }));
+    connection.receive(h.frame(ClientOpcode.Command, { kind: 'debug.echo' }));
+    await vi.waitFor(() => expect(h.lastOf(ServerOpcode.Patch)).toBeDefined());
+    expect(h.lastOf(ServerOpcode.CommandAck)).toBeDefined();
+    expect(h.lastOf(ServerOpcode.Patch)!.payload).toMatchObject({
+      kind: 'debug.echo',
+      state: { pips: 3 },
+    });
+  });
+
+  it('forwards a handler rejection verbatim instead of flattening it', async () => {
+    const h = harness();
+    h.router.register('debug.deny', () =>
+      Promise.resolve(
+        err(failure(FailureCode.Validation, 'inventory.slot_full', { context: { slots: 60 } })),
+      ),
+    );
+    const connection = h.gateway.accept(h.socket)!;
+    connection.receive(h.frame(ClientOpcode.Handshake, { playerId: 'player-1' }));
+    connection.receive(h.frame(ClientOpcode.Command, { kind: 'debug.deny' }));
+    await vi.waitFor(() => expect(h.lastOf(ServerOpcode.CommandRejected)).toBeDefined());
+
+    const rejection = h.lastOf(ServerOpcode.CommandRejected)!.payload as Failure;
+    expect(rejection.reason).toBe('inventory.slot_full');
+    expect(rejection.code).toBe(FailureCode.Validation);
+    expect(rejection.context).toMatchObject({ slots: 60 });
+    // A rejected command is decided, not acknowledged.
+    expect(h.lastOf(ServerOpcode.CommandAck)).toBeUndefined();
+  });
+
+  it('keeps a thrown defect opaque to the client', async () => {
+    const h = harness();
+    h.router.register('debug.boom', () => Promise.reject(new Error('connection string leaked')));
+    const connection = h.gateway.accept(h.socket)!;
+    connection.receive(h.frame(ClientOpcode.Handshake, { playerId: 'player-1' }));
+    connection.receive(h.frame(ClientOpcode.Command, { kind: 'debug.boom' }));
+    await vi.waitFor(() => expect(h.lastOf(ServerOpcode.CommandRejected)).toBeDefined());
+
+    const rejection = h.lastOf(ServerOpcode.CommandRejected)!.payload as Failure;
+    expect(rejection.reason).toBe('command.dispatch_failed');
+    expect(JSON.stringify(rejection)).not.toContain('connection string leaked');
   });
 
   it('resumes a dropped session with its token', () => {

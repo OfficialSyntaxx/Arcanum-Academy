@@ -9,6 +9,7 @@ import {
   type Failure,
   type Logger,
   type PlayerId,
+  type Result,
   type SessionId,
 } from '@arcanum/shared';
 import { type SessionStore, type Session } from '../session/session-store.js';
@@ -41,11 +42,33 @@ export const CloseCode = {
   CapacityReached: 4005,
 } as const;
 
+/**
+ * A command handler.
+ *
+ * Returning `Err` is how a handler rejects a command the player was not
+ * entitled to make - a full inventory, a depleted node, an unmet skill gate.
+ * The gateway forwards that `Failure` verbatim, so the client learns the
+ * actual reason rather than a generic server error.
+ *
+ * Throwing is reserved for genuine defects. Those become an opaque
+ * `command.dispatch_failed`, because an unplanned exception has no reason
+ * string worth showing a player and may carry internals that should not
+ * cross the wire.
+ *
+ * An `Ok` value, when it is not `undefined`, is sent as a `Patch` after the
+ * acknowledgement: the authoritative state the client should adopt in place of
+ * whatever it predicted locally.
+ */
+export type CommandHandler = (
+  session: Session,
+  payload: unknown,
+) => Promise<Result<unknown, Failure>>;
+
 export interface CommandRouter {
   /** Returns true when a handler exists for the kind. */
   supports(kind: string): boolean;
-  /** Applies a command. Failures are reported to the client, never thrown. */
-  dispatch(session: Session, kind: string, payload: unknown): Promise<void>;
+  /** Applies a command. Expected failures come back as `Err`, never thrown. */
+  dispatch(session: Session, kind: string, payload: unknown): Promise<Result<unknown, Failure>>;
 }
 
 export interface GatewayOptions {
@@ -268,9 +291,19 @@ export class Gateway {
       return;
     }
     try {
-      await this.options.router.dispatch(session, kind, payload);
+      const outcome = await this.options.router.dispatch(session, kind, payload);
+      // Recorded on rejection as well as success: the sequence number records
+      // what the server has seen, and a resuming client must not replay a
+      // command that was already decided against it.
       this.options.sessions.recordSeq(session.id, seq);
+      if (!outcome.ok) {
+        this.reject(connection, outcome.error, null);
+        return;
+      }
       this.send(connection, ServerOpcode.CommandAck, { seq, kind });
+      if (outcome.value !== undefined) {
+        this.send(connection, ServerOpcode.Patch, { seq, kind, state: outcome.value });
+      }
     } catch (error) {
       this.options.logger.error('command dispatch threw', {
         kind,
@@ -323,17 +356,16 @@ export class Gateway {
 }
 
 /**
- * The Phase 1 router. It knows about no command kinds yet, so every gameplay
- * command is answered with an explicit `command.unsupported` rejection rather
- * than silence. Phase 3 onwards registers real handlers against this interface.
+ * Routes commands to handlers registered at startup.
+ *
+ * An unregistered kind is answered with an explicit `command.unsupported`
+ * rejection rather than silence, so a client built against a newer protocol
+ * learns why nothing happened.
  */
 export class RegistryCommandRouter implements CommandRouter {
-  private readonly handlers = new Map<
-    string,
-    (session: Session, payload: unknown) => Promise<void>
-  >();
+  private readonly handlers = new Map<string, CommandHandler>();
 
-  register(kind: string, handler: (session: Session, payload: unknown) => Promise<void>): this {
+  register(kind: string, handler: CommandHandler): this {
     if (this.handlers.has(kind)) throw new Error(`Handler already registered for "${kind}"`);
     this.handlers.set(kind, handler);
     return this;
@@ -343,9 +375,16 @@ export class RegistryCommandRouter implements CommandRouter {
     return this.handlers.has(kind);
   }
 
-  async dispatch(session: Session, kind: string, payload: unknown): Promise<void> {
+  async dispatch(
+    session: Session,
+    kind: string,
+    payload: unknown,
+  ): Promise<Result<unknown, Failure>> {
     const handler = this.handlers.get(kind);
+    // Unreachable: the gateway checks supports() first. Kept as a throw rather
+    // than a Failure because reaching it means the two fell out of step, which
+    // is a defect and not something to explain to a player.
     if (!handler) throw new Error(`No handler for "${kind}"`);
-    await handler(session, payload);
+    return handler(session, payload);
   }
 }
