@@ -7,3 +7,7 @@ coverage/
 .env.local
 .DS_Store
 *.log
+
+# Source archives. The repository is the source of truth; a zip of it goes
+# stale the moment the next commit lands.
+*.zip

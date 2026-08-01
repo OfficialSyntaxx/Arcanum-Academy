@@ -3,9 +3,14 @@
 A mobile-first web game: gather resources in a magical academy, refine them, scribe
 spell cards, grade the results, build decks and duel.
 
-This repository is at **Phase 1**: the engine, the architecture and the tooling are
-in place. No gameplay systems have been implemented yet - that is deliberate, and
-the order is set out in [`docs/IMPLEMENTATION_ROADMAP.md`](docs/IMPLEMENTATION_ROADMAP.md).
+This repository is at **Phase 2 complete**. The engine, architecture and tooling are
+in place (Phase 1), and so is a living hub world: the Courtyard of the Arcanum, with
+navigation, an orbiting camera, touch input, scheduled NPCs and accessibility
+preferences (Phase 2).
+
+No economic or combat systems exist yet - that is deliberate, and the order is set
+out in [`docs/IMPLEMENTATION_ROADMAP.md`](docs/IMPLEMENTATION_ROADMAP.md). Phase 3
+is next: inventory, gathering, crafting and skills, server-authoritative.
 
 ## Getting started
 
