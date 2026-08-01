@@ -1,0 +1,44 @@
+# Render blueprint for the authoritative game server.
+#
+# Why a long-running web service rather than a serverless function: the gateway
+# holds persistent WebSocket connections for session resume and heartbeats.
+# Serverless request/response platforms cannot host it.
+#
+# The free plan sleeps after roughly fifteen minutes of inactivity and cold
+# starts in 30-60 seconds. That is acceptable for a demo link and painful for
+# real play; move to a paid instance or Fly.io before players arrive.
+#
+# Apply from the Render dashboard: New > Blueprint, pick this repository.
+# ALLOWED_ORIGINS is deliberately left unset here - fill it in the dashboard
+# with the deployed client origin once Netlify has issued one.
+
+services:
+  - type: web
+    name: arcanum-server
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    healthCheckPath: /healthz
+    buildCommand: npm ci
+    startCommand: npm run start --workspace @arcanum/server
+    envVars:
+      # Must match .nvmrc. The server runs TypeScript directly through
+      # --experimental-strip-types, which needs Node 22.6 or newer.
+      - key: NODE_VERSION
+        value: '22'
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # Render injects PORT itself and the server already reads it, so it is
+      # not declared here. HOST defaults to 0.0.0.0, which is what Render needs.
+      - key: MAX_CONNECTIONS
+        value: '200'
+      - key: SESSION_RESUME_SECONDS
+        value: '120'
+      # Set in the dashboard to the Netlify origin, e.g.
+      # https://arcanum-academy.netlify.app - a wrong value here silently
+      # rejects every browser connection in production.
+      - key: ALLOWED_ORIGINS
+        sync: false
