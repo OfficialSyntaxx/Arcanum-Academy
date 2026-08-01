@@ -7,11 +7,13 @@ import {
   LogLevel,
   PROTOCOL_VERSION,
   consoleSink,
+  describeFailure,
 } from '@arcanum/shared';
 import { loadConfig } from './config.js';
 import { Gateway, RegistryCommandRouter, type GatewaySocket } from './net/gateway.js';
 import { SessionStore } from './session/session-store.js';
-import { InMemoryPlayerRepository } from './persistence/repository.js';
+import { InMemoryPlayerRepository, type PlayerRepository } from './persistence/repository.js';
+import { PostgresPlayerRepository } from './persistence/postgres-repository.js';
 
 /**
  * Server entry point.
@@ -41,7 +43,35 @@ async function main(): Promise<void> {
     resumeWindowMs: config.SESSION_RESUME_SECONDS * 1000,
   });
   const router = new RegistryCommandRouter();
-  const repository = new InMemoryPlayerRepository();
+
+  // Durable storage when a database is configured, memory when it is not.
+  // The fallback keeps local development and the tests free of a database
+  // dependency, but in a deployed environment it silently discards every
+  // player's progress on restart - so it is called out rather than logged as
+  // an ordinary line and scrolled past.
+  let postgres: PostgresPlayerRepository | null = null;
+  let repository: PlayerRepository = new InMemoryPlayerRepository();
+  if (config.DATABASE_URL !== undefined) {
+    postgres = new PostgresPlayerRepository({
+      connectionString: config.DATABASE_URL,
+      poolMax: config.DATABASE_POOL_MAX,
+      logger: logger.child('postgres'),
+    });
+    const prepared = await postgres.initialise();
+    if (!prepared.ok) {
+      // Refuse to start rather than fall back. A deployment that asked for a
+      // database and quietly got a memory store instead would look healthy
+      // while losing everything written to it.
+      throw new Error(`Database unavailable: ${describeFailure(prepared.error)}`);
+    }
+    repository = postgres;
+    logger.info('persistence ready', { adapter: 'postgres' });
+  } else if (config.NODE_ENV === 'production') {
+    logger.warn(
+      'DATABASE_URL is not set, so player progress is held in memory and will be lost on restart',
+    );
+  }
+
   const gateway = new Gateway({
     sessions,
     logger: logger.child('gateway'),
@@ -133,7 +163,12 @@ async function main(): Promise<void> {
     gateway.shutdown();
     wss.close();
     httpServer.close(() => {
-      void app.close().then(() => process.exit(0));
+      // Drain the pool last: an in-flight save should be allowed to finish
+      // rather than be cut off mid-write by the process exiting.
+      void app
+        .close()
+        .then(() => postgres?.close())
+        .then(() => process.exit(0));
     });
     setTimeout(() => process.exit(1), config.SHUTDOWN_GRACE_MS).unref();
   };

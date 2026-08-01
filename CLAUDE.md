@@ -279,8 +279,15 @@ process. No serverless platform can host it, Netlify Functions included.
   silently refuses every browser connection in production and looks like a network
   fault rather than a config error.
 
+- `DATABASE_URL` on Render — Postgres connection string. **Unset, player progress
+  lives in memory and is destroyed on every restart**, which on a free instance means
+  roughly every fifteen idle minutes. The server refuses to start if the variable is
+  set but the database is unreachable, rather than falling back to memory and looking
+  healthy while losing every write.
+
 Unset, `VITE_SERVER_URL` falls back to `ws://localhost:8787`, so local development
-needs no configuration at all.
+needs no configuration at all. `DATABASE_URL` behaves the same way: absent means the
+in-memory repository, which is what the tests and local development want.
 
 **The server is bundled, and that is deliberate.** `packages/server/scripts/bundle.mjs`
 produces a single ESM file via esbuild. The workspace sets `moduleResolution: "Bundler"`

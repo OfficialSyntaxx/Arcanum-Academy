@@ -34,7 +34,7 @@ const options = {
   format: 'esm',
   sourcemap: true,
   logLevel: 'info',
-  external: ['fastify', 'ws', 'zod'],
+  external: ['fastify', 'ws', 'zod', 'pg'],
 };
 
 if (!watch) {

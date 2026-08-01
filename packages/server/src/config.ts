@@ -20,6 +20,23 @@ const schema = z.object({
   /** Seconds a disconnected session stays resumable. */
   SESSION_RESUME_SECONDS: z.coerce.number().int().positive().default(120),
   SHUTDOWN_GRACE_MS: z.coerce.number().int().nonnegative().default(10_000),
+  /**
+   * Postgres connection string. Optional: when it is absent the server falls
+   * back to the in-memory repository, which is what local development and the
+   * tests want. Absent in a deployed environment means every player's progress
+   * is discarded whenever the process restarts, so the server says so loudly
+   * at boot rather than letting it be discovered later.
+   */
+  DATABASE_URL: z
+    .string()
+    .optional()
+    // A blank value is treated as absent. Deployment platforms materialise an
+    // unset variable as an empty string rather than omitting it, and crashing
+    // on boot because a value is "" rather than missing would be a distinction
+    // no operator asked for.
+    .transform((value) => (value === undefined || value.trim() === '' ? undefined : value.trim())),
+  /** Pool ceiling. Free Postgres tiers cap connections far below Node's appetite. */
+  DATABASE_POOL_MAX: z.coerce.number().int().positive().default(5),
 });
 
 export type ServerConfig = Readonly<

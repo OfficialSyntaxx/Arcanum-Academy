@@ -53,3 +53,9 @@ services:
       # rejects every browser connection in production.
       - key: ALLOWED_ORIGINS
         sync: false
+      # Postgres connection string, set in the dashboard so the credentials
+      # never enter the repository. Without it the server keeps player state in
+      # memory and loses it on every restart, which on a free instance means
+      # roughly every fifteen idle minutes.
+      - key: DATABASE_URL
+        sync: false
