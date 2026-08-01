@@ -77,7 +77,7 @@ export class PostgresPlayerRepository implements PlayerRepository {
   private readonly pool: pg.Pool;
   private readonly now: () => number;
 
-  constructor(private readonly options: PostgresPlayerRepositoryOptions) {
+  constructor(options: PostgresPlayerRepositoryOptions) {
     this.now = options.now ?? (() => Date.now());
     this.pool = new pg.Pool({
       connectionString: options.connectionString,
