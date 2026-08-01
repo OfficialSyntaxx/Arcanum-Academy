@@ -228,44 +228,40 @@ Sans Condensed (labels), Mono (serials).
 
 ---
 
-## Open decisions (must be resolved before the relevant phase)
+## Resolved decisions
 
-### 🔴 Phase 3 blocker — Grading and purchased randomness
-**Question:** Can grading consume purchased randomness (a reroll item, a bonus seal bought
-with premium currency), or only materials the player gathered and crafted?
+### Grading and purchased randomness — RESOLVED 2026-07-31
+**Decision:** Earned-only. Grading may only consume materials the player gathered and
+crafted — never purchased randomness (reroll items, bonus seals bought with premium
+currency). Purchased randomness on grade outcomes is a loot box under UK, Belgian, Dutch,
+and increasingly other regulatory regimes — requires age gating, odds disclosure, and in
+some markets cannot ship at all. This holds the compliance surface at zero and is
+consistent with V2 §22 (cosmetics as the primary premium value). If premium materials
+ever enter the grading chain in the future, that must be a new, explicit, documented
+decision — this one does not grandfather it in.
 
-**Recommendation (not yet accepted):** Earned-only. Purchased randomness on grade outcomes
-is a loot box under UK, Belgian, Dutch, and increasingly other regulatory regimes — requires
-age gating, odds disclosure, and in some markets cannot ship at all. Keeping grading as
-earned-only holds the compliance surface at zero and is consistent with V2 §22 (cosmetics
-as the primary premium value). If premium materials ever enter the grading chain, that
-decision must be made explicitly and documented.
+**Impact:** Item definition schema and crafting recipe format must not include any
+premium-currency-purchased input that affects grade odds.
 
-**Impact:** Changes the item definition schema and the crafting recipe format.
+### Tool durability — RESOLVED 2026-07-31
+**Decision:** Currency sink only. A tool breaking mid-harvest never interrupts an active
+idle session — the session the player set up before closing the app runs to completion
+or its normal cap. Durability at zero instead reduces the resource gain of the *next*
+session until the tool is repaired. Avoids the most-complained-about idle-game pattern
+(silent interruption of unattended progress).
 
-### 🟡 Phase 3 — Tool durability
-**Question:** Does tool durability interrupt an idle session, or is it purely a currency sink
-that resolves on the next login?
-
-**Recommendation (not yet accepted):** Currency sink only — a tool that breaks mid-harvest
-interrupts the idle session the player set up before closing the app, which is the single
-most-complained-about design pattern in idle games. Durability should reduce the resource
-gain of the next session, not cancel the current one.
-
-### 🟡 Phase 3 — Offline accrual rate and cap
-**Question:** At what rate does offline gathering accrue, and what is the cap?
-
-**Current tunables default:** cap = 8 hours (`offlineAccrualCapMs: 28_800_000`). Rate is
-unspecified. Recommendation: 50-60% of online rate, claimed explicitly (so the player
-opens the app to collect rather than resources silently filling up and being lost).
+### Offline accrual rate and cap — RESOLVED 2026-07-31
+**Decision:** Offline gathering accrues at **25% of the online rate**, capped at 8 hours
+(`offlineAccrualCapMs: 28_800_000`, already in tunables). Deliberately on the low end of
+the originally-proposed 50-60% range, at the owner's explicit direction, to more strongly
+incentivize active play over idling. Accrual is claimed explicitly when the player opens
+the app — never silently applied — so nothing is lost to an unopened session before the cap.
 
 ---
 
 ## Phase 3 — what to build next
 
 **Goal:** The first economic loop, server-side authoritative.
-
-**Requires settling first:** The grading/purchased-randomness decision (see above).
 
 **Build order within Phase 3:**
 1. Content pipeline: authoring format (JSON schema), validator (reuses `buildNavGraph`
