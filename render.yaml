@@ -20,12 +20,19 @@ services:
     region: oregon
     branch: main
     healthCheckPath: /healthz
-    # npm install rather than npm ci: esbuild was added to the server package
-    # after the lockfile was last generated, and no machine with Node attached
-    # has regenerated it yet. Switch this back to `npm ci` the moment
-    # package-lock.json is refreshed and committed - ci is reproducible and
-    # install is not.
-    buildCommand: npm install && npm run build --workspace @arcanum/server
+    # Two deliberate choices here:
+    #
+    # --include=dev is required because NODE_ENV is production below, and npm
+    # omits devDependencies entirely when it sees that. The compiler, the type
+    # definitions and esbuild all live in devDependencies, so without this the
+    # build has no toolchain and fails on the first import.
+    #
+    # npm install rather than npm ci because esbuild was added to the server
+    # package after the lockfile was last generated, and no machine with Node
+    # attached has regenerated it yet. Switch back to `npm ci --include=dev`
+    # the moment package-lock.json is refreshed and committed - ci is
+    # reproducible and install is not.
+    buildCommand: npm install --include=dev && npm run build --workspace @arcanum/server
     startCommand: npm run start --workspace @arcanum/server
     envVars:
       # Must match .nvmrc.
