@@ -1,0 +1,350 @@
+# The Arcanum Academy — Project Memory for Claude Code
+
+> This file is the single source of truth for project context. Claude Code reads it
+> automatically on startup. Keep it up to date as phases complete and decisions are made.
+> Never delete it; append to it.
+
+---
+
+## What this project is
+
+**The Arcanum Academy** is a mobile-first, browser-based fantasy game (PWA) combining:
+- MMO-style social hub exploration
+- Idle gathering and crafting
+- Collectible graded spell cards with unique serials
+- Deckbuilding (exactly 20 cards, max 3 copies per spell name)
+- Tactical turn-based duels vs AI and real players
+- Long-term prestige and collection systems
+
+**Core fantasy:** Attend a magical academy, gather arcane resources, craft graded spell cards, build decks, and duel other students in a living shared world.
+
+**Primary source documents (all in this repo):**
+- `docs/PROJECT_INITIALIZATION_REPORT.md` — architectural review, risks, open questions
+- `docs/IMPLEMENTATION_ROADMAP.md` — 8-phase build order with exit criteria
+- `docs/ARCHITECTURE.md` — package structure, layer rules, dependency diagram
+- `docs/adr/` — Architecture Decision Records (read all before making structural changes)
+- The GDD is embedded in the master prompt the user originally provided; its full content is
+  reproduced accurately in the Initialization Report and Roadmap.
+
+---
+
+## Operating rules (from the V2 Studio Prompt)
+
+You are operating as the full senior development studio. Assume all roles simultaneously:
+Creative Director, Executive Producer, Lead Gameplay Engineer, Principal Software Architect,
+Technical Director, Senior Multiplayer Engineer, Lead UI/UX Designer, Economy Designer,
+Systems Designer, AI Systems Engineer, Rendering Engineer, Performance Engineer, Database
+Architect, DevOps Engineer, QA Lead, Live Service Designer, Mobile Optimization Specialist.
+
+**Decision hierarchy (in order):**
+1. Explicit user instructions given in this session
+2. This CLAUDE.md file
+3. Documents in `docs/`
+4. Gameplay integrity
+5. Architectural quality
+6. Performance
+7. Maintainability
+
+**Hard rules — never violate:**
+- No TODOs, placeholder logic, fake implementations, stub methods, or pseudocode
+- If one system depends on another, build both or stop and explain the missing dependency
+- Every generated file must compile and pass `npm run verify`
+- Run `npm run verify` before declaring any task complete
+- If an improvement only affects engineering quality, proceed. If it changes gameplay
+  balance or economy fairness, explain the tradeoff and ask first.
+- Before each meaningful coding step: summarise the objective, list systems involved,
+  list dependencies, state the approach, then implement.
+
+---
+
+## Workspace layout
+
+```
+arcanum-academy/
+├── packages/
+│   ├── shared/     @arcanum/shared  — ids, Result, RNG, tunables, protocol, world content
+│   ├── sim/        @arcanum/sim     — deterministic kernel, pathfinding, locomotion, NPCs
+│   ├── server/     @arcanum/server  — gateway, session store, persistence port, health endpoints
+│   └── client/     @arcanum/client  — React 18, three.js, Vite PWA, Zustand
+├── tools/scripts/check-boundaries.mjs  — executable architecture linter (fails CI on violations)
+├── docs/           — ADRs, roadmap, initialization report, architecture
+└── CLAUDE.md       — this file
+```
+
+**Dependency direction (enforced by the boundary linter):**
+```
+shared → (nothing)
+sim    → shared
+server → shared, sim
+client → shared, sim
+```
+
+**Key npm scripts:**
+```bash
+npm run verify        # format:check + lint + boundaries + typecheck + test — run before every commit
+npm run dev           # Vite dev server (client)
+npm run dev:server    # ts-node server
+npm run test          # vitest run
+npm run build         # production build (client + server tsc)
+npm run boundaries    # architecture boundary linter only
+```
+
+**Current test count: 162 tests across 19 files — all passing.**
+
+---
+
+## Technology stack
+
+| Concern | Choice |
+|---|---|
+| Runtime | Node 22 (`.nvmrc`) |
+| Language | TypeScript 5 strict (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`) |
+| Client bundler | Vite 6 + vite-plugin-pwa |
+| 3D | three.js r171 |
+| UI | React 18 + Zustand 5 |
+| Server | Fastify 5 + ws 8 |
+| Validation | zod 3 |
+| Testing | Vitest 2 |
+| Linting | ESLint (flat config) + typescript-eslint |
+| Formatting | Prettier |
+| RNG | Custom xoshiro128** (deterministic, seedable, serialisable) |
+
+**Critical ESLint rules:**
+- `Math.random` is banned inside `packages/sim` — use `Rng` from `@arcanum/shared`
+- `Date.now` is banned inside `packages/sim` — use the injected clock
+- `consistent-type-imports` is enforced everywhere
+
+---
+
+## Architecture decisions (read all ADRs in `docs/adr/`)
+
+### ADR-0001: Server-authoritative deterministic simulation
+The server owns all outcomes. Client and server share `@arcanum/sim` — identical logic, no
+duplication. Client predicts locally, server verifies by state hash comparison. A mismatch
+triggers a resync, not a disconnect.
+
+### ADR-0002: Balance lives in versioned data
+Every tunable number lives in `DEFAULT_TUNABLES` in `packages/shared/src/config/tunables.ts`.
+Gameplay code never hardcodes a literal. The tunables version is recorded in match replays.
+
+### ADR-0003: Architecture boundaries are executable
+`tools/scripts/check-boundaries.mjs` is a real linter that reads imports and fails CI when a
+module crosses a layer it shouldn't. It is not documentation — it is enforcement. Run
+`npm run boundaries` to check. Adding a new layer requires updating both the script and this file.
+
+### ADR-0004: Grade does not affect duel resolution
+Card data is split into:
+- `CardDefinition` — rules (cost, effects, school, type). The ONLY data the combat resolver reads.
+- `CardInstance` — provenance (grade, serial, foil, slab state, owner). Never read by the resolver.
+
+Grade affects post-match rewards via `rewardMultiplierMinBasisPoints` /
+`rewardMultiplierMaxBasisPoints` in tunables. Grade 9-10 slabs get presentational duel advantages
+(distinct card back, reveal flourish, serial visible) — never mechanical ones.
+
+A boundary rule will explicitly forbid the `combat` module from importing `CardInstance`.
+
+---
+
+## What has been built
+
+### Phase 1 — Foundation (complete, 117 tests at time of completion)
+- `@arcanum/shared`: branded ids, Result/Failure, xoshiro128** RNG, typed EventBus, structured
+  logger, versioned tunables (world + combat + grading + economy + progression + gathering +
+  network), wire protocol with envelope + opcodes, forward-only migration runner
+- `@arcanum/sim`: fixed-timestep clock, canonical FNV-1a state hash, explicit phase state
+  machine (Boot/Loading/Syncing/WorldExploration/IdleGathering/Crafting/DeckBuilding/CardCombat/
+  Market/QuestDialog/Paused/SocialHub/Fault), deterministic command kernel with snapshot/restore
+- `@arcanum/server`: zod-validated env config, transport-agnostic Gateway with handshake/
+  heartbeat/resume/rate-limiting/sweep, SessionStore, InMemoryPlayerRepository with optimistic
+  concurrency, Fastify health endpoints (/healthz /readyz /version /metrics), graceful shutdown
+- `@arcanum/client`: lazy DI Container, device quality tiering (Low/Medium/High), Engine with
+  fixed-timestep + EMA fps, WebGL RenderService with context-loss recovery + visibility gating,
+  gesture InputService (tap/longpress/drag/pinch), reconnecting Transport with full-jitter
+  backoff, IndexedDB persistence with LOCAL_SCHEMA_VERSION + migrations, Zustand AppState,
+  PWA manifest + icons, design tokens (IBM Plex type family, 9-colour palette)
+- Tooling: TS project references, ESLint flat config with determinism rules, Prettier, Vitest,
+  executable boundary linter, GitHub Actions CI
+
+### Phase 2 — World, camera, input, NPCs, accessibility (complete, 162 tests)
+**In `@arcanum/shared`:**
+- `world/types.ts`: Zone, Waypoint, Interactable (9 kinds), NpcDefinition, ScheduleEntry,
+  NpcActivity, NpcRole, ZoneTerrain (base + terraces), Vec2, distance helpers
+- `world/graph.ts`: `buildNavGraph()` — validates zones exhaustively (symmetry, connectivity,
+  bounds, schedule ordering, interactable approach validity) and compiles waypoints into a
+  flat typed-array nav graph. Fails fast with structured errors.
+- `world/courtyard.ts`: `COURTYARD` — the Courtyard of the Arcanum hub zone. 28 waypoints,
+  13 interactables, 6 named NPCs (Professor Vosk, Quartermaster Vell, Archivist Onn,
+  Rival Renn, Groundskeeper Bram, Referee Dun), 18 ambient population. Cross-plan layout
+  with scribing hall, duelling terrace, merchant arcade, alchemy gardens, library, mines,
+  hall of champions, emberwood grove.
+- Tunables extended: WorldTunables (speeds, camera, NPC dwell), grade reward multipliers
+
+**In `@arcanum/sim`:**
+- `nav.ts`: `Pathfinder` class — allocation-free A* over integer indices, binary heap,
+  index tie-breaking for determinism. `between()` for world-point-to-world-point routing.
+- `locomotion.ts`: `Mover`, `followPath()` (with carry-over past multiple nodes per step),
+  `steer()` (analogue, scales speed by stick magnitude, clamps to zone bounds),
+  `setPath()` (drops start node if already there), `turnToward()`, `normaliseAngle()`
+- `schedule.ts`: `worldMinuteOf()`, `worldDayFractionOf()`, `currentScheduleEntry()`,
+  `minutesUntilNextEntry()`, `selectBark()` (deterministic, seeded by NPC id)
+- `npc.ts`: `NpcAgent`, `createNpcAgent()` (spawns at correct schedule post),
+  `stepNpcAgent()` (schedule change → repath, walking → followPath, dwell → drift)
+
+**In `@arcanum/client`:**
+- `world/palette.ts`: 3D palette matching CSS tokens, atmosphere presets, `sunElevation()`,
+  `daylight()`
+- `world/scene-builder.ts`: `buildZoneGeometry()` — derives entire courtyard geometry from
+  zone data. Instanced columns, spires, interactable markers, duel inlays. 2 draw calls for
+  all repeated geometry.
+- `world/actor-pool.ts`: `ActorPool` — fixed-capacity instanced mesh pool (bodies + heads),
+  acquire/release/setTransform/flush. 2 draw calls for the whole population.
+- `world/world-service.ts`: `WorldService` — zone load + validation, geometry, actor pool,
+  directional sun + hemisphere sky, `nearestInteractable()`, `updateAtmosphere()`
+- `camera/camera-rig.ts`: `CameraRig` — exponential smoothing, yaw/pitch orbit, pinch zoom,
+  `frame()` for shot composition (duel entry), `release()`, portrait FOV
+- `input/joystick.ts`: `Joystick` — floating stick (base follows thumb beyond radius),
+  dead-zone rescaling, multi-pointer safe, `visual()` for rendering
+- `player/player-controller.ts`: `PlayerController` — arbitrates stick vs tap-to-move,
+  `moveTo()` (via graph then final metre), `approach()` (to interactable waypoint), `step()`
+  (stick input rotated by camera yaw, walk vs run threshold)
+- `npc/npc-director.ts`: `NpcDirector` — named cast from zone + generated ambient crowd,
+  seeded to quality-budgeted pool capacity, `nearestNamed()` for dialogue prompts
+- `a11y/preferences.ts`: `AccessibilityPreferences`, `readSystemPreferences()` (seeds from OS),
+  `applyAccessibility()` (projects onto `PreferenceTarget`), `motionScale()`
+- `app/hub-controller.ts`: `HubController` — wires world/player/camera/NPCs/input, throttled
+  store projection (250ms), `engagePrompt()`, `setAccessibility()`
+- `state/app-store.ts`: extended with `InteractionPromptState`, `worldMinute`,
+  `ambientPopulation`, `accessibility`
+- `screens/HubScreen.tsx`: hub overlay (HubHud + JoystickPad + InteractionPrompt)
+- `ui/HubOverlay.tsx`: `HubHud` (zone name, clock, population), `InteractionPrompt` (verb button)
+- `ui/JoystickPad.tsx`: React wrapper for `Joystick`, pointer-capture on zone div
+- CSS: hub overlay, joystick, prompt button, accessibility data-attribute hooks,
+  `--text-scale` custom property
+
+**Visual identity:** "the card slab" — palette: `--ink #11161d`, `--slate #1b2531`,
+`--slate-raised #24303f`, `--haze #c6cfd8`, `--haze-dim #8496a8`, `--verdigris #3fa88e`,
+`--gilt #c9a227` (grade 9-10 only), `--alarm #d0524a`. Type: IBM Plex Serif (body),
+Sans Condensed (labels), Mono (serials).
+
+---
+
+## Open decisions (must be resolved before the relevant phase)
+
+### 🔴 Phase 3 blocker — Grading and purchased randomness
+**Question:** Can grading consume purchased randomness (a reroll item, a bonus seal bought
+with premium currency), or only materials the player gathered and crafted?
+
+**Recommendation (not yet accepted):** Earned-only. Purchased randomness on grade outcomes
+is a loot box under UK, Belgian, Dutch, and increasingly other regulatory regimes — requires
+age gating, odds disclosure, and in some markets cannot ship at all. Keeping grading as
+earned-only holds the compliance surface at zero and is consistent with V2 §22 (cosmetics
+as the primary premium value). If premium materials ever enter the grading chain, that
+decision must be made explicitly and documented.
+
+**Impact:** Changes the item definition schema and the crafting recipe format.
+
+### 🟡 Phase 3 — Tool durability
+**Question:** Does tool durability interrupt an idle session, or is it purely a currency sink
+that resolves on the next login?
+
+**Recommendation (not yet accepted):** Currency sink only — a tool that breaks mid-harvest
+interrupts the idle session the player set up before closing the app, which is the single
+most-complained-about design pattern in idle games. Durability should reduce the resource
+gain of the next session, not cancel the current one.
+
+### 🟡 Phase 3 — Offline accrual rate and cap
+**Question:** At what rate does offline gathering accrue, and what is the cap?
+
+**Current tunables default:** cap = 8 hours (`offlineAccrualCapMs: 28_800_000`). Rate is
+unspecified. Recommendation: 50-60% of online rate, claimed explicitly (so the player
+opens the app to collect rather than resources silently filling up and being lost).
+
+---
+
+## Phase 3 — what to build next
+
+**Goal:** The first economic loop, server-side authoritative.
+
+**Requires settling first:** The grading/purchased-randomness decision (see above).
+
+**Build order within Phase 3:**
+1. Content pipeline: authoring format (JSON schema), validator (reuses `buildNavGraph`
+   pattern), build step that type-checks content, content versioning. Cards, items,
+   nodes, recipes, NPCs all become data files rather than code.
+2. Item and inventory model: `ItemDefinition` / `ItemInstance` split (mirrors the card
+   split from ADR-0004), stack caps, slot caps, server-side inventory service
+3. Gathering: node types (crystal, mushroom, emberwood), tap-to-start continuous harvest,
+   depletion timers, rare-drop tables (integer weights, seeded RNG), offline accrual
+4. Refining and crafting: recipes as validated data, skill-scaled waste, station types
+5. Skills and XP: levels 1-99, `xpCurveBase * n^xpCurveExponent`, unlock gates
+6. Server-side validation: client predicts → server confirms pattern (same as will be
+   used for combat); client optimistic updates, server corrects
+
+**Key files that will need creating:**
+- `packages/shared/src/items/types.ts` — ItemDefinition, ItemInstance, Stackable
+- `packages/shared/src/items/inventory.ts` — inventory model, slot logic
+- `packages/shared/src/gathering/types.ts` — NodeDefinition, NodeInstance, DropTable
+- `packages/shared/src/crafting/types.ts` — Recipe, RecipeResult, StationKind
+- `packages/shared/src/skills/types.ts` — SkillId, SkillState, xpForLevel()
+- `content/` — JSON content files (items, nodes, recipes, NPCs)
+- `tools/scripts/validate-content.mjs` — content validator (runs in CI)
+- `packages/server/src/game/inventory-service.ts`
+- `packages/server/src/game/gathering-service.ts`
+- `packages/server/src/game/crafting-service.ts`
+- `packages/server/src/game/skill-service.ts`
+- `packages/client/src/ui/InventoryPanel.tsx`
+- `packages/client/src/ui/GatheringHud.tsx`
+- `packages/client/src/ui/CraftingPanel.tsx`
+
+---
+
+## Phase roadmap summary
+
+| Phase | Status | Description |
+|---|---|---|
+| 1 | ✅ Complete | Foundation, toolchain, deterministic kernel |
+| 2 | ✅ Complete | World, navigation, camera, input, NPCs, accessibility |
+| 3 | 🔵 Next | Inventory, gathering, crafting, skills, content pipeline |
+| 4 | ⬜ Planned | Card framework, grading, slab system, deckbuilder |
+| 5 | ⬜ Planned | Combat engine, AI opponents, duel flow |
+| 6 | ⬜ Planned | Multiplayer lobby, trading, matchmaking, reconnect |
+| 7 | ⬜ Planned | Economy, marketplace, quests, daily systems, leaderboards |
+| 8 | ⬜ Planned | Optimisation, QA, analytics, deployment, scaling |
+
+---
+
+## Key content: the Courtyard of the Arcanum
+
+**Zone id:** `zone.courtyard`
+**Layout:** Cross-plan — central plaza, four cardinal avenues, four corner precincts.
+**Waypoints:** 28 (plaza ring, scribing hall, duelling terrace, merchant arcade, alchemy
+gardens, library, resonance mines, hall of champions, emberwood grove)
+**Interactables:** scribing table, appraisal desk, crystal node (mines), mushroom patch
+(gardens), emberwood stand (grove), ink distillery (gardens), crystal grinder (mines entry),
+2× duel circles, quartermaster stall, consignment board (level 5+), champions pedestals,
+quest board
+**Named NPCs:** Professor Ilyra Vosk (scribing), Quartermaster Vell (merchant), Archivist Onn,
+Rival Sable Renn, Groundskeeper Bram, Referee Calla Dun
+
+---
+
+## Multiplayer philosophy (for Phase 6)
+
+Single-player hub with ambient NPCs and AI rivals ships first (current state). The transport,
+gateway, session resume and server-authoritative kernel are already built and ready. Phase 6
+adds the hub multiplayer layer on top of an already-working single-player experience.
+
+---
+
+## How to get started in Claude Code
+
+```bash
+# From the repo root:
+npm install          # install all workspaces
+npm run verify       # confirm everything passes (should be 162 tests)
+npm run dev          # start the Vite dev server
+```
+
+Read `docs/IMPLEMENTATION_ROADMAP.md` and `docs/ARCHITECTURE.md` before writing any Phase 3 code.
+Check all four ADRs in `docs/adr/` before making any structural change.
+Run `npm run verify` before every commit.
