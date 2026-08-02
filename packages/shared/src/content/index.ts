@@ -96,7 +96,7 @@ export const NODE_CATALOG: NodeCatalog = expect(
   buildNodeCatalog(nodeDefinitions, {
     items: ITEM_CATALOG,
     skills: SKILL_TABLE,
-    zone: COURTYARD,
+    zones: [COURTYARD],
   }),
   'shipped gathering content is invalid',
 );
@@ -105,7 +105,7 @@ export const RECIPE_BOOK: RecipeBook = expect(
   buildRecipeBook(recipeDefinitions, {
     items: ITEM_CATALOG,
     skills: SKILL_TABLE,
-    zone: COURTYARD,
+    zones: [COURTYARD],
   }),
   'shipped recipe content is invalid',
 );

@@ -24,6 +24,7 @@ import {
   type RecipeId,
   type SkillId,
   type InteractableId,
+  type ZoneId,
 } from '../index.js';
 
 const MAX_LEVEL = DEFAULT_TUNABLES.progression.maxSkillLevel;
@@ -112,7 +113,7 @@ function craftingContext() {
     skills.value,
   );
   if (!items.ok) throw new Error('fixture item catalog should build');
-  return { skills: skills.value, items: items.value, zone: COURTYARD };
+  return { skills: skills.value, items: items.value, zones: [COURTYARD] };
 }
 
 describe('shipped content', () => {
@@ -275,7 +276,7 @@ describe('buildNodeCatalog', () => {
     const skills = gatheringTable();
     const items = buildItemCatalog([item()], skills);
     if (!items.ok) throw new Error('fixture item catalog should build');
-    return { skills, items: items.value, zone: COURTYARD };
+    return { skills, items: items.value, zones: [COURTYARD] };
   }
 
   it('rejects a node bound to a crafting station', () => {
@@ -347,7 +348,7 @@ describe('buildNodeCatalog', () => {
     const built = buildNodeCatalog([node()], {
       skills: skills.value,
       items: items.value,
-      zone: COURTYARD,
+      zones: [COURTYARD],
     });
     expect(built.ok).toBe(false);
     if (!built.ok) expect(built.error.detail).toContain('not a gathering skill');
@@ -400,5 +401,34 @@ describe('buildRecipeBook', () => {
     );
     expect(built.ok).toBe(false);
     if (!built.ok) expect(built.error.detail).toContain('unknown skill');
+  });
+});
+
+describe('validating against the whole world', () => {
+  function context() {
+    const skills = gatheringTable();
+    const items = buildItemCatalog([item()], skills);
+    if (!items.ok) throw new Error('fixture item catalog should build');
+    return { skills, items: items.value };
+  }
+
+  it('reports an interactable defined in more than one zone', () => {
+    // The same zone listed twice is the cheapest way to collide every id, and
+    // is exactly what a copy-pasted zone file would do.
+    const built = buildNodeCatalog([node()], {
+      ...context(),
+      zones: [COURTYARD, COURTYARD],
+    });
+    expect(built.ok).toBe(false);
+    if (!built.ok) expect(built.error.detail).toContain('defined in more than one zone');
+  });
+
+  it('resolves a station in any zone it was given, not just the first', () => {
+    const empty = { ...COURTYARD, id: asId<ZoneId>('zone.empty'), interactables: [] };
+    const built = buildRecipeBook([recipe()], {
+      ...craftingContext(),
+      zones: [empty, COURTYARD],
+    });
+    expect(built.ok).toBe(true);
   });
 });

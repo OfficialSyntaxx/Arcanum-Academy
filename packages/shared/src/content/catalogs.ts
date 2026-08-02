@@ -25,7 +25,7 @@ import { ItemCategory, ItemRarity, type ItemDefinition } from '../items/types.js
 import { GatheringNodeKind, type NodeDefinition } from '../gathering/types.js';
 import type { RecipeDefinition } from '../crafting/types.js';
 import { SkillCategory, type SkillDefinition } from '../skills/types.js';
-import { InteractableKind, type Zone } from '../world/types.js';
+import { InteractableKind, type Interactable, type Zone } from '../world/types.js';
 
 function fail(reason: string, detail: string): Failure {
   return failure('validation', reason, { detail });
@@ -46,6 +46,39 @@ function isNonNegativeInteger(value: unknown): boolean {
 
 function isNonEmptyString(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+/**
+ * The world content is validated against: every interactable in every zone.
+ *
+ * Nodes and recipes are validated against the whole world rather than one zone
+ * because content is authored per subject, not per location - a single
+ * recipes file will eventually name stations in several zones. Taking a
+ * collection also makes an id collision across zones detectable, which a
+ * per-zone check cannot see at all.
+ */
+export interface WorldContext {
+  readonly items: ItemCatalog;
+  readonly skills: SkillTable;
+  readonly zones: readonly Zone[];
+}
+
+function indexInteractables(zones: readonly Zone[]): {
+  readonly byId: ReadonlyMap<string, Interactable>;
+  readonly collisions: readonly string[];
+} {
+  const byId = new Map<string, Interactable>();
+  const collisions: string[] = [];
+  for (const zone of zones) {
+    for (const interactable of zone.interactables) {
+      if (byId.has(interactable.id)) {
+        collisions.push(`interactable "${interactable.id}" is defined in more than one zone`);
+        continue;
+      }
+      byId.set(interactable.id, interactable);
+    }
+  }
+  return { byId, collisions };
 }
 
 export interface SkillTable {
@@ -194,7 +227,7 @@ export function buildItemCatalog(
 
 export function buildNodeCatalog(
   definitions: readonly NodeDefinition[],
-  context: { readonly items: ItemCatalog; readonly skills: SkillTable; readonly zone: Zone },
+  context: WorldContext,
 ): Result<NodeCatalog, Failure> {
   if (definitions.length === 0) {
     return err(fail('content.nodes_empty', 'no gathering nodes are defined'));
@@ -202,9 +235,9 @@ export function buildNodeCatalog(
 
   const byId = new Map<string, NodeDefinition>();
   const byInteractable = new Map<string, NodeDefinition>();
-  const problems: string[] = [];
   const kinds: string[] = Object.values(GatheringNodeKind);
-  const interactables = new Map(context.zone.interactables.map((entry) => [entry.id, entry]));
+  const { byId: interactables, collisions } = indexInteractables(context.zones);
+  const problems: string[] = [...collisions];
 
   for (const node of definitions) {
     if (byId.has(node.id)) {
@@ -289,7 +322,7 @@ export function buildNodeCatalog(
 
 export function buildRecipeBook(
   definitions: readonly RecipeDefinition[],
-  context: { readonly items: ItemCatalog; readonly skills: SkillTable; readonly zone: Zone },
+  context: WorldContext,
 ): Result<RecipeBook, Failure> {
   if (definitions.length === 0) {
     return err(fail('content.recipes_empty', 'no recipes are defined'));
@@ -297,8 +330,8 @@ export function buildRecipeBook(
 
   const byId = new Map<string, RecipeDefinition>();
   const byStation = new Map<string, RecipeDefinition[]>();
-  const problems: string[] = [];
-  const interactables = new Map(context.zone.interactables.map((entry) => [entry.id, entry]));
+  const { byId: interactables, collisions } = indexInteractables(context.zones);
+  const problems: string[] = [...collisions];
 
   for (const recipe of definitions) {
     if (byId.has(recipe.id)) {
