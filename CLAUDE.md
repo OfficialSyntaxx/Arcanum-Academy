@@ -95,7 +95,7 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 165 tests across 19 files — all passing.** First verified end to
+**Current test count: 202 tests across 21 files — all passing.** First verified end to
 end on 2026-08-02; before that the suite had never been run to completion on any machine
 or in CI.
 
@@ -404,7 +404,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 165 tests)
+npm run verify       # confirm everything passes (should be 202 tests)
 npm run dev          # start the Vite dev server
 ```
 

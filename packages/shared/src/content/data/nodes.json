@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "node.courtyard.crystal",
+      "interactableId": "int.node.crystal",
+      "kind": "CRYSTAL",
+      "requiredSkillId": "skill.mining",
+      "requiredSkillLevel": 1,
+      "harvestIntervalMs": 3000,
+      "xpPerHarvest": 12,
+      "depletionHarvests": 40,
+      "regenerationMs": 300000,
+      "dropTable": [
+        { "itemId": "item.crystal.shard", "weight": 820, "minQuantity": 1, "maxQuantity": 3 },
+        { "itemId": "item.crystal.resonant", "weight": 160, "minQuantity": 1, "maxQuantity": 1 },
+        { "itemId": "item.crystal.prismatic", "weight": 20, "minQuantity": 1, "maxQuantity": 1 }
+      ]
+    },
+    {
+      "id": "node.courtyard.mushroom",
+      "interactableId": "int.node.mushroom",
+      "kind": "MUSHROOM",
+      "requiredSkillId": "skill.foraging",
+      "requiredSkillLevel": 1,
+      "harvestIntervalMs": 2600,
+      "xpPerHarvest": 11,
+      "depletionHarvests": 45,
+      "regenerationMs": 240000,
+      "dropTable": [
+        { "itemId": "item.mushroom.cap", "weight": 840, "minQuantity": 1, "maxQuantity": 3 },
+        { "itemId": "item.mushroom.glowspore", "weight": 145, "minQuantity": 1, "maxQuantity": 1 },
+        { "itemId": "item.mushroom.dreamveil", "weight": 15, "minQuantity": 1, "maxQuantity": 1 }
+      ]
+    },
+    {
+      "id": "node.courtyard.emberwood",
+      "interactableId": "int.node.emberwood",
+      "kind": "EMBERWOOD",
+      "requiredSkillId": "skill.forestry",
+      "requiredSkillLevel": 1,
+      "harvestIntervalMs": 3400,
+      "xpPerHarvest": 14,
+      "depletionHarvests": 35,
+      "regenerationMs": 360000,
+      "dropTable": [
+        { "itemId": "item.emberwood.branch", "weight": 830, "minQuantity": 1, "maxQuantity": 2 },
+        { "itemId": "item.emberwood.heartwood", "weight": 155, "minQuantity": 1, "maxQuantity": 1 },
+        { "itemId": "item.emberwood.core", "weight": 15, "minQuantity": 1, "maxQuantity": 1 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "item.crystal.shard",
+      "name": "Crystal Shard",
+      "description": "A dull fragment of resonance seam. Common as gravel beneath the mines.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 3,
+      "iconKey": "crystal-shard"
+    },
+    {
+      "id": "item.crystal.resonant",
+      "name": "Resonant Crystal",
+      "description": "It hums faintly when held near ink. Scribes pay well for the clarity.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 18,
+      "iconKey": "crystal-resonant"
+    },
+    {
+      "id": "item.crystal.prismatic",
+      "name": "Prismatic Crystal",
+      "description": "Splits lamplight into colours that have no names in the register.",
+      "category": "MATERIAL",
+      "rarity": "RARE",
+      "stackCap": 999,
+      "baseValue": 95,
+      "iconKey": "crystal-prismatic"
+    },
+    {
+      "id": "item.mushroom.cap",
+      "name": "Pale Cap",
+      "description": "Grows thick along the garden terraces. Bitter, but it holds pigment.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 3,
+      "iconKey": "mushroom-cap"
+    },
+    {
+      "id": "item.mushroom.glowspore",
+      "name": "Glowspore",
+      "description": "Sheds a cold blue light for about an hour after picking.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 20,
+      "iconKey": "mushroom-glowspore"
+    },
+    {
+      "id": "item.mushroom.dreamveil",
+      "name": "Dreamveil",
+      "description": "Fruits only in the hours the courtyard is empty. Nobody has watched it happen.",
+      "category": "MATERIAL",
+      "rarity": "RARE",
+      "stackCap": 999,
+      "baseValue": 105,
+      "iconKey": "mushroom-dreamveil"
+    },
+    {
+      "id": "item.emberwood.branch",
+      "name": "Emberwood Branch",
+      "description": "Warm to the touch long after it is cut from the grove.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 4,
+      "iconKey": "emberwood-branch"
+    },
+    {
+      "id": "item.emberwood.heartwood",
+      "name": "Emberwood Heartwood",
+      "description": "Taken from the trunk, where the grain runs red and refuses the saw.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 22,
+      "iconKey": "emberwood-heartwood"
+    },
+    {
+      "id": "item.emberwood.core",
+      "name": "Ember Core",
+      "description": "A knot of wood that never cooled. Groundskeeper Bram buries the ones he finds.",
+      "category": "MATERIAL",
+      "rarity": "RARE",
+      "stackCap": 999,
+      "baseValue": 120,
+      "iconKey": "emberwood-core"
+    },
+    {
+      "id": "item.dust.resonant",
+      "name": "Resonant Dust",
+      "description": "Ground crystal, fine enough to suspend in ink without clouding it.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 30,
+      "iconKey": "dust-resonant"
+    },
+    {
+      "id": "item.ink.azure",
+      "name": "Azure Ink",
+      "description": "Holds a glyph for a century. The scribing hall accepts nothing weaker.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 75,
+      "iconKey": "ink-azure"
+    },
+    {
+      "id": "item.ink.ember",
+      "name": "Ember Ink",
+      "description": "Sets warm and stays warm. Reserved for cards meant to be cast in anger.",
+      "category": "MATERIAL",
+      "rarity": "RARE",
+      "stackCap": 999,
+      "baseValue": 140,
+      "iconKey": "ink-ember"
+    },
+    {
+      "id": "item.tool.pick",
+      "name": "Academy Pick",
+      "description": "Issued at the quartermaster's stall. Blunts quickly against resonance seams.",
+      "category": "TOOL",
+      "rarity": "COMMON",
+      "stackCap": 1,
+      "baseValue": 120,
+      "iconKey": "tool-pick",
+      "tool": {
+        "maxDurability": 500,
+        "yieldMultiplierBasisPoints": 12000,
+        "boundSkillId": "skill.mining",
+        "repairCost": 45
+      }
+    },
+    {
+      "id": "item.tool.sickle",
+      "name": "Garden Sickle",
+      "description": "Short, curved, and kept sharp enough to take a cap without bruising it.",
+      "category": "TOOL",
+      "rarity": "COMMON",
+      "stackCap": 1,
+      "baseValue": 120,
+      "iconKey": "tool-sickle",
+      "tool": {
+        "maxDurability": 500,
+        "yieldMultiplierBasisPoints": 12000,
+        "boundSkillId": "skill.foraging",
+        "repairCost": 45
+      }
+    },
+    {
+      "id": "item.tool.axe",
+      "name": "Grove Axe",
+      "description": "Bram's design. Heavy enough for heartwood, balanced enough for a long session.",
+      "category": "TOOL",
+      "rarity": "COMMON",
+      "stackCap": 1,
+      "baseValue": 140,
+      "iconKey": "tool-axe",
+      "tool": {
+        "maxDurability": 500,
+        "yieldMultiplierBasisPoints": 12000,
+        "boundSkillId": "skill.forestry",
+        "repairCost": 50
+      }
+    }
+  ]
+}

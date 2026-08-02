@@ -15,3 +15,8 @@ export * from './config/index.js';
 export * from './protocol/index.js';
 export * from './persistence/index.js';
 export * from './world/index.js';
+export * from './items/types.js';
+export * from './gathering/types.js';
+export * from './crafting/types.js';
+export * from './skills/types.js';
+export * from './content/index.js';

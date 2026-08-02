@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "skill.mining",
+      "name": "Mining",
+      "category": "GATHERING",
+      "unlocks": [
+        { "atLevel": 1, "description": "Work resonance seams", "nodeKind": "CRYSTAL" },
+        { "atLevel": 15, "description": "Resonant crystal appears more often" },
+        { "atLevel": 40, "description": "Prismatic crystal appears more often" }
+      ]
+    },
+    {
+      "id": "skill.foraging",
+      "name": "Foraging",
+      "category": "GATHERING",
+      "unlocks": [
+        { "atLevel": 1, "description": "Gather from mushroom patches", "nodeKind": "MUSHROOM" },
+        { "atLevel": 20, "description": "Glowspore caps appear more often" },
+        { "atLevel": 45, "description": "Dreamveil appears more often" }
+      ]
+    },
+    {
+      "id": "skill.forestry",
+      "name": "Forestry",
+      "category": "GATHERING",
+      "unlocks": [
+        { "atLevel": 1, "description": "Fell emberwood stands", "nodeKind": "EMBERWOOD" },
+        { "atLevel": 25, "description": "Heartwood appears more often" },
+        { "atLevel": 50, "description": "Ember cores appear more often" }
+      ]
+    },
+    {
+      "id": "skill.refining",
+      "name": "Refining",
+      "category": "CRAFTING",
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Grind crystal into resonant dust",
+          "recipeId": "recipe.dust.resonant"
+        },
+        {
+          "atLevel": 5,
+          "description": "Distil azure ink",
+          "recipeId": "recipe.ink.azure"
+        },
+        {
+          "atLevel": 10,
+          "description": "Distil ember ink",
+          "recipeId": "recipe.ink.ember"
+        }
+      ]
+    }
+  ]
+}
