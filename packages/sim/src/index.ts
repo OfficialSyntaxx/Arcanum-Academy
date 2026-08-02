@@ -15,3 +15,4 @@ export * from './nav.js';
 export * from './locomotion.js';
 export * from './schedule.js';
 export * from './npc.js';
+export * from './economy/inventory.js';
