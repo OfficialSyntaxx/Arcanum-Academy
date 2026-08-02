@@ -68,8 +68,37 @@ export interface GatheringTunables {
   readonly minHarvestIntervalMs: number;
   /** Offline accrual is capped so idle progression cannot replace play sessions. */
   readonly offlineAccrualCapMs: number;
+  /**
+   * Share of the online rate earned while away, in basis points.
+   *
+   * Applied to the number of harvest ticks, not to the yield of each tick, so
+   * a rare drop is exactly as rare offline as it is online - there are simply
+   * fewer chances at it. Scaling the yield instead would quietly make rarity
+   * itself depend on whether the app was open.
+   */
+  readonly offlineAccrualRateBasisPoints: number;
   readonly baseInventorySlots: number;
   readonly maxInventorySlots: number;
+  /** Durability consumed per harvest tick by the equipped tool. */
+  readonly toolDurabilityLossPerHarvest: number;
+  /**
+   * Yield multiplier while the equipped tool sits at zero durability.
+   *
+   * A worn tool reduces the next session rather than interrupting the current
+   * one: an idle session set up before closing the app always runs to its cap.
+   * Durability is a currency sink, never a silent halt to unattended progress.
+   */
+  readonly depletedToolYieldMultiplierBasisPoints: number;
+}
+
+export interface CraftingTunables {
+  readonly baseCraftDurationMs: number;
+  readonly minCraftDurationMs: number;
+  /** Floor on waste; skill reduces spoilage but never eliminates it. */
+  readonly minWasteRateBasisPoints: number;
+  /** Ceiling on the total reduction skill investment can buy. */
+  readonly wasteReductionCapBasisPoints: number;
+  readonly maxConcurrentCraftsPerStation: number;
 }
 
 export interface WorldTunables {
@@ -116,12 +145,16 @@ export interface Tunables {
   readonly economy: EconomyTunables;
   readonly progression: ProgressionTunables;
   readonly gathering: GatheringTunables;
+  readonly crafting: CraftingTunables;
   readonly world: WorldTunables;
   readonly network: NetworkTunables;
 }
 
 export const DEFAULT_TUNABLES: Tunables = Object.freeze({
-  version: 1,
+  // Bumped to 2 when crafting was added and gathering gained offline-rate and
+  // tool-durability dials. Per ADR-0002 the version travels with replays, so a
+  // recording made under 1 is not silently compared against 2's balance.
+  version: 2,
   combat: Object.freeze({
     deckSize: 20,
     maxCopiesPerSpell: 3,
@@ -166,8 +199,21 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     baseHarvestIntervalMs: 3_000,
     minHarvestIntervalMs: 900,
     offlineAccrualCapMs: 28_800_000,
+    // 25%: deliberately below the 50-60% an idle game would usually pay, at
+    // the owner's direction, so that being present is meaningfully better than
+    // being away without making absence feel punitive.
+    offlineAccrualRateBasisPoints: 2_500,
     baseInventorySlots: 60,
     maxInventorySlots: 240,
+    toolDurabilityLossPerHarvest: 1,
+    depletedToolYieldMultiplierBasisPoints: 5_000,
+  }),
+  crafting: Object.freeze({
+    baseCraftDurationMs: 6_000,
+    minCraftDurationMs: 1_500,
+    minWasteRateBasisPoints: 200,
+    wasteReductionCapBasisPoints: 4_000,
+    maxConcurrentCraftsPerStation: 1,
   }),
   world: Object.freeze({
     playerWalkSpeed: 2.6,

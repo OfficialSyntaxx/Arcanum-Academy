@@ -16,7 +16,18 @@ export type CardInstanceId = Brand<string, 'CardInstanceId'>;
 export type CardDefinitionId = Brand<string, 'CardDefinitionId'>;
 export type DeckId = Brand<string, 'DeckId'>;
 export type ItemDefinitionId = Brand<string, 'ItemDefinitionId'>;
+/**
+ * One owned tool, distinct from its definition.
+ *
+ * Only items that carry per-copy state need an instance id. Materials stack
+ * and are counted, so a thousand crystal shards are a quantity rather than a
+ * thousand identities; a tool wears down independently of every other copy and
+ * therefore has to be one.
+ */
+export type ItemInstanceId = Brand<string, 'ItemInstanceId'>;
 export type NodeId = Brand<string, 'NodeId'>;
+export type RecipeId = Brand<string, 'RecipeId'>;
+export type SkillId = Brand<string, 'SkillId'>;
 export type MatchId = Brand<string, 'MatchId'>;
 export type ListingId = Brand<string, 'ListingId'>;
 export type SlabSerial = Brand<string, 'SlabSerial'>;
