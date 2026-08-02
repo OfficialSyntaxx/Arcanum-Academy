@@ -9,6 +9,7 @@
 ## What this project is
 
 **The Arcanum Academy** is a mobile-first, browser-based fantasy game (PWA) combining:
+
 - MMO-style social hub exploration
 - Idle gathering and crafting
 - Collectible graded spell cards with unique serials
@@ -19,6 +20,7 @@
 **Core fantasy:** Attend a magical academy, gather arcane resources, craft graded spell cards, build decks, and duel other students in a living shared world.
 
 **Primary source documents (all in this repo):**
+
 - `docs/PROJECT_INITIALIZATION_REPORT.md` — architectural review, risks, open questions
 - `docs/IMPLEMENTATION_ROADMAP.md` — 8-phase build order with exit criteria
 - `docs/ARCHITECTURE.md` — package structure, layer rules, dependency diagram
@@ -37,6 +39,7 @@ Systems Designer, AI Systems Engineer, Rendering Engineer, Performance Engineer,
 Architect, DevOps Engineer, QA Lead, Live Service Designer, Mobile Optimization Specialist.
 
 **Decision hierarchy (in order):**
+
 1. Explicit user instructions given in this session
 2. This CLAUDE.md file
 3. Documents in `docs/`
@@ -46,6 +49,7 @@ Architect, DevOps Engineer, QA Lead, Live Service Designer, Mobile Optimization 
 7. Maintainability
 
 **Hard rules — never violate:**
+
 - No TODOs, placeholder logic, fake implementations, stub methods, or pseudocode
 - If one system depends on another, build both or stop and explain the missing dependency
 - Every generated file must compile and pass `npm run verify`
@@ -72,6 +76,7 @@ arcanum-academy/
 ```
 
 **Dependency direction (enforced by the boundary linter):**
+
 ```
 shared → (nothing)
 sim    → shared
@@ -80,6 +85,7 @@ client → shared, sim
 ```
 
 **Key npm scripts:**
+
 ```bash
 npm run verify        # format:check + lint + boundaries + typecheck + test — run before every commit
 npm run dev           # Vite dev server (client)
@@ -89,27 +95,30 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 162 tests across 19 files — all passing.**
+**Current test count: 165 tests across 19 files — all passing.** First verified end to
+end on 2026-08-02; before that the suite had never been run to completion on any machine
+or in CI.
 
 ---
 
 ## Technology stack
 
-| Concern | Choice |
-|---|---|
-| Runtime | Node 22 (`.nvmrc`) |
-| Language | TypeScript 5 strict (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`) |
-| Client bundler | Vite 6 + vite-plugin-pwa |
-| 3D | three.js r171 |
-| UI | React 18 + Zustand 5 |
-| Server | Fastify 5 + ws 8 |
-| Validation | zod 3 |
-| Testing | Vitest 2 |
-| Linting | ESLint (flat config) + typescript-eslint |
-| Formatting | Prettier |
-| RNG | Custom xoshiro128** (deterministic, seedable, serialisable) |
+| Concern        | Choice                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------ |
+| Runtime        | Node 22 (`.nvmrc`)                                                                                     |
+| Language       | TypeScript 5 strict (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`) |
+| Client bundler | Vite 6 + vite-plugin-pwa                                                                               |
+| 3D             | three.js r171                                                                                          |
+| UI             | React 18 + Zustand 5                                                                                   |
+| Server         | Fastify 5 + ws 8                                                                                       |
+| Validation     | zod 3                                                                                                  |
+| Testing        | Vitest 2                                                                                               |
+| Linting        | ESLint (flat config) + typescript-eslint                                                               |
+| Formatting     | Prettier                                                                                               |
+| RNG            | Custom xoshiro128** (deterministic, seedable, serialisable)                                            |
 
 **Critical ESLint rules:**
+
 - `Math.random` is banned inside `packages/sim` — use `Rng` from `@arcanum/shared`
 - `Date.now` is banned inside `packages/sim` — use the injected clock
 - `consistent-type-imports` is enforced everywhere
@@ -119,21 +128,26 @@ npm run boundaries    # architecture boundary linter only
 ## Architecture decisions (read all ADRs in `docs/adr/`)
 
 ### ADR-0001: Server-authoritative deterministic simulation
+
 The server owns all outcomes. Client and server share `@arcanum/sim` — identical logic, no
 duplication. Client predicts locally, server verifies by state hash comparison. A mismatch
 triggers a resync, not a disconnect.
 
 ### ADR-0002: Balance lives in versioned data
+
 Every tunable number lives in `DEFAULT_TUNABLES` in `packages/shared/src/config/tunables.ts`.
 Gameplay code never hardcodes a literal. The tunables version is recorded in match replays.
 
 ### ADR-0003: Architecture boundaries are executable
+
 `tools/scripts/check-boundaries.mjs` is a real linter that reads imports and fails CI when a
 module crosses a layer it shouldn't. It is not documentation — it is enforcement. Run
 `npm run boundaries` to check. Adding a new layer requires updating both the script and this file.
 
 ### ADR-0004: Grade does not affect duel resolution
+
 Card data is split into:
+
 - `CardDefinition` — rules (cost, effects, school, type). The ONLY data the combat resolver reads.
 - `CardInstance` — provenance (grade, serial, foil, slab state, owner). Never read by the resolver.
 
@@ -148,6 +162,7 @@ A boundary rule will explicitly forbid the `combat` module from importing `CardI
 ## What has been built
 
 ### Phase 1 — Foundation (complete, 117 tests at time of completion)
+
 - `@arcanum/shared`: branded ids, Result/Failure, xoshiro128** RNG, typed EventBus, structured
   logger, versioned tunables (world + combat + grading + economy + progression + gathering +
   network), wire protocol with envelope + opcodes, forward-only migration runner
@@ -166,7 +181,9 @@ A boundary rule will explicitly forbid the `combat` module from importing `CardI
   executable boundary linter, GitHub Actions CI
 
 ### Phase 2 — World, camera, input, NPCs, accessibility (complete, 162 tests)
+
 **In `@arcanum/shared`:**
+
 - `world/types.ts`: Zone, Waypoint, Interactable (9 kinds), NpcDefinition, ScheduleEntry,
   NpcActivity, NpcRole, ZoneTerrain (base + terraces), Vec2, distance helpers
 - `world/graph.ts`: `buildNavGraph()` — validates zones exhaustively (symmetry, connectivity,
@@ -180,6 +197,7 @@ A boundary rule will explicitly forbid the `combat` module from importing `CardI
 - Tunables extended: WorldTunables (speeds, camera, NPC dwell), grade reward multipliers
 
 **In `@arcanum/sim`:**
+
 - `nav.ts`: `Pathfinder` class — allocation-free A* over integer indices, binary heap,
   index tie-breaking for determinism. `between()` for world-point-to-world-point routing.
 - `locomotion.ts`: `Mover`, `followPath()` (with carry-over past multiple nodes per step),
@@ -191,6 +209,7 @@ A boundary rule will explicitly forbid the `combat` module from importing `CardI
   `stepNpcAgent()` (schedule change → repath, walking → followPath, dwell → drift)
 
 **In `@arcanum/client`:**
+
 - `world/palette.ts`: 3D palette matching CSS tokens, atmosphere presets, `sunElevation()`,
   `daylight()`
 - `world/scene-builder.ts`: `buildZoneGeometry()` — derives entire courtyard geometry from
@@ -231,6 +250,7 @@ Sans Condensed (labels), Mono (serials).
 ## Resolved decisions
 
 ### Grading and purchased randomness — RESOLVED 2026-07-31
+
 **Decision:** Earned-only. Grading may only consume materials the player gathered and
 crafted — never purchased randomness (reroll items, bonus seals bought with premium
 currency). Purchased randomness on grade outcomes is a loot box under UK, Belgian, Dutch,
@@ -244,13 +264,15 @@ decision — this one does not grandfather it in.
 premium-currency-purchased input that affects grade odds.
 
 ### Tool durability — RESOLVED 2026-07-31
+
 **Decision:** Currency sink only. A tool breaking mid-harvest never interrupts an active
 idle session — the session the player set up before closing the app runs to completion
-or its normal cap. Durability at zero instead reduces the resource gain of the *next*
+or its normal cap. Durability at zero instead reduces the resource gain of the _next_
 session until the tool is repaired. Avoids the most-complained-about idle-game pattern
 (silent interruption of unattended progress).
 
 ### Offline accrual rate and cap — RESOLVED 2026-07-31
+
 **Decision:** Offline gathering accrues at **25% of the online rate**, capped at 8 hours
 (`offlineAccrualCapMs: 28_800_000`, already in tunables). Deliberately on the low end of
 the originally-proposed 50-60% range, at the owner's explicit direction, to more strongly
@@ -307,6 +329,7 @@ The free Render instance sleeps after roughly fifteen minutes idle and cold star
 **Goal:** The first economic loop, server-side authoritative.
 
 **Build order within Phase 3:**
+
 1. Content pipeline: authoring format (JSON schema), validator (reuses `buildNavGraph`
    pattern), build step that type-checks content, content versioning. Cards, items,
    nodes, recipes, NPCs all become data files rather than code.
@@ -320,6 +343,7 @@ The free Render instance sleeps after roughly fifteen minutes idle and cold star
    used for combat); client optimistic updates, server corrects
 
 **Key files that will need creating:**
+
 - `packages/shared/src/items/types.ts` — ItemDefinition, ItemInstance, Stackable
 - `packages/shared/src/items/inventory.ts` — inventory model, slot logic
 - `packages/shared/src/gathering/types.ts` — NodeDefinition, NodeInstance, DropTable
@@ -339,16 +363,16 @@ The free Render instance sleeps after roughly fifteen minutes idle and cold star
 
 ## Phase roadmap summary
 
-| Phase | Status | Description |
-|---|---|---|
-| 1 | ✅ Complete | Foundation, toolchain, deterministic kernel |
-| 2 | ✅ Complete | World, navigation, camera, input, NPCs, accessibility |
-| 3 | 🔵 Next | Inventory, gathering, crafting, skills, content pipeline |
-| 4 | ⬜ Planned | Card framework, grading, slab system, deckbuilder |
-| 5 | ⬜ Planned | Combat engine, AI opponents, duel flow |
-| 6 | ⬜ Planned | Multiplayer lobby, trading, matchmaking, reconnect |
-| 7 | ⬜ Planned | Economy, marketplace, quests, daily systems, leaderboards |
-| 8 | ⬜ Planned | Optimisation, QA, analytics, deployment, scaling |
+| Phase | Status      | Description                                               |
+| ----- | ----------- | --------------------------------------------------------- |
+| 1     | ✅ Complete | Foundation, toolchain, deterministic kernel               |
+| 2     | ✅ Complete | World, navigation, camera, input, NPCs, accessibility     |
+| 3     | 🔵 Next     | Inventory, gathering, crafting, skills, content pipeline  |
+| 4     | ⬜ Planned  | Card framework, grading, slab system, deckbuilder         |
+| 5     | ⬜ Planned  | Combat engine, AI opponents, duel flow                    |
+| 6     | ⬜ Planned  | Multiplayer lobby, trading, matchmaking, reconnect        |
+| 7     | ⬜ Planned  | Economy, marketplace, quests, daily systems, leaderboards |
+| 8     | ⬜ Planned  | Optimisation, QA, analytics, deployment, scaling          |
 
 ---
 
@@ -380,7 +404,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 162 tests)
+npm run verify       # confirm everything passes (should be 165 tests)
 npm run dev          # start the Vite dev server
 ```
 

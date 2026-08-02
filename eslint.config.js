@@ -51,7 +51,10 @@ export default tseslint.config(
     rules: { 'no-console': 'off', '@typescript-eslint/no-non-null-assertion': 'off' },
   },
   {
-    files: ['tools/**/*.mjs', '*.config.{js,ts}'],
+    // Build and tooling scripts, whether repo-wide or owned by one package.
+    // They run in Node directly rather than being bundled, so Node globals are
+    // available and printing to stdout is the point rather than a mistake.
+    files: ['tools/**/*.mjs', 'packages/*/scripts/**/*.mjs', '*.config.{js,ts}'],
     languageOptions: {
       globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
     },
