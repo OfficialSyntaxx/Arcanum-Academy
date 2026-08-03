@@ -1,0 +1,618 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "card.resonance.shardward",
+      "nameKey": "card.resonance.shardward.name",
+      "textKey": "card.resonance.shardward.text",
+      "schoolId": "school.resonance",
+      "type": "WARD",
+      "rarity": "COMMON",
+      "cost": 1,
+      "effects": [
+        {
+          "kind": "WARD",
+          "target": "SELF",
+          "magnitude": 3
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.crystal.shard",
+          "quantity": 4
+        },
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 1,
+      "artKey": "resonance-shardward"
+    },
+    {
+      "id": "card.resonance.tuningstrike",
+      "nameKey": "card.resonance.tuningstrike.name",
+      "textKey": "card.resonance.tuningstrike.text",
+      "schoolId": "school.resonance",
+      "type": "CANTRIP",
+      "rarity": "COMMON",
+      "cost": 2,
+      "effects": [
+        {
+          "kind": "DAMAGE",
+          "target": "OPPONENT",
+          "magnitude": 3
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.crystal.shard",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 1,
+      "artKey": "resonance-tuningstrike"
+    },
+    {
+      "id": "card.resonance.harmonic",
+      "nameKey": "card.resonance.harmonic.name",
+      "textKey": "card.resonance.harmonic.text",
+      "schoolId": "school.resonance",
+      "type": "CANTRIP",
+      "rarity": "UNCOMMON",
+      "cost": 2,
+      "effects": [
+        {
+          "kind": "RESONANCE_GAIN",
+          "target": "SELF",
+          "magnitude": 2
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.crystal.resonant",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 8,
+      "artKey": "resonance-harmonic"
+    },
+    {
+      "id": "card.resonance.bulwark",
+      "nameKey": "card.resonance.bulwark.name",
+      "textKey": "card.resonance.bulwark.text",
+      "schoolId": "school.resonance",
+      "type": "WARD",
+      "rarity": "UNCOMMON",
+      "cost": 3,
+      "effects": [
+        {
+          "kind": "WARD",
+          "target": "SELF",
+          "magnitude": 6
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.crystal.resonant",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.dust.resonant",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 12,
+      "artKey": "resonance-bulwark"
+    },
+    {
+      "id": "card.resonance.lattice",
+      "nameKey": "card.resonance.lattice.name",
+      "textKey": "card.resonance.lattice.text",
+      "schoolId": "school.resonance",
+      "type": "CONSTRUCT",
+      "rarity": "RARE",
+      "cost": 5,
+      "effects": [
+        {
+          "kind": "WARD",
+          "target": "SELF",
+          "magnitude": 4
+        },
+        {
+          "kind": "DAMAGE",
+          "target": "OPPONENT",
+          "magnitude": 2
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.crystal.prismatic",
+          "quantity": 1
+        },
+        {
+          "itemId": "item.dust.resonant",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 2
+        }
+      ],
+      "scribeSkillLevel": 25,
+      "artKey": "resonance-lattice"
+    },
+    {
+      "id": "card.verdance.knit",
+      "nameKey": "card.verdance.knit.name",
+      "textKey": "card.verdance.knit.text",
+      "schoolId": "school.verdance",
+      "type": "CANTRIP",
+      "rarity": "COMMON",
+      "cost": 1,
+      "effects": [
+        {
+          "kind": "HEAL",
+          "target": "SELF",
+          "magnitude": 3
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.mushroom.cap",
+          "quantity": 4
+        },
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 1,
+      "artKey": "verdance-knit"
+    },
+    {
+      "id": "card.verdance.thornlash",
+      "nameKey": "card.verdance.thornlash.name",
+      "textKey": "card.verdance.thornlash.text",
+      "schoolId": "school.verdance",
+      "type": "CANTRIP",
+      "rarity": "COMMON",
+      "cost": 2,
+      "effects": [
+        {
+          "kind": "DAMAGE",
+          "target": "OPPONENT",
+          "magnitude": 2
+        },
+        {
+          "kind": "HEAL",
+          "target": "SELF",
+          "magnitude": 2
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.mushroom.cap",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 1,
+      "artKey": "verdance-thornlash"
+    },
+    {
+      "id": "card.verdance.bloom",
+      "nameKey": "card.verdance.bloom.name",
+      "textKey": "card.verdance.bloom.text",
+      "schoolId": "school.verdance",
+      "type": "CONSTRUCT",
+      "rarity": "UNCOMMON",
+      "cost": 3,
+      "effects": [
+        {
+          "kind": "HEAL",
+          "target": "SELF",
+          "magnitude": 2
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.mushroom.glowspore",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 10,
+      "artKey": "verdance-bloom"
+    },
+    {
+      "id": "card.verdance.gardener",
+      "nameKey": "card.verdance.gardener.name",
+      "textKey": "card.verdance.gardener.text",
+      "schoolId": "school.verdance",
+      "type": "CONSTRUCT",
+      "rarity": "UNCOMMON",
+      "cost": 4,
+      "effects": [
+        {
+          "kind": "HEAL",
+          "target": "SELF",
+          "magnitude": 3
+        },
+        {
+          "kind": "DRAW",
+          "target": "SELF",
+          "magnitude": 1
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.mushroom.glowspore",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.dust.resonant",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 16,
+      "artKey": "verdance-gardener"
+    },
+    {
+      "id": "card.verdance.dreamveil",
+      "nameKey": "card.verdance.dreamveil.name",
+      "textKey": "card.verdance.dreamveil.text",
+      "schoolId": "school.verdance",
+      "type": "WARD",
+      "rarity": "RARE",
+      "cost": 5,
+      "effects": [
+        {
+          "kind": "WARD",
+          "target": "SELF",
+          "magnitude": 5
+        },
+        {
+          "kind": "HEAL",
+          "target": "SELF",
+          "magnitude": 5
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.mushroom.dreamveil",
+          "quantity": 1
+        },
+        {
+          "itemId": "item.mushroom.glowspore",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 2
+        }
+      ],
+      "scribeSkillLevel": 28,
+      "artKey": "verdance-dreamveil"
+    },
+    {
+      "id": "card.ember.spark",
+      "nameKey": "card.ember.spark.name",
+      "textKey": "card.ember.spark.text",
+      "schoolId": "school.ember",
+      "type": "CANTRIP",
+      "rarity": "COMMON",
+      "cost": 1,
+      "effects": [
+        {
+          "kind": "DAMAGE",
+          "target": "OPPONENT",
+          "magnitude": 2
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.emberwood.branch",
+          "quantity": 4
+        },
+        {
+          "itemId": "item.ink.ember",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 1,
+      "artKey": "ember-spark"
+    },
+    {
+      "id": "card.ember.bolt",
+      "nameKey": "card.ember.bolt.name",
+      "textKey": "card.ember.bolt.text",
+      "schoolId": "school.ember",
+      "type": "CANTRIP",
+      "rarity": "COMMON",
+      "cost": 2,
+      "effects": [
+        {
+          "kind": "DAMAGE",
+          "target": "OPPONENT",
+          "magnitude": 4
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.emberwood.branch",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.ink.ember",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 1,
+      "artKey": "ember-bolt"
+    },
+    {
+      "id": "card.ember.kindling",
+      "nameKey": "card.ember.kindling.name",
+      "textKey": "card.ember.kindling.text",
+      "schoolId": "school.ember",
+      "type": "CANTRIP",
+      "rarity": "UNCOMMON",
+      "cost": 3,
+      "effects": [
+        {
+          "kind": "DAMAGE",
+          "target": "OPPONENT",
+          "magnitude": 3
+        },
+        {
+          "kind": "RESONANCE_GAIN",
+          "target": "SELF",
+          "magnitude": 1
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.emberwood.heartwood",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.ink.ember",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 11,
+      "artKey": "ember-kindling"
+    },
+    {
+      "id": "card.ember.forgehand",
+      "nameKey": "card.ember.forgehand.name",
+      "textKey": "card.ember.forgehand.text",
+      "schoolId": "school.ember",
+      "type": "CONSTRUCT",
+      "rarity": "UNCOMMON",
+      "cost": 4,
+      "effects": [
+        {
+          "kind": "DAMAGE",
+          "target": "OPPONENT",
+          "magnitude": 3
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.emberwood.heartwood",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.dust.resonant",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 18,
+      "artKey": "ember-forgehand"
+    },
+    {
+      "id": "card.ember.corefall",
+      "nameKey": "card.ember.corefall.name",
+      "textKey": "card.ember.corefall.text",
+      "schoolId": "school.ember",
+      "type": "CANTRIP",
+      "rarity": "RARE",
+      "cost": 6,
+      "effects": [
+        {
+          "kind": "DAMAGE",
+          "target": "OPPONENT",
+          "magnitude": 9
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.emberwood.core",
+          "quantity": 1
+        },
+        {
+          "itemId": "item.emberwood.heartwood",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.ink.ember",
+          "quantity": 2
+        }
+      ],
+      "scribeSkillLevel": 30,
+      "artKey": "ember-corefall"
+    },
+    {
+      "id": "card.cipher.margin",
+      "nameKey": "card.cipher.margin.name",
+      "textKey": "card.cipher.margin.text",
+      "schoolId": "school.cipher",
+      "type": "CANTRIP",
+      "rarity": "COMMON",
+      "cost": 1,
+      "effects": [
+        {
+          "kind": "DRAW",
+          "target": "SELF",
+          "magnitude": 1
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 2
+        }
+      ],
+      "scribeSkillLevel": 1,
+      "artKey": "cipher-margin"
+    },
+    {
+      "id": "card.cipher.errata",
+      "nameKey": "card.cipher.errata.name",
+      "textKey": "card.cipher.errata.text",
+      "schoolId": "school.cipher",
+      "type": "CANTRIP",
+      "rarity": "COMMON",
+      "cost": 2,
+      "effects": [
+        {
+          "kind": "DRAW",
+          "target": "SELF",
+          "magnitude": 2
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 3
+        }
+      ],
+      "scribeSkillLevel": 4,
+      "artKey": "cipher-errata"
+    },
+    {
+      "id": "card.cipher.transcribe",
+      "nameKey": "card.cipher.transcribe.name",
+      "textKey": "card.cipher.transcribe.text",
+      "schoolId": "school.cipher",
+      "type": "CANTRIP",
+      "rarity": "UNCOMMON",
+      "cost": 3,
+      "effects": [
+        {
+          "kind": "DRAW",
+          "target": "SELF",
+          "magnitude": 2
+        },
+        {
+          "kind": "RESONANCE_GAIN",
+          "target": "SELF",
+          "magnitude": 1
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.dust.resonant",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 14,
+      "artKey": "cipher-transcribe"
+    },
+    {
+      "id": "card.cipher.redaction",
+      "nameKey": "card.cipher.redaction.name",
+      "textKey": "card.cipher.redaction.text",
+      "schoolId": "school.cipher",
+      "type": "WARD",
+      "rarity": "UNCOMMON",
+      "cost": 3,
+      "effects": [
+        {
+          "kind": "WARD",
+          "target": "SELF",
+          "magnitude": 4
+        },
+        {
+          "kind": "DRAW",
+          "target": "SELF",
+          "magnitude": 1
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.ink.ember",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 20,
+      "artKey": "cipher-redaction"
+    },
+    {
+      "id": "card.cipher.colophon",
+      "nameKey": "card.cipher.colophon.name",
+      "textKey": "card.cipher.colophon.text",
+      "schoolId": "school.cipher",
+      "type": "CONSTRUCT",
+      "rarity": "MYTHIC",
+      "cost": 7,
+      "effects": [
+        {
+          "kind": "DRAW",
+          "target": "SELF",
+          "magnitude": 2
+        },
+        {
+          "kind": "WARD",
+          "target": "SELF",
+          "magnitude": 3
+        },
+        {
+          "kind": "DAMAGE",
+          "target": "OPPONENT",
+          "magnitude": 3
+        }
+      ],
+      "scribeInputs": [
+        {
+          "itemId": "item.ink.azure",
+          "quantity": 4
+        },
+        {
+          "itemId": "item.ink.ember",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.crystal.prismatic",
+          "quantity": 1
+        }
+      ],
+      "scribeSkillLevel": 40,
+      "artKey": "cipher-colophon"
+    }
+  ]
+}

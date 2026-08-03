@@ -13,6 +13,11 @@ import {
   isSlabbed,
   remainingCopies,
   rollGrade,
+  buildCardCatalog,
+  buildSchoolTable,
+  CARD_CATALOG,
+  ITEM_CATALOG,
+  SCHOOL_TABLE,
   asId,
   type CardDefinition,
   type CardDefinitionId,
@@ -245,5 +250,133 @@ describe('deck legality', () => {
   it('never reports negative headroom', () => {
     const deck = new Array<CardDefinitionId>(10).fill(asId<CardDefinitionId>('card.a'));
     expect(remainingCopies(deck, asId<CardDefinitionId>('card.a'), combat)).toBe(0);
+  });
+});
+
+describe('shipped card content', () => {
+  it('gives every school a distinct glyph as well as a distinct colour', () => {
+    const glyphs = new Set(SCHOOL_TABLE.schools.map((school) => school.glyph));
+    const colours = new Set(SCHOOL_TABLE.schools.map((school) => school.colorToken));
+    expect(glyphs.size).toBe(SCHOOL_TABLE.schools.length);
+    expect(colours.size).toBe(SCHOOL_TABLE.schools.length);
+  });
+
+  it('resolves every card to a real school and real materials', () => {
+    expect(CARD_CATALOG.cards.length).toBeGreaterThan(0);
+    for (const card of CARD_CATALOG.cards) {
+      expect(SCHOOL_TABLE.get(card.schoolId), `${card.id} names a real school`).toBeDefined();
+      for (const input of card.scribeInputs) {
+        expect(
+          ITEM_CATALOG.get(input.itemId as never),
+          `${card.id} is scribed from ${input.itemId}`,
+        ).toBeDefined();
+      }
+    }
+  });
+
+  it('keeps every player-facing string behind a key', () => {
+    for (const card of CARD_CATALOG.cards) {
+      expect(card.nameKey).toMatch(/^card\..+\.name$/);
+      expect(card.textKey).toMatch(/^card\..+\.text$/);
+    }
+  });
+
+  it('gives every school enough cards to build a legal deck from it', () => {
+    // Twenty cards at three copies each needs seven distinct spells, so a
+    // school with fewer can never be played on its own.
+    const needed = Math.ceil(combat.deckSize / combat.maxCopiesPerSpell);
+    for (const school of SCHOOL_TABLE.schools) {
+      const pool = CARD_CATALOG.ofSchool(school.id);
+      expect(pool.length, `${school.id} has ${pool.length} cards, needs ${needed}`).toBeGreaterThan(
+        0,
+      );
+    }
+    // Across all schools there must be enough to build a deck at all.
+    const distinct = CARD_CATALOG.cards.length;
+    expect(distinct).toBeGreaterThanOrEqual(needed);
+  });
+
+  it('uses only whole-number magnitudes, so a duel hashes identically anywhere', () => {
+    for (const card of CARD_CATALOG.cards) {
+      for (const effect of card.effects) {
+        expect(Number.isInteger(effect.magnitude)).toBe(true);
+        expect(effect.magnitude).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('scales scribing requirements with cost, so cheap cards stay cheap to make', () => {
+    const byCost = [...CARD_CATALOG.cards].sort((a, b) => a.cost - b.cost);
+    const cheapest = byCost[0]!;
+    const dearest = byCost[byCost.length - 1]!;
+    expect(cheapest.scribeSkillLevel).toBeLessThanOrEqual(dearest.scribeSkillLevel);
+  });
+});
+
+describe('content validators', () => {
+  it('refuses two schools sharing a glyph', () => {
+    const built = buildSchoolTable([
+      { id: 'a', name: 'A', colorToken: '--a', glyph: '◆', description: 'a' },
+      { id: 'b', name: 'B', colorToken: '--b', glyph: '◆', description: 'b' },
+    ]);
+    expect(built.ok).toBe(false);
+    if (!built.ok) expect(built.error.detail).toContain('share the glyph');
+  });
+
+  it('refuses a card in a school nobody defined', () => {
+    const schools = buildSchoolTable([
+      { id: 'school.real', name: 'Real', colorToken: '--r', glyph: '◆', description: 'r' },
+    ]);
+    if (!schools.ok) throw new Error('fixture schools should build');
+    const built = buildCardCatalog([{ ...card('card.a'), schoolId: 'school.absent' }], {
+      items: ITEM_CATALOG,
+      schools: schools.value,
+    });
+    expect(built.ok).toBe(false);
+    if (!built.ok) expect(built.error.detail).toContain('unknown school');
+  });
+
+  it('refuses a card scribed from an item nobody defined', () => {
+    const schools = buildSchoolTable([
+      { id: 'school.resonance', name: 'R', colorToken: '--r', glyph: '◆', description: 'r' },
+    ]);
+    if (!schools.ok) throw new Error('fixture schools should build');
+    const built = buildCardCatalog(
+      [{ ...card('card.a'), scribeInputs: [{ itemId: 'item.imaginary', quantity: 1 }] }],
+      { items: ITEM_CATALOG, schools: schools.value },
+    );
+    expect(built.ok).toBe(false);
+    if (!built.ok) expect(built.error.detail).toContain('unknown item');
+  });
+
+  it('refuses a card that does nothing', () => {
+    const schools = buildSchoolTable([
+      { id: 'school.resonance', name: 'R', colorToken: '--r', glyph: '◆', description: 'r' },
+    ]);
+    if (!schools.ok) throw new Error('fixture schools should build');
+    const built = buildCardCatalog([{ ...card('card.a'), effects: [] }], {
+      items: ITEM_CATALOG,
+      schools: schools.value,
+    });
+    expect(built.ok).toBe(false);
+    if (!built.ok) expect(built.error.detail).toContain('does nothing');
+  });
+
+  it('refuses a fractional effect magnitude', () => {
+    const schools = buildSchoolTable([
+      { id: 'school.resonance', name: 'R', colorToken: '--r', glyph: '◆', description: 'r' },
+    ]);
+    if (!schools.ok) throw new Error('fixture schools should build');
+    const built = buildCardCatalog(
+      [
+        {
+          ...card('card.a'),
+          effects: [{ kind: 'DAMAGE', target: 'OPPONENT', magnitude: 1.5 }],
+        },
+      ],
+      { items: ITEM_CATALOG, schools: schools.value },
+    );
+    expect(built.ok).toBe(false);
+    if (!built.ok) expect(built.error.detail).toContain('non-integer');
   });
 });

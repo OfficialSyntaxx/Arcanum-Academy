@@ -20,11 +20,26 @@
 
 import { failure, type Failure } from '../errors.js';
 import { err, ok, type Result } from '../result.js';
-import type { InteractableId, ItemDefinitionId, NodeId, RecipeId, SkillId } from '../ids.js';
+import type {
+  CardDefinitionId,
+  InteractableId,
+  ItemDefinitionId,
+  NodeId,
+  RecipeId,
+  SkillId,
+} from '../ids.js';
 import { ItemCategory, ItemRarity, type ItemDefinition } from '../items/types.js';
 import { GatheringNodeKind, type NodeDefinition } from '../gathering/types.js';
 import type { RecipeDefinition } from '../crafting/types.js';
 import { SkillCategory, type SkillDefinition } from '../skills/types.js';
+import {
+  CardRarity,
+  CardType,
+  EffectKind,
+  EffectTarget,
+  type CardDefinition,
+  type SchoolDefinition,
+} from '../cards/types.js';
 import { InteractableKind, type Interactable, type Zone } from '../world/types.js';
 
 function fail(reason: string, detail: string): Failure {
@@ -409,5 +424,154 @@ export function buildRecipeBook(
     recipes: definitions,
     get: (id) => byId.get(id),
     atStation: (id) => byStation.get(id) ?? [],
+  });
+}
+
+export interface SchoolTable {
+  readonly schools: readonly SchoolDefinition[];
+  get(id: string): SchoolDefinition | undefined;
+}
+
+export interface CardCatalog {
+  readonly cards: readonly CardDefinition[];
+  get(id: CardDefinitionId): CardDefinition | undefined;
+  ofSchool(schoolId: string): readonly CardDefinition[];
+}
+
+export function buildSchoolTable(
+  definitions: readonly SchoolDefinition[],
+): Result<SchoolTable, Failure> {
+  if (definitions.length === 0) {
+    return err(fail('content.schools_empty', 'no schools are defined'));
+  }
+
+  const byId = new Map<string, SchoolDefinition>();
+  const glyphs = new Map<string, string>();
+  const colours = new Map<string, string>();
+  const problems: string[] = [];
+
+  for (const school of definitions) {
+    if (byId.has(school.id)) {
+      return err(fail('content.schools_duplicate_id', `duplicate school id "${school.id}"`));
+    }
+    byId.set(school.id, school);
+
+    for (const [field, value] of [
+      ['name', school.name],
+      ['colour token', school.colorToken],
+      ['glyph', school.glyph],
+      ['description', school.description],
+    ] as const) {
+      if (!isNonEmptyString(value)) problems.push(`school "${school.id}" has no ${field}`);
+    }
+
+    // A shared glyph or colour would leave two schools indistinguishable on a
+    // card. The glyph matters most: it is the carrier of meaning that survives
+    // a colour vision deficiency, and a duplicate defeats the point of having
+    // one at all.
+    const glyphOwner = glyphs.get(school.glyph);
+    if (glyphOwner !== undefined) {
+      problems.push(`schools "${glyphOwner}" and "${school.id}" share the glyph "${school.glyph}"`);
+    }
+    glyphs.set(school.glyph, school.id);
+
+    const colourOwner = colours.get(school.colorToken);
+    if (colourOwner !== undefined) {
+      problems.push(`schools "${colourOwner}" and "${school.id}" share a colour token`);
+    }
+    colours.set(school.colorToken, school.id);
+  }
+
+  if (problems.length > 0) {
+    return err(fail('content.schools_invalid', problems.join('; ')));
+  }
+
+  return ok({ schools: definitions, get: (id) => byId.get(id) });
+}
+
+export function buildCardCatalog(
+  definitions: readonly CardDefinition[],
+  context: { readonly items: ItemCatalog; readonly schools: SchoolTable },
+): Result<CardCatalog, Failure> {
+  if (definitions.length === 0) {
+    return err(fail('content.cards_empty', 'no cards are defined'));
+  }
+
+  const byId = new Map<string, CardDefinition>();
+  const bySchool = new Map<string, CardDefinition[]>();
+  const problems: string[] = [];
+  const types: string[] = Object.values(CardType);
+  const rarities: string[] = Object.values(CardRarity);
+  const effectKinds: string[] = Object.values(EffectKind);
+  const effectTargets: string[] = Object.values(EffectTarget);
+
+  for (const card of definitions) {
+    if (byId.has(card.id)) {
+      return err(fail('content.cards_duplicate_id', `duplicate card id "${card.id}"`));
+    }
+    byId.set(card.id, card);
+
+    if (context.schools.get(card.schoolId) === undefined) {
+      problems.push(`card "${card.id}" belongs to unknown school "${card.schoolId}"`);
+    } else {
+      const existing = bySchool.get(card.schoolId);
+      if (existing === undefined) bySchool.set(card.schoolId, [card]);
+      else existing.push(card);
+    }
+
+    if (!types.includes(card.type)) problems.push(`card "${card.id}" has unknown type`);
+    if (!rarities.includes(card.rarity)) problems.push(`card "${card.id}" has unknown rarity`);
+    if (!isNonNegativeInteger(card.cost)) {
+      problems.push(`card "${card.id}" has a negative or fractional cost`);
+    }
+
+    // Player-facing text is referenced by key, never inlined. The Phase 4 exit
+    // criteria require every string to be localisable, and a card that carries
+    // its own English is one that can never be translated without a migration.
+    if (!isNonEmptyString(card.nameKey) || !isNonEmptyString(card.textKey)) {
+      problems.push(`card "${card.id}" is missing a localisation key`);
+    }
+
+    if (card.effects.length === 0) problems.push(`card "${card.id}" does nothing`);
+    for (const effect of card.effects) {
+      if (!effectKinds.includes(effect.kind)) {
+        problems.push(`card "${card.id}" has unknown effect "${effect.kind}"`);
+      }
+      if (!effectTargets.includes(effect.target)) {
+        problems.push(`card "${card.id}" has unknown effect target`);
+      }
+      // Fractional magnitudes cannot hash identically across platforms, and the
+      // state hash is what makes a duel verifiable rather than merely claimed.
+      if (!isPositiveInteger(effect.magnitude)) {
+        problems.push(`card "${card.id}" has a non-integer or non-positive magnitude`);
+      }
+    }
+
+    if (card.scribeInputs.length === 0) {
+      problems.push(`card "${card.id}" costs nothing to scribe`);
+    }
+    const seen = new Set<string>();
+    for (const input of card.scribeInputs) {
+      if (context.items.get(input.itemId as ItemDefinitionId) === undefined) {
+        problems.push(`card "${card.id}" is scribed from unknown item "${input.itemId}"`);
+      }
+      if (!isPositiveInteger(input.quantity)) {
+        problems.push(`card "${card.id}" needs a non-positive quantity of "${input.itemId}"`);
+      }
+      if (seen.has(input.itemId)) {
+        problems.push(`card "${card.id}" lists "${input.itemId}" twice`);
+      }
+      seen.add(input.itemId);
+    }
+  }
+
+  if (problems.length > 0) {
+    return err(fail('content.cards_invalid', problems.join('; ')));
+  }
+
+  return ok({
+    cards: definitions,
+    get: (id) => byId.get(id),
+    ofSchool: (schoolId) => bySchool.get(schoolId) ?? [],
   });
 }

@@ -21,7 +21,21 @@
   --haze-dim: #8496a8; /* secondary text */
   --verdigris: #3fa88e; /* certification seal, primary action */
   --gilt: #c9a227; /* reserved: grade 9-10 only */
-  --alarm: #d0524a; /* faults, destructive actions */
+  --alarm: #d0524a;
+
+  /*
+   * School colours.
+   *
+   * Brighter and more saturated than the interface palette on purpose: the
+   * agreed direction is dark chrome around a bright world, and a card is the
+   * one object that belongs to the world while sitting inside the chrome.
+   * Colour never carries meaning alone - every school also has a glyph, which
+   * is what keeps a card readable with a colour vision deficiency.
+   */
+  --school-resonance: #4fc3d9;
+  --school-verdance: #6fbf5e;
+  --school-ember: #e07a3f;
+  --school-cipher: #a482d8; /* faults, destructive actions */
 
   /* Type */
   --font-book: 'IBM Plex Serif', Georgia, serif;
