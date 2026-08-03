@@ -402,6 +402,9 @@
  * stacking upward so the thumb zone at the bottom stays clear on a phone.
  */
 .gathering-hud {
+  /* The hub layer is click-through by default so the world stays reachable;
+     every interactive overlay has to opt back in explicitly. */
+  pointer-events: auto;
   position: absolute;
   right: var(--space-3);
   bottom: calc(var(--inset-bottom) + var(--space-8) * 2);
@@ -478,6 +481,7 @@
 }
 
 .inventory-panel {
+  pointer-events: auto;
   position: absolute;
   inset: auto var(--space-3) calc(var(--inset-bottom) + var(--space-4)) auto;
   width: min(20rem, calc(100vw - var(--space-6)));
@@ -489,6 +493,7 @@
 }
 
 .satchel-toggle {
+  pointer-events: auto;
   position: absolute;
   right: var(--space-3);
   top: calc(var(--inset-top) + var(--space-8));
@@ -505,6 +510,9 @@
 }
 
 .command-error {
+  /* Deliberately left click-through: it reports, it does not act, and a
+     notice that swallowed a tap meant for the world would be a bug. */
+  pointer-events: none;
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
