@@ -70,6 +70,36 @@ export const EMPTY_ECONOMY: EconomyState = {
   decks: {},
 };
 
+/**
+ * The duel as the server last reported it.
+ *
+ * The opponent's hand is a count, never a list. That is enforced server-side
+ * too, but the client type says so as well so nobody adds a renderer for cards
+ * that were deliberately never sent.
+ */
+export interface DuelView {
+  readonly turn: number;
+  readonly active: number;
+  readonly outcome: { readonly winner: number | null; readonly reason: string } | null;
+  readonly log: readonly string[];
+  readonly you: {
+    readonly life: number;
+    readonly ward: number;
+    readonly resonance: number;
+    readonly hand: readonly string[];
+    readonly board: readonly { readonly definitionId: string }[];
+    readonly deck: number;
+  };
+  readonly opponent: {
+    readonly life: number;
+    readonly ward: number;
+    readonly resonance: number;
+    readonly board: readonly { readonly definitionId: string }[];
+    readonly handCount: number;
+    readonly deck: number;
+  };
+}
+
 export interface AppState {
   readonly phase: GamePhase;
   readonly bootSteps: readonly BootStep[];
@@ -91,6 +121,7 @@ export interface AppState {
   /** The crafting station whose recipes are open, or null. */
   readonly openStationId: string | null;
   readonly collectionOpen: boolean;
+  readonly duel: DuelView | null;
 
   setPhase(phase: GamePhase): void;
   setBootStep(id: string, patch: Partial<Omit<BootStep, 'id'>>): void;
@@ -109,6 +140,7 @@ export interface AppState {
   setLastCommandError(reason: string | null): void;
   setOpenStation(interactableId: string | null): void;
   setCollectionOpen(open: boolean): void;
+  setDuel(duel: DuelView | null): void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -129,6 +161,7 @@ export const useAppStore = create<AppState>((set) => ({
   lastCommandError: null,
   openStationId: null,
   collectionOpen: false,
+  duel: null,
 
   setPhase: (phase) => set({ phase }),
   registerBootSteps: (steps) => set({ bootSteps: steps }),
@@ -151,4 +184,5 @@ export const useAppStore = create<AppState>((set) => ({
   setLastCommandError: (lastCommandError) => set({ lastCommandError }),
   setOpenStation: (openStationId) => set({ openStationId }),
   setCollectionOpen: (collectionOpen) => set({ collectionOpen }),
+  setDuel: (duel) => set({ duel }),
 }));

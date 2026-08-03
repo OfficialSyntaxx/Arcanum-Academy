@@ -3,6 +3,7 @@ import { HubHud, InteractionPrompt } from '../ui/HubOverlay.js';
 import { JoystickPad } from '../ui/JoystickPad.js';
 import { CommandError, CraftingPanel, GatheringHud, InventoryPanel } from '../ui/EconomyPanels.js';
 import { CollectionPanel } from '../ui/CollectionPanel.js';
+import { DuelScreen } from '../ui/DuelScreen.js';
 import { useAppStore } from '../state/app-store.js';
 import type { Joystick } from '../input/joystick.js';
 
@@ -28,6 +29,9 @@ export interface HubScreenProps {
   readonly onSaveDeck: (deckId: string, name: string, cardDefinitionIds: string[]) => void;
   readonly onScribe: (cardId: string) => void;
   readonly onDeleteDeck: (deckId: string) => void;
+  readonly onStartDuel: (deckId: string, difficulty: string) => void;
+  readonly onDuelAct: (command: string, handIndex?: number) => void;
+  readonly onForfeitDuel: () => void;
 }
 
 /**
@@ -49,10 +53,16 @@ export function HubScreen({
   onSaveDeck,
   onScribe,
   onDeleteDeck,
+  onStartDuel,
+  onDuelAct,
+  onForfeitDuel,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
   const setOpenStation = useAppStore((state) => state.setOpenStation);
+  const duel = useAppStore((state) => state.duel);
+  const setDuel = useAppStore((state) => state.setDuel);
+  const decks = useAppStore((state) => state.economy.decks);
   const collectionOpen = useAppStore((state) => state.collectionOpen);
   const setCollectionOpen = useAppStore((state) => state.setCollectionOpen);
 
@@ -66,6 +76,15 @@ export function HubScreen({
   // occasionally and would otherwise cost screen the world should be using.
   const [satchelOpen, setSatchelOpen] = useState(false);
 
+  // A duel takes the whole surface. The hub is still there underneath, but a
+  // duel with a joystick and a satchel button over it is neither one thing nor
+  // the other on a phone.
+  if (duel !== null) {
+    return <DuelScreen onAct={onDuelAct} onForfeit={onForfeitDuel} onLeave={() => setDuel(null)} />;
+  }
+
+  const firstDeckId = Object.keys(decks)[0];
+
   return (
     <div className="hub">
       <HubHud />
@@ -76,6 +95,15 @@ export function HubScreen({
         onStop={onStopGathering}
         onClaimOffline={onClaimOffline}
       />
+      {firstDeckId !== undefined && (
+        <button
+          type="button"
+          className="duel-start"
+          onClick={() => onStartDuel(firstDeckId, 'ADEPT')}
+        >
+          Duel
+        </button>
+      )}
       <CommandError />
       {collectionOpen && (
         <CollectionPanel

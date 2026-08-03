@@ -95,7 +95,7 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 362 tests across 28 files — all passing.** First verified end to
+**Current test count: 409 tests across 30 files — all passing.** First verified end to
 end on 2026-08-02; before that the suite had never been run to completion on any machine
 or in CI.
 
@@ -439,6 +439,40 @@ reaches grade 10 about one time in eight. Set by `noviceCentreScore`,
 
 ---
 
+## Phase 5 — Combat (complete, 409 tests)
+
+**ADR-0004 is enforced, not just documented.** `tools/scripts/check-boundaries.mjs` now
+forbids `sim/combat` from importing `CardInstance` or `SlabSerial`, including
+**type-only** imports — `import type` compiles away, so a resolver could otherwise read
+a grade leaving no runtime trace. Proven by a probe file that fails the linter.
+
+**Built:**
+
+- `sim/combat/duel.ts` — a duel is a pure function of seed and command log. Resolution
+  order is fixed and stated once. Damage meets wards before life; a ward is a **pool**,
+  not a shield per source, so how an opponent divides their turn cannot change the maths.
+- `sim/combat/ai.ts` — three difficulties that are genuinely different algorithms, not
+  one with a knob. A novice curves badly and sometimes passes holding cards, because an
+  easy opponent should make recognisably human mistakes. Bounded to one card per call, so
+  the turn timer holds by construction.
+- `sim/combat/replay.ts` — records seed, command log, **content version and tunables
+  version**, and refuses to verify across a mismatch rather than producing a confident
+  wrong answer.
+- `server/net/handlers/duel.ts` — `duel.start`, `duel.act`, `duel.forfeit`, `duel.state`.
+  The duel lives **on the player record**, so a dropped connection does not destroy it.
+  The opponent's hand is reduced to a count before it leaves the server.
+- `client/ui/DuelScreen.tsx` — full-surface duel. No local resolution: a duel is the one
+  place where predicting wrongly shows a card resolving and then takes it back.
+
+**Rules the GDD left open, now decided and tested:** a timeout ends the turn rather than
+the duel; simultaneous death is a draw rather than a win for whoever is checked first; an
+empty deck deals rising fatigue rather than an instant loss; abandonment has a defined
+outcome. Every card in the set has automated rules coverage generated from its own
+declared effects, so a card added without working effects fails without anyone
+remembering to write a test.
+
+---
+
 ## Phase roadmap summary
 
 | Phase | Status      | Description                                               |
@@ -447,8 +481,8 @@ reaches grade 10 about one time in eight. Set by `noviceCentreScore`,
 | 2     | ✅ Complete | World, navigation, camera, input, NPCs, accessibility     |
 | 3     | ✅ Complete | Inventory, gathering, crafting, skills, content pipeline  |
 | 4     | ✅ Complete | Card framework, grading, slabs, deckbuilder               |
-| 5     | 🔵 Next     | Combat engine, AI opponents, duel flow                    |
-| 6     | ⬜ Planned  | Multiplayer lobby, trading, matchmaking, reconnect        |
+| 5     | ✅ Complete | Combat engine, AI opponents, duel flow                    |
+| 6     | 🔵 Next     | Multiplayer lobby, trading, matchmaking, reconnect        |
 | 7     | ⬜ Planned  | Economy, marketplace, quests, daily systems, leaderboards |
 | 8     | ⬜ Planned  | Optimisation, QA, analytics, deployment, scaling          |
 
@@ -482,7 +516,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 362 tests)
+npm run verify       # confirm everything passes (should be 409 tests)
 npm run dev          # start the Vite dev server
 ```
 

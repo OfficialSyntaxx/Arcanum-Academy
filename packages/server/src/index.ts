@@ -25,6 +25,7 @@ import { InMemoryPlayerRepository, type PlayerRepository } from './persistence/r
 import { PostgresPlayerRepository } from './persistence/postgres-repository.js';
 import { PlayerService } from './domain/player-service.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
+import { registerDuelHandlers } from './net/handlers/duel.js';
 import {
   InMemorySerialMinter,
   PostgresSerialMinter,
@@ -118,6 +119,13 @@ async function main(): Promise<void> {
     },
     serials,
     newInstanceId: () => asId<CardInstanceId>(generateId()),
+    tunables: DEFAULT_TUNABLES,
+    now: () => Date.now(),
+  });
+
+  registerDuelHandlers(router, {
+    players,
+    cards: CARD_CATALOG,
     tunables: DEFAULT_TUNABLES,
     now: () => Date.now(),
   });

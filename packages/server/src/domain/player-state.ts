@@ -15,6 +15,8 @@
 import {
   createInventory,
   initialProgress,
+  type Difficulty,
+  type DuelState,
   type GatheringSession,
   type Inventory,
 } from '@arcanum/sim';
@@ -40,6 +42,12 @@ import type { PlayerRecord } from '../persistence/repository.js';
 
 export const PLAYER_SCHEMA_VERSION = 1;
 
+export interface ActiveDuel {
+  readonly state: DuelState;
+  readonly seed: string;
+  readonly difficulty: Difficulty;
+}
+
 export interface PlayerState {
   readonly inventory: Inventory;
   /** Progress per skill. Absent means untouched, which reads as level one. */
@@ -53,6 +61,15 @@ export interface PlayerState {
   readonly cards: readonly CardInstance[];
   /** Saved decks, keyed by deck id. Legality is re-checked on every save. */
   readonly decks: Readonly<Record<string, Deck>>;
+  /**
+   * The duel in progress, with the seed and difficulty it was opened under.
+   *
+   * Stored on the record rather than held in memory so a dropped connection
+   * does not destroy a duel the player is entitled to return to. The engine
+   * state stays pure - seed and difficulty live in the envelope around it,
+   * not inside the rules.
+   */
+  readonly duel: ActiveDuel | null;
   /**
    * Last moment the player was demonstrably present.
    *
@@ -70,6 +87,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     gathering: null,
     cards: [],
     decks: {},
+    duel: null,
     lastSeenAtMs: nowMs,
   };
 }
@@ -222,6 +240,9 @@ export function parsePlayerState(
     gathering: readGathering(data.gathering),
     cards: readCards(data.cards),
     decks: readDecks(data.decks),
+    // A duel is read back as-is. It is written only by the engine, and a
+    // partially repaired duel would be less honest than none at all.
+    duel: (data.duel as ActiveDuel | undefined) ?? null,
     lastSeenAtMs: readNumber(data.lastSeenAtMs, record.updatedAtMs),
   });
 }
@@ -236,6 +257,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     gathering: state.gathering,
     cards: state.cards,
     decks: state.decks,
+    duel: state.duel,
     lastSeenAtMs: state.lastSeenAtMs,
   };
 }

@@ -49,6 +49,9 @@ const OWNED = new Set([
   'deck.delete',
 ]);
 
+/** Duel patches replace the duel view wholesale rather than merging. */
+const DUEL_KINDS = new Set(['duel.start', 'duel.act', 'duel.forfeit', 'duel.state']);
+
 export class EconomyController {
   private disposed = false;
 
@@ -92,6 +95,18 @@ export class EconomyController {
     this.send('deck.delete', { deckId });
   }
 
+  startDuel(deckId: string, difficulty: string): void {
+    this.send('duel.start', { deckId, difficulty });
+  }
+
+  duelAct(command: string, handIndex?: number): void {
+    this.send('duel.act', handIndex === undefined ? { command } : { command, handIndex });
+  }
+
+  forfeitDuel(): void {
+    this.send('duel.forfeit');
+  }
+
   dispose(): void {
     this.disposed = true;
   }
@@ -126,7 +141,17 @@ export class EconomyController {
 
     if (frame.op !== ServerOpcode.Patch) return;
     const envelope = frame.p as { readonly kind?: string; readonly state?: HarvestPatch } | null;
-    if (envelope?.kind === undefined || !OWNED.has(envelope.kind)) return;
+    if (envelope?.kind === undefined) return;
+
+    if (DUEL_KINDS.has(envelope.kind)) {
+      // A duel patch is the whole duel, so it replaces rather than merges - a
+      // partially applied duel would be a state neither side believes in.
+      useAppStore.getState().setDuel((envelope.state ?? null) as never);
+      useAppStore.getState().setLastCommandError(null);
+      return;
+    }
+
+    if (!OWNED.has(envelope.kind)) return;
     const patch = envelope.state;
     if (patch === undefined) return;
 

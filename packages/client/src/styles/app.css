@@ -719,3 +719,144 @@
   border: var(--border-hairline);
   border-radius: var(--radius-sm);
 }
+
+/* Duel */
+
+.duel {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: calc(var(--inset-top) + var(--space-2)) var(--space-2)
+    calc(var(--inset-bottom) + var(--space-2));
+  background: var(--ink);
+  overflow-y: auto;
+}
+
+.duel__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.duel__side--you {
+  margin-top: auto;
+}
+
+.duel__stats {
+  display: flex;
+  gap: var(--space-3);
+  font-family: var(--font-serial);
+  font-size: var(--text-xs);
+  color: var(--haze-dim);
+}
+
+.duel__ward {
+  color: var(--school-stone);
+}
+
+.duel__board,
+.duel__hand {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+/* The hand scrolls rather than shrinking: a card small enough to fit ten on a
+   phone is a card nobody can read. */
+.duel-card {
+  flex: 0 0 8.5rem;
+  min-height: 7rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  text-align: left;
+  background: var(--slate-raised);
+  border: 2px solid var(--haze-dim);
+  border-radius: var(--radius-md);
+}
+
+.duel-card:disabled {
+  opacity: 0.45;
+}
+
+.duel-card__cost {
+  align-self: flex-end;
+  font-family: var(--font-serial);
+  font-size: var(--text-sm);
+  color: var(--haze);
+}
+
+.duel-card__glyph {
+  font-size: var(--text-md);
+}
+
+.duel-card__name {
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--haze);
+}
+
+.duel-card__text {
+  font-family: var(--font-book);
+  font-size: var(--text-xs);
+  color: var(--haze-dim);
+}
+
+.duel__log {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--space-2);
+  font-family: var(--font-serial);
+  font-size: var(--text-xs);
+  color: var(--haze-dim);
+}
+
+.duel__log p {
+  margin: 0 0 var(--space-1);
+}
+
+.duel__outcome {
+  margin: 0;
+  font-family: var(--font-book);
+  font-size: var(--text-md);
+  color: var(--haze);
+}
+
+.duel__reason {
+  font-family: var(--font-serial);
+  font-size: var(--text-xs);
+  color: var(--haze-dim);
+}
+
+.duel__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.duel__actions .prompt__button {
+  flex: 1 1 auto;
+}
+
+.duel-start {
+  pointer-events: auto;
+  position: absolute;
+  right: var(--space-3);
+  top: calc(var(--inset-top) + var(--space-8) + var(--touch-min) + var(--space-2));
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--alarm);
+  background: var(--slate-raised);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+}

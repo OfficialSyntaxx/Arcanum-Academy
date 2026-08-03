@@ -110,6 +110,9 @@ export function App() {
               onSaveDeck={(deckId, name, ids) => economy?.saveDeck(deckId, name, ids)}
               onScribe={(cardId) => economy?.scribe(cardId)}
               onDeleteDeck={(deckId) => economy?.deleteDeck(deckId)}
+              onStartDuel={(deckId, difficulty) => economy?.startDuel(deckId, difficulty)}
+              onDuelAct={(command, handIndex) => economy?.duelAct(command, handIndex)}
+              onForfeitDuel={() => economy?.forfeitDuel()}
             />
           ) : (
             <Screen />

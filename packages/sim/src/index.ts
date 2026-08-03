@@ -21,3 +21,5 @@ export * from './economy/crafting.js';
 export * from './economy/skills.js';
 export * from './economy/scribing.js';
 export * from './combat/duel.js';
+export * from './combat/ai.js';
+export * from './combat/replay.js';
