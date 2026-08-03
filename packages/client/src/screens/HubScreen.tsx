@@ -3,6 +3,7 @@ import { HubHud, InteractionPrompt } from '../ui/HubOverlay.js';
 import { JoystickPad } from '../ui/JoystickPad.js';
 import { CommandError, CraftingPanel, GatheringHud, InventoryPanel } from '../ui/EconomyPanels.js';
 import { CollectionPanel } from '../ui/CollectionPanel.js';
+import { LadderPanel, TradePanel } from '../ui/SocialPanels.js';
 import { DuelScreen } from '../ui/DuelScreen.js';
 import { useAppStore } from '../state/app-store.js';
 import type { Joystick } from '../input/joystick.js';
@@ -32,6 +33,18 @@ export interface HubScreenProps {
   readonly onStartDuel: (deckId: string, difficulty: string) => void;
   readonly onDuelAct: (command: string, handIndex?: number) => void;
   readonly onForfeitDuel: () => void;
+  readonly playerId: string;
+  readonly onQueue: (deckId: string) => void;
+  readonly onLeaveQueue: () => void;
+  readonly onPvpAct: (matchId: string, command: string, handIndex?: number) => void;
+  readonly onForfeitPvp: (matchId: string) => void;
+  readonly onTradeOffer: (
+    tradeId: string,
+    stacks: { definitionId: string; quantity: number }[],
+    cardInstanceIds: string[],
+  ) => void;
+  readonly onTradeConfirm: (tradeId: string) => void;
+  readonly onTradeCancel: (tradeId: string) => void;
 }
 
 /**
@@ -56,11 +69,24 @@ export function HubScreen({
   onStartDuel,
   onDuelAct,
   onForfeitDuel,
+  playerId,
+  onQueue,
+  onLeaveQueue,
+  onPvpAct,
+  onForfeitPvp,
+  onTradeOffer,
+  onTradeConfirm,
+  onTradeCancel,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
   const setOpenStation = useAppStore((state) => state.setOpenStation);
   const duel = useAppStore((state) => state.duel);
+  const pvp = useAppStore((state) => state.pvp);
+  const trade = useAppStore((state) => state.trade);
+  const ladderOpen = useAppStore((state) => state.ladderOpen);
+  const setLadderOpen = useAppStore((state) => state.setLadderOpen);
+  const setPvp = useAppStore((state) => state.setPvp);
   const setDuel = useAppStore((state) => state.setDuel);
   const decks = useAppStore((state) => state.economy.decks);
   const collectionOpen = useAppStore((state) => state.collectionOpen);
@@ -79,8 +105,28 @@ export function HubScreen({
   // A duel takes the whole surface. The hub is still there underneath, but a
   // duel with a joystick and a satchel button over it is neither one thing nor
   // the other on a phone.
+  // A ladder duel takes the same surface as an AI one; only where the commands
+  // go differs, which is the point of the engine being seat-agnostic.
+  if (pvp !== null) {
+    return (
+      <DuelScreen
+        duel={pvp}
+        onAct={(command, handIndex) => onPvpAct(pvp.matchId, command, handIndex)}
+        onForfeit={() => onForfeitPvp(pvp.matchId)}
+        onLeave={() => setPvp(null)}
+      />
+    );
+  }
+
   if (duel !== null) {
-    return <DuelScreen onAct={onDuelAct} onForfeit={onForfeitDuel} onLeave={() => setDuel(null)} />;
+    return (
+      <DuelScreen
+        duel={duel}
+        onAct={onDuelAct}
+        onForfeit={onForfeitDuel}
+        onLeave={() => setDuel(null)}
+      />
+    );
   }
 
   const firstDeckId = Object.keys(decks)[0];
@@ -103,6 +149,22 @@ export function HubScreen({
         >
           Duel
         </button>
+      )}
+      {ladderOpen && (
+        <LadderPanel
+          deckId={firstDeckId}
+          onQueue={onQueue}
+          onLeaveQueue={onLeaveQueue}
+          onClose={() => setLadderOpen(false)}
+        />
+      )}
+      {trade !== null && (
+        <TradePanel
+          playerId={playerId}
+          onOffer={onTradeOffer}
+          onConfirm={onTradeConfirm}
+          onCancel={onTradeCancel}
+        />
       )}
       <CommandError />
       {collectionOpen && (

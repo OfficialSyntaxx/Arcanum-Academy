@@ -551,6 +551,11 @@ first and a small amount of code second.
   Acting out of turn is refused rather than queued - a queued command resolves against a
   board the player never saw. Ratings move in one transaction because Elo is zero-sum,
   and a ladder that does not add up is one nobody trusts.
+- **All three are wired through to the client.** `net/handlers/social.ts` carries
+  `trade.*`, `match.*` and `pvp.*`; the duel circle opens the ladder, and a ladder duel
+  reuses the same `DuelScreen` as an AI duel because the engine is seat-agnostic. The
+  trade window shows both offers side by side with each side's confirmation state, and
+  agreeing is disabled until the other side has actually offered something.
 
 ---
 
@@ -563,7 +568,7 @@ first and a small amount of code second.
 | 3     | ✅ Complete | Inventory, gathering, crafting, skills, content pipeline  |
 | 4     | ✅ Complete | Card framework, grading, slabs, deckbuilder               |
 | 5     | ✅ Complete | Combat engine, AI opponents, duel flow                    |
-| 6     | 🟡 Mostly   | All built; account recovery blocked on a provider         |
+| 6     | 🟡 Mostly   | Built and wired; account recovery blocked on a provider   |
 | 7     | 🔵 Next     | Economy, marketplace, quests, daily systems, leaderboards |
 | 8     | ⬜ Planned  | Optimisation, QA, analytics, deployment, scaling          |
 

@@ -1,5 +1,5 @@
 import { CARD_CATALOG, SCHOOL_TABLE, STRINGS, type CardDefinitionId } from '@arcanum/shared';
-import { useAppStore } from '../state/app-store.js';
+import type { DuelView } from '../state/app-store.js';
 import { LabelStrip } from './LabelStrip.js';
 
 /**
@@ -56,17 +56,18 @@ function DuelCard({
 }
 
 export function DuelScreen({
+  duel,
   onAct,
   onForfeit,
   onLeave,
 }: {
+  /** Passed in rather than read from the store, so one surface serves both an
+   * AI duel and a ladder duel without knowing which it is showing. */
+  duel: DuelView;
   onAct: (command: string, handIndex?: number) => void;
   onForfeit: () => void;
   onLeave: () => void;
 }) {
-  const duel = useAppStore((state) => state.duel);
-  if (duel === null) return null;
-
   const yourTurn = duel.active === 0 && duel.outcome === null;
 
   return (

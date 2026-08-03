@@ -55,6 +55,7 @@ export function App() {
   const setPhase = useAppStore((state) => state.setPhase);
   const [hub, setHub] = useState<HubController | null>(null);
   const [economy, setEconomy] = useState<EconomyController | null>(null);
+  const playerId = useAppStore((state) => state.playerId);
   const Screen = resolveScreen(phase);
 
   useEffect(() => {
@@ -113,6 +114,16 @@ export function App() {
               onStartDuel={(deckId, difficulty) => economy?.startDuel(deckId, difficulty)}
               onDuelAct={(command, handIndex) => economy?.duelAct(command, handIndex)}
               onForfeitDuel={() => economy?.forfeitDuel()}
+              playerId={playerId}
+              onQueue={(deckId) => economy?.queueForMatch(deckId)}
+              onLeaveQueue={() => economy?.leaveQueue()}
+              onPvpAct={(matchId, command, handIndex) =>
+                economy?.pvpAct(matchId, command, handIndex)
+              }
+              onForfeitPvp={(matchId) => economy?.forfeitPvp(matchId)}
+              onTradeOffer={(tradeId, stacks, ids) => economy?.offerTrade(tradeId, stacks, ids)}
+              onTradeConfirm={(tradeId) => economy?.confirmTrade(tradeId)}
+              onTradeCancel={(tradeId) => economy?.cancelTrade(tradeId)}
             />
           ) : (
             <Screen />

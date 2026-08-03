@@ -169,7 +169,10 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
         // Losing it loses the account, so it is written before anything else
         // is done with the frame.
         if (typeof payload.identityToken === 'string') identityToken = payload.identityToken;
-        if (typeof payload.playerId === 'string') playerId = payload.playerId;
+        if (typeof payload.playerId === 'string') {
+          playerId = payload.playerId;
+          store.setPlayerId(playerId);
+        }
         void writeDocument(storage, IDENTITY_KEY, {
           playerId,
           identityToken,
@@ -198,6 +201,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     onEngageGatheringNode: (interactableId) => economy.startGathering(interactableId),
     onEngageCraftingStation: (interactableId) => store.setOpenStation(interactableId),
     onEngageScribingTable: () => store.setCollectionOpen(true),
+    onEngageDuelCircle: () => store.setLadderOpen(true),
   });
   if (!hubResult.ok) {
     store.setBootStep('world', { status: 'failed', detail: hubResult.error.reason });

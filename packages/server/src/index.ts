@@ -25,6 +25,10 @@ import { InMemoryPlayerRepository, type PlayerRepository } from './persistence/r
 import { PostgresPlayerRepository } from './persistence/postgres-repository.js';
 import { PlayerService } from './domain/player-service.js';
 import { PresenceService } from './domain/presence.js';
+import { InMemoryTradeStore, TradingService } from './domain/trading.js';
+import { Matchmaker } from './domain/matchmaking.js';
+import { InMemoryLiveDuelStore, PvpService } from './domain/pvp.js';
+import { registerSocialHandlers } from './net/handlers/social.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
 import { registerDuelHandlers } from './net/handlers/duel.js';
 import {
@@ -150,6 +154,33 @@ async function main(): Promise<void> {
     tunables: DEFAULT_TUNABLES,
     now: () => Date.now(),
   });
+
+  // Trades and live duels are held in process for now. Both are short-lived and
+  // recoverable - an interrupted trade returns its escrow, an interrupted duel
+  // is a forfeit - so durability here buys less than it does for player state.
+  // Both stores are behind interfaces, so backing them with Postgres later is a
+  // constructor change and nothing else.
+  const trading = new TradingService({
+    repository,
+    trades: new InMemoryTradeStore(),
+    catalog: ITEM_CATALOG,
+    slotCapacity: DEFAULT_TUNABLES.gathering.baseInventorySlots,
+    now: () => Date.now(),
+  });
+  const matchmaker = new Matchmaker({
+    baseSpread: 100,
+    spreadPerSecond: 25,
+    maxSpread: 600,
+    now: () => Date.now(),
+  });
+  const pvp = new PvpService({
+    repository,
+    duels: new InMemoryLiveDuelStore(),
+    cards: CARD_CATALOG,
+    tunables: DEFAULT_TUNABLES.combat,
+    slotCapacity: DEFAULT_TUNABLES.gathering.baseInventorySlots,
+  });
+  registerSocialHandlers(router, { players, trading, matchmaker, pvp, cards: CARD_CATALOG });
 
   const presence = new PresenceService({
     radius: DEFAULT_TUNABLES.world.presenceRadius,

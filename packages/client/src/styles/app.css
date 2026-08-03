@@ -860,3 +860,44 @@
   border: var(--border-hairline);
   border-radius: var(--radius-sm);
 }
+
+/* Ladder and trading */
+
+.ladder-panel,
+.trade-panel {
+  pointer-events: auto;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--inset-bottom) + var(--space-4));
+  width: min(26rem, calc(100vw - var(--space-6)));
+  max-height: 70vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Both offers side by side: a trade you cannot inspect before agreeing to is
+   how people are defrauded. */
+.trade-panel__sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.trade-panel__sides section {
+  padding: var(--space-2);
+  background: var(--slate-raised);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+}
+
+.trade-panel__sides h3 {
+  margin: 0 0 var(--space-2);
+}
+
+.ladder-panel .prompt__button,
+.trade-panel .prompt__button {
+  min-height: var(--touch-min);
+}

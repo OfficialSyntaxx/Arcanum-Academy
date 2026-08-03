@@ -62,6 +62,8 @@ export interface HubControllerOptions {
   readonly onEngageCraftingStation?: (interactableId: string) => void;
   /** Called when the player engages the scribing table. */
   readonly onEngageScribingTable?: () => void;
+  /** Called when the player engages a duel circle. */
+  readonly onEngageDuelCircle?: () => void;
 }
 
 export class HubController {
@@ -175,6 +177,8 @@ export class HubController {
       this.options.onEngageCraftingStation?.(prompt.id);
     } else if (prompt.kind === InteractableKind.ScribingTable) {
       this.options.onEngageScribingTable?.();
+    } else if (prompt.kind === InteractableKind.DuelCircle) {
+      this.options.onEngageDuelCircle?.();
     }
   }
 

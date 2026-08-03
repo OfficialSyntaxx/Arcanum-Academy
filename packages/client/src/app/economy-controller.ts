@@ -51,6 +51,8 @@ const OWNED = new Set([
 
 /** Duel patches replace the duel view wholesale rather than merging. */
 const DUEL_KINDS = new Set(['duel.start', 'duel.act', 'duel.forfeit', 'duel.state']);
+const TRADE_KINDS = new Set(['trade.open', 'trade.offer', 'trade.confirm', 'trade.cancel']);
+const PVP_KINDS = new Set(['pvp.act', 'pvp.forfeit']);
 
 export class EconomyController {
   private disposed = false;
@@ -107,6 +109,45 @@ export class EconomyController {
     this.send('duel.forfeit');
   }
 
+  openTrade(partnerId: string): void {
+    this.send('trade.open', { partnerId });
+  }
+
+  offerTrade(
+    tradeId: string,
+    stacks: readonly { definitionId: string; quantity: number }[],
+    cardInstanceIds: readonly string[],
+  ): void {
+    this.send('trade.offer', { tradeId, stacks, cardInstanceIds });
+  }
+
+  confirmTrade(tradeId: string): void {
+    this.send('trade.confirm', { tradeId });
+  }
+
+  cancelTrade(tradeId: string): void {
+    this.send('trade.cancel', { tradeId });
+  }
+
+  queueForMatch(deckId: string): void {
+    this.send('match.queue', { deckId });
+  }
+
+  leaveQueue(): void {
+    this.send('match.leave');
+  }
+
+  pvpAct(matchId: string, command: string, handIndex?: number): void {
+    this.send(
+      'pvp.act',
+      handIndex === undefined ? { matchId, command } : { matchId, command, handIndex },
+    );
+  }
+
+  forfeitPvp(matchId: string): void {
+    this.send('pvp.forfeit', { matchId });
+  }
+
   dispose(): void {
     this.disposed = true;
   }
@@ -142,6 +183,34 @@ export class EconomyController {
     if (frame.op !== ServerOpcode.Patch) return;
     const envelope = frame.p as { readonly kind?: string; readonly state?: HarvestPatch } | null;
     if (envelope?.kind === undefined) return;
+
+    if (TRADE_KINDS.has(envelope.kind)) {
+      useAppStore.getState().setTrade((envelope.state ?? null) as never);
+      useAppStore.getState().setLastCommandError(null);
+      return;
+    }
+
+    if (PVP_KINDS.has(envelope.kind)) {
+      useAppStore.getState().setPvp((envelope.state ?? null) as never);
+      useAppStore.getState().setLastCommandError(null);
+      return;
+    }
+
+    if (envelope.kind === 'match.queue' || envelope.kind === 'match.leave') {
+      const patch = envelope.state as unknown as
+        { queued?: boolean; queueSize?: number; matchId?: string } | undefined;
+      const store = useAppStore.getState();
+      // A pairing answers the queue command directly, so the same reply either
+      // says "still waiting" or is the duel itself.
+      if (patch?.matchId !== undefined) {
+        store.setQueued(null);
+        store.setPvp(patch as never);
+      } else {
+        store.setQueued(patch?.queued === true ? { queueSize: patch.queueSize ?? 0 } : null);
+      }
+      store.setLastCommandError(null);
+      return;
+    }
 
     if (DUEL_KINDS.has(envelope.kind)) {
       // A duel patch is the whole duel, so it replaces rather than merges - a
