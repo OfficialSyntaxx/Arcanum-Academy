@@ -95,7 +95,7 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 445 tests across 32 files — all passing.** First verified end to
+**Current test count: 467 tests across 34 files — all passing.** First verified end to
 end on 2026-08-02; before that the suite had never been run to completion on any machine
 or in CI.
 
@@ -534,8 +534,13 @@ first and a small amount of code second.
   where it is and receives the neighbours it can see, which bounds outbound cost to one
   reply per request instead of one message per player per movement. Interest managed by
   a radius, with a hard cap so a crowd standing on one tile cannot undo it.
-- Player-to-player trading, matchmaking, rating, and an authoritative duel service for
-  player-versus-player.
+- ~~Player-to-player trading~~ **done.** Every mutation runs inside one transaction, so
+  an asset is in a satchel or in escrow, never both and never neither. Four steps rather
+  than one swap - open, offer, confirm, settle - because both sides must see the terms
+  before either commits. Any change to an offer clears both confirmations, so nobody is
+  held to terms that changed after they agreed. An append-only ledger records every step,
+  because a dispute is unanswerable without one.
+- Matchmaking, rating, and an authoritative duel service for player-versus-player.
 
 ---
 
@@ -582,7 +587,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 445 tests)
+npm run verify       # confirm everything passes (should be 467 tests)
 npm run dev          # start the Vite dev server
 ```
 
