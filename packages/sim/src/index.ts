@@ -20,3 +20,4 @@ export * from './economy/gathering.js';
 export * from './economy/crafting.js';
 export * from './economy/skills.js';
 export * from './economy/scribing.js';
+export * from './combat/duel.js';

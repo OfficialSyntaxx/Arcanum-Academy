@@ -40,6 +40,19 @@ const ALLOWED_WORKSPACE = {
  * Layer rules, per package. A layer may import itself and anything listed.
  * `__tests__` is exempt: tests legitimately reach across layers to assert.
  */
+/**
+ * Imports a specific layer may never make, whatever the package rules allow.
+ *
+ * ADR-0004 requires that the combat resolver cannot read a card's grade,
+ * serial or owner. Stating it as a rule the linter enforces is the difference
+ * between a decision and a convention: a resolver that imports CardInstance
+ * would make grade mechanically relevant, and an open market plus grade-driven
+ * power is pay-to-win however carefully the rest is written.
+ */
+const FORBIDDEN_SYMBOLS = {
+  'sim/combat': ['CardInstance', 'SlabSerial'],
+};
+
 const LAYERS = {
   client: {
     core: [],
@@ -109,6 +122,29 @@ function importsOf(source) {
   return found;
 }
 
+/**
+ * Named imports in a source file, including type-only ones.
+ *
+ * Type-only matters: `import type { CardInstance }` compiles away, so a
+ * resolver could read a grade through a type and leave no trace at runtime.
+ * The rule is about what the code is allowed to know, not what survives to the
+ * bundle.
+ */
+function namedImportsOf(source) {
+  const found = [];
+  const pattern = /import\s+(?:type\s+)?\{([^}]*)\}\s*from/g;
+  for (const match of source.matchAll(pattern)) {
+    for (const part of match[1].split(',')) {
+      const name = part
+        .replace(/^\s*type\s+/, '')
+        .split(/\s+as\s+/)[0]
+        .trim();
+      if (name) found.push(name);
+    }
+  }
+  return found;
+}
+
 function layerOf(relativePath) {
   const parts = relativePath.split(sep);
   return parts.length > 1 ? parts[0] : null;
@@ -135,6 +171,20 @@ for (const packageName of Object.keys(ALLOWED_WORKSPACE)) {
     const isTest = relativePath.includes('__tests__');
     const source = await readFile(file, 'utf8');
     const location = `packages/${packageName}/src/${relativePath}`;
+
+    if (!isTest) {
+      const layer = layerOf(relativePath);
+      const forbidden = FORBIDDEN_SYMBOLS[`${packageName}/${layer}`];
+      if (forbidden) {
+        for (const name of namedImportsOf(source)) {
+          if (forbidden.includes(name)) {
+            violations.push(
+              `${location}: "${layer}" may not import ${name} (ADR-0004: grade never affects duel resolution)`,
+            );
+          }
+        }
+      }
+    }
 
     for (const specifier of importsOf(source)) {
       const bare = specifier
