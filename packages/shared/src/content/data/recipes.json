@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "entries": [
     {
       "id": "recipe.dust.resonant",
@@ -7,8 +7,16 @@
       "stationInteractableId": "int.station.grinder",
       "requiredSkillId": "skill.refining",
       "requiredSkillLevel": 1,
-      "inputs": [{ "itemId": "item.crystal.shard", "quantity": 3 }],
-      "output": { "itemId": "item.dust.resonant", "quantity": 1 },
+      "inputs": [
+        {
+          "itemId": "item.crystal.shard",
+          "quantity": 3
+        }
+      ],
+      "output": {
+        "itemId": "item.dust.resonant",
+        "quantity": 1
+      },
       "craftDurationMs": 6000,
       "baseWasteRateBasisPoints": 1800,
       "wasteReductionPerSkillLevelBasisPoints": 40,
@@ -21,10 +29,19 @@
       "requiredSkillId": "skill.refining",
       "requiredSkillLevel": 5,
       "inputs": [
-        { "itemId": "item.mushroom.cap", "quantity": 2 },
-        { "itemId": "item.dust.resonant", "quantity": 1 }
+        {
+          "itemId": "item.mushroom.cap",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.dust.resonant",
+          "quantity": 1
+        }
       ],
-      "output": { "itemId": "item.ink.azure", "quantity": 1 },
+      "output": {
+        "itemId": "item.ink.azure",
+        "quantity": 1
+      },
       "craftDurationMs": 9000,
       "baseWasteRateBasisPoints": 2200,
       "wasteReductionPerSkillLevelBasisPoints": 45,
@@ -37,10 +54,19 @@
       "requiredSkillId": "skill.refining",
       "requiredSkillLevel": 10,
       "inputs": [
-        { "itemId": "item.emberwood.branch", "quantity": 2 },
-        { "itemId": "item.dust.resonant", "quantity": 1 }
+        {
+          "itemId": "item.emberwood.branch",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.dust.resonant",
+          "quantity": 1
+        }
       ],
-      "output": { "itemId": "item.ink.ember", "quantity": 1 },
+      "output": {
+        "itemId": "item.ink.ember",
+        "quantity": 1
+      },
       "craftDurationMs": 12000,
       "baseWasteRateBasisPoints": 2600,
       "wasteReductionPerSkillLevelBasisPoints": 50,

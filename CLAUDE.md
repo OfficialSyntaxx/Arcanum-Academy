@@ -95,7 +95,7 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 409 tests across 30 files — all passing.** First verified end to
+**Current test count: 425 tests across 31 files — all passing.** First verified end to
 end on 2026-08-02; before that the suite had never been run to completion on any machine
 or in CI.
 
@@ -464,6 +464,14 @@ a grade leaving no runtime trace. Proven by a probe file that fails the linter.
 - `client/ui/DuelScreen.tsx` — full-surface duel. No local resolution: a duel is the one
   place where predicting wrongly shows a card resolving and then takes it back.
 
+**The effect vocabulary is eight kinds, plus conditions and scaling.** Five verbs give
+150 cards that differ only in numbers; conditions (`IF_WARDED`, `IF_WOUNDED`,
+`IF_OPPONENT_BLOODIED`, `IF_CONSTRUCTED`) and scales (`PER_WARD`, `PER_CONSTRUCT`,
+`PER_CARD_IN_HAND`) are what let two cards with the same numbers be different cards.
+Both read only public state, so the client can still predict a cast. `PIERCE`,
+`DESTROY_CONSTRUCT` and `DISCARD` give Flame reach, Aether answers, and Stone a payoff
+for holding wards.
+
 **Rules the GDD left open, now decided and tested:** a timeout ends the turn rather than
 the duel; simultaneous death is a draw rather than a win for whoever is checked first; an
 empty deck deals rising fatigue rather than an instant loss; abandonment has a defined
@@ -516,7 +524,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 409 tests)
+npm run verify       # confirm everything passes (should be 425 tests)
 npm run dev          # start the Vite dev server
 ```
 

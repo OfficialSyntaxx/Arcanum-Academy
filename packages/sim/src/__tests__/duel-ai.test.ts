@@ -272,9 +272,9 @@ describe('every card resolves', () => {
             resonance: combat.maxResonance,
             resonanceCeiling: combat.maxResonance,
             hand: [definition.id],
-            life: 20,
+            life: combat.startingLife,
           },
-          { ...base.sides[1], life: 40, ward: 0 },
+          { ...base.sides[1], life: 40, ward: 0, board: [] },
         ] as typeof base.sides,
       };
 
@@ -292,7 +292,13 @@ describe('every card resolves', () => {
       // A card may both cost resonance and give some back, and the total is
       // capped at the ceiling reached so far.
       const gained = definition.effects
-        .filter((effect) => effect.kind === 'RESONANCE_GAIN' && effect.target === 'SELF')
+        .filter(
+          (effect) =>
+            effect.kind === 'RESONANCE_GAIN' &&
+            effect.target === 'SELF' &&
+            effect.condition === undefined &&
+            effect.scale === undefined,
+        )
         .reduce((sum, effect) => sum + effect.magnitude, 0);
       const expectedResonance = Math.min(
         before[0].resonance - definition.cost + (definition.type === 'CONSTRUCT' ? 0 : gained),
@@ -306,17 +312,27 @@ describe('every card resolves', () => {
         return;
       }
 
-      const damage = definition.effects
+      // The duel is primed so no condition holds and nothing scales: full
+      // life, no ward, no constructs, a healthy opponent. Only unconditional,
+      // flat clauses are asserted here - conditional and scaled ones are
+      // covered by their own tests, where the condition is actually arranged.
+      const unconditional = definition.effects.filter(
+        (effect) => effect.condition === undefined && effect.scale === undefined,
+      );
+      const damage = unconditional
         .filter((effect) => effect.kind === 'DAMAGE' && effect.target === 'OPPONENT')
         .reduce((sum, effect) => sum + effect.magnitude, 0);
-      const heal = definition.effects
+      const pierce = unconditional
+        .filter((effect) => effect.kind === 'PIERCE' && effect.target === 'OPPONENT')
+        .reduce((sum, effect) => sum + effect.magnitude, 0);
+      const heal = unconditional
         .filter((effect) => effect.kind === 'HEAL')
         .reduce((sum, effect) => sum + effect.magnitude, 0);
-      const ward = definition.effects
+      const ward = unconditional
         .filter((effect) => effect.kind === 'WARD')
         .reduce((sum, effect) => sum + effect.magnitude, 0);
 
-      if (damage > 0) expect(after[1].life).toBe(before[1].life - damage);
+      if (damage + pierce > 0) expect(after[1].life).toBe(before[1].life - damage - pierce);
       if (heal > 0) expect(after[0].life).toBe(before[0].life + heal);
       if (ward > 0) expect(after[0].ward).toBe(before[0].ward + ward);
     });

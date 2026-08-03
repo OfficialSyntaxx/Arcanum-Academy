@@ -59,7 +59,7 @@ export * from './strings.js';
  * The moment a second exists, `createMigrationRunner` in `../persistence` is
  * the forward-only chain to route these documents through.
  */
-export const CONTENT_SCHEMA_VERSION = 1;
+export const CONTENT_SCHEMA_VERSION = 2;
 
 const documents = [
   ['skills', skillsDocument.schemaVersion],

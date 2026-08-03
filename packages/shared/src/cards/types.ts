@@ -74,8 +74,50 @@ export const EffectKind = {
   Draw: 'DRAW',
   Ward: 'WARD',
   ResonanceGain: 'RESONANCE_GAIN',
+  /** Damage that ignores wards entirely. Flame's answer to a turtle. */
+  Pierce: 'PIERCE',
+  /** Destroys the longest-standing construct the target controls. */
+  DestroyConstruct: 'DESTROY_CONSTRUCT',
+  /** Target discards from hand, oldest card first. */
+  Discard: 'DISCARD',
 } as const;
 export type EffectKind = (typeof EffectKind)[keyof typeof EffectKind];
+
+/**
+ * When an effect applies.
+ *
+ * Conditions are what let two cards with the same numbers be different cards.
+ * They are evaluated against the caster's own position, never the opponent's
+ * hand, so nothing here needs hidden information to resolve - which is what
+ * keeps client prediction possible.
+ */
+export const EffectCondition = {
+  Always: 'ALWAYS',
+  /** The caster holds a ward. */
+  IfWarded: 'IF_WARDED',
+  /** The caster has taken damage. */
+  IfWounded: 'IF_WOUNDED',
+  /** The opponent is at or below the magnitude of the condition threshold. */
+  IfOpponentBloodied: 'IF_OPPONENT_BLOODIED',
+  /** The caster controls at least one construct. */
+  IfConstructed: 'IF_CONSTRUCTED',
+} as const;
+export type EffectCondition = (typeof EffectCondition)[keyof typeof EffectCondition];
+
+/**
+ * What an effect's magnitude is multiplied by.
+ *
+ * Scaling is the other half of distinctness: "deal 2" and "deal 2 for every
+ * ward you hold" cost the same to author and play completely differently.
+ * Every scale reads from public state for the same reason conditions do.
+ */
+export const EffectScale = {
+  Flat: 'FLAT',
+  PerWard: 'PER_WARD',
+  PerConstruct: 'PER_CONSTRUCT',
+  PerCardInHand: 'PER_CARD_IN_HAND',
+} as const;
+export type EffectScale = (typeof EffectScale)[keyof typeof EffectScale];
 
 export const EffectTarget = {
   Opponent: 'OPPONENT',
@@ -87,6 +129,12 @@ export interface CardEffect {
   readonly kind: EffectKind;
   readonly target: EffectTarget;
   readonly magnitude: number;
+  /** Defaults to ALWAYS when absent. */
+  readonly condition?: EffectCondition;
+  /** Threshold the condition compares against, where it needs one. */
+  readonly conditionValue?: number;
+  /** Defaults to FLAT when absent. */
+  readonly scale?: EffectScale;
 }
 
 export interface CardDefinition {

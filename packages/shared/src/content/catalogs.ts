@@ -35,7 +35,9 @@ import { SkillCategory, type SkillDefinition } from '../skills/types.js';
 import {
   CardRarity,
   CardType,
+  EffectCondition,
   EffectKind,
+  EffectScale,
   EffectTarget,
   type CardDefinition,
   type SchoolDefinition,
@@ -504,6 +506,8 @@ export function buildCardCatalog(
   const rarities: string[] = Object.values(CardRarity);
   const effectKinds: string[] = Object.values(EffectKind);
   const effectTargets: string[] = Object.values(EffectTarget);
+  const conditions: string[] = Object.values(EffectCondition);
+  const scales: string[] = Object.values(EffectScale);
 
   for (const card of definitions) {
     if (byId.has(card.id)) {
@@ -544,6 +548,21 @@ export function buildCardCatalog(
       // state hash is what makes a duel verifiable rather than merely claimed.
       if (!isPositiveInteger(effect.magnitude)) {
         problems.push(`card "${card.id}" has a non-integer or non-positive magnitude`);
+      }
+      if (effect.condition !== undefined && !conditions.includes(effect.condition)) {
+        problems.push(`card "${card.id}" has unknown condition "${effect.condition}"`);
+      }
+      if (effect.scale !== undefined && !scales.includes(effect.scale)) {
+        problems.push(`card "${card.id}" has unknown scale "${effect.scale}"`);
+      }
+      // A threshold condition with nothing to compare against would silently
+      // read as zero and never fire, which looks like a dead card rather than
+      // a mistake.
+      if (
+        effect.condition === EffectCondition.IfOpponentBloodied &&
+        !isPositiveInteger(effect.conditionValue)
+      ) {
+        problems.push(`card "${card.id}" needs a positive threshold for ${effect.condition}`);
       }
     }
 

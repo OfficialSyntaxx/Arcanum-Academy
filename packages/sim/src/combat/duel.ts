@@ -34,6 +34,7 @@ import {
   ok,
   type CardDefinition,
   type CardDefinitionId,
+  type CardEffect,
   type CombatTunables,
   type Failure,
   type Result,
@@ -162,6 +163,59 @@ function draw(side: DuelSide, tunables: CombatTunables, log: string[], seat: Sea
   return { ...side, deck: side.deck.slice(1), hand: [...side.hand, next] };
 }
 
+/**
+ * Whether an effect's condition holds.
+ *
+ * Every condition reads public state - the caster's own position, or the
+ * opponent's life and board. None reads a hidden hand, which is what keeps the
+ * client able to predict a cast without information it was never sent.
+ */
+export function conditionHolds(
+  effect: CardEffect,
+  state: DuelState,
+  caster: Seat,
+  tunables: CombatTunables,
+): boolean {
+  const self = state.sides[caster];
+  const foe = state.sides[opponentOf(caster)];
+  switch (effect.condition ?? 'ALWAYS') {
+    case 'ALWAYS':
+      return true;
+    case 'IF_WARDED':
+      return self.ward > 0;
+    case 'IF_WOUNDED':
+      return self.life < tunables.startingLife;
+    case 'IF_OPPONENT_BLOODIED':
+      return foe.life <= (effect.conditionValue ?? 0);
+    case 'IF_CONSTRUCTED':
+      return self.board.length > 0;
+    default:
+      return true;
+  }
+}
+
+/**
+ * The magnitude an effect actually applies.
+ *
+ * Scaling reads the caster's side, never the target's, so "for every ward you
+ * hold" means the caster's wards whichever way the effect points.
+ */
+export function scaledMagnitude(effect: CardEffect, state: DuelState, caster: Seat): number {
+  const self = state.sides[caster];
+  switch (effect.scale ?? 'FLAT') {
+    case 'FLAT':
+      return effect.magnitude;
+    case 'PER_WARD':
+      return effect.magnitude * self.ward;
+    case 'PER_CONSTRUCT':
+      return effect.magnitude * self.board.length;
+    case 'PER_CARD_IN_HAND':
+      return effect.magnitude * self.hand.length;
+    default:
+      return effect.magnitude;
+  }
+}
+
 /** Applies one card's effects. Order within a card is the order authored. */
 function applyEffects(
   state: DuelState,
@@ -172,36 +226,69 @@ function applyEffects(
 ): DuelState {
   let next = state;
   for (const effect of definition.effects) {
+    // Conditions and scaling are both evaluated against the state as it stands
+    // when this clause resolves, not as the card was cast. A card that wards
+    // and then strikes for its wards counts the ward it just raised.
+    if (!conditionHolds(effect, next, caster, tunables)) continue;
+    const magnitude = scaledMagnitude(effect, next, caster);
+    if (magnitude <= 0) continue;
+
     const target = effect.target === 'SELF' ? caster : opponentOf(caster);
     const side = next.sides[target];
     switch (effect.kind) {
       case 'DAMAGE':
-        log.push(`seat ${target} takes ${effect.magnitude}`);
-        next = withSide(next, target, damage(side, effect.magnitude));
+        log.push(`seat ${target} takes ${magnitude}`);
+        next = withSide(next, target, damage(side, magnitude));
+        break;
+      case 'PIERCE':
+        // Ignores wards entirely rather than spending them, which is what
+        // makes it an answer to a turtle rather than merely more damage.
+        log.push(`seat ${target} is pierced for ${magnitude}`);
+        next = withSide(next, target, { ...side, life: side.life - magnitude });
         break;
       case 'HEAL':
-        log.push(`seat ${target} restores ${effect.magnitude}`);
-        next = withSide(next, target, { ...side, life: side.life + effect.magnitude });
+        log.push(`seat ${target} restores ${magnitude}`);
+        next = withSide(next, target, { ...side, life: side.life + magnitude });
         break;
       case 'WARD':
-        log.push(`seat ${target} wards ${effect.magnitude}`);
-        next = withSide(next, target, { ...side, ward: side.ward + effect.magnitude });
+        log.push(`seat ${target} wards ${magnitude}`);
+        next = withSide(next, target, { ...side, ward: side.ward + magnitude });
         break;
       case 'RESONANCE_GAIN':
         next = withSide(next, target, {
           ...side,
-          resonance: Math.min(
-            side.resonance + effect.magnitude,
-            next.sides[target].resonanceCeiling,
-          ),
+          resonance: Math.min(side.resonance + magnitude, next.sides[target].resonanceCeiling),
         });
         break;
       case 'DRAW': {
         let drawn = side;
-        for (let n = 0; n < effect.magnitude; n += 1) {
+        for (let n = 0; n < magnitude; n += 1) {
           drawn = draw(drawn, tunables, log, target);
         }
         next = withSide(next, target, drawn);
+        break;
+      }
+      case 'DESTROY_CONSTRUCT': {
+        // Oldest first, by placement sequence. Choosing by any other rule -
+        // strongest, newest - needs a valuation the resolver has no business
+        // holding, and one the client would have to reproduce exactly.
+        if (side.board.length === 0) break;
+        const doomed = new Set(
+          [...side.board].sort((a, b) => a.sequence - b.sequence).slice(0, magnitude),
+        );
+        for (const slot of doomed) log.push(`seat ${target} loses ${slot.definitionId}`);
+        next = withSide(next, target, {
+          ...side,
+          board: side.board.filter((slot) => !doomed.has(slot)),
+        });
+        break;
+      }
+      case 'DISCARD': {
+        // Oldest card first, for the same reason.
+        const lost = Math.min(magnitude, side.hand.length);
+        if (lost === 0) break;
+        log.push(`seat ${target} discards ${lost}`);
+        next = withSide(next, target, { ...side, hand: side.hand.slice(lost) });
         break;
       }
     }

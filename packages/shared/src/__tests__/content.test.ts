@@ -122,7 +122,7 @@ describe('shipped content', () => {
     expect(ITEM_CATALOG.items.length).toBeGreaterThan(0);
     expect(NODE_CATALOG.nodes.length).toBeGreaterThan(0);
     expect(RECIPE_BOOK.recipes.length).toBeGreaterThan(0);
-    expect(CONTENT_SCHEMA_VERSION).toBe(1);
+    expect(CONTENT_SCHEMA_VERSION).toBe(2);
   });
 
   it('binds every gathering node to a gathering interactable in the courtyard', () => {

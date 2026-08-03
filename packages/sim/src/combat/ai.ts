@@ -22,7 +22,14 @@ import {
   type CombatTunables,
   type Rng,
 } from '@arcanum/shared';
-import { applyDuelCommand, type DuelCommand, type DuelState, type Seat } from './duel.js';
+import {
+  applyDuelCommand,
+  conditionHolds,
+  scaledMagnitude,
+  type DuelCommand,
+  type DuelState,
+  type Seat,
+} from './duel.js';
 
 export const Difficulty = {
   /** Plays something it can afford. Does not plan, does not count lethal. */
@@ -61,11 +68,35 @@ function playableCards(state: DuelState, seat: Seat, context: AiContext): Playab
   return playable;
 }
 
-/** Damage a card would deal to the opponent this instant. */
-function immediateDamage(definition: CardDefinition): number {
-  return definition.effects
-    .filter((effect) => effect.kind === 'DAMAGE' && effect.target === 'OPPONENT')
-    .reduce((sum, effect) => sum + effect.magnitude, 0);
+/**
+ * Damage a card would actually land right now, wards accounted for.
+ *
+ * Evaluated through the resolver's own condition and scaling functions rather
+ * than re-derived here. An AI that reasoned about effects differently from the
+ * engine would misjudge exactly the cards the new vocabulary makes
+ * interesting - a conditional strike, a ward-scaled hit - and the divergence
+ * would be silent.
+ */
+function lethalReach(
+  definition: CardDefinition,
+  state: DuelState,
+  seat: Seat,
+  tunables: CombatTunables,
+): number {
+  const foe = state.sides[seat === 0 ? 1 : 0];
+  let throughWard = 0;
+  let ignoringWard = 0;
+
+  for (const effect of definition.effects) {
+    if (effect.target !== 'OPPONENT') continue;
+    if (!conditionHolds(effect, state, seat, tunables)) continue;
+    const magnitude = scaledMagnitude(effect, state, seat);
+    if (effect.kind === 'DAMAGE') throughWard += magnitude;
+    if (effect.kind === 'PIERCE') ignoringWard += magnitude;
+  }
+
+  // Pierce skips the ward entirely; ordinary damage has to chew through it.
+  return ignoringWard + Math.max(0, throughWard - foe.ward);
 }
 
 /**
@@ -76,28 +107,52 @@ function immediateDamage(definition: CardDefinition): number {
  * damage is worth more when the opponent is nearly dead. An AI whose
  * reasoning cannot be read is one nobody can tell is broken.
  */
-function valueOf(definition: CardDefinition, state: DuelState, seat: Seat): number {
+function valueOf(
+  definition: CardDefinition,
+  state: DuelState,
+  seat: Seat,
+  tunables: CombatTunables,
+): number {
   const self = state.sides[seat];
   const foe = state.sides[seat === 0 ? 1 : 0];
   let value = 0;
 
   for (const effect of definition.effects) {
+    // A clause whose condition does not hold is worth nothing, which is what
+    // stops the AI paying for a conditional it cannot currently satisfy.
+    if (!conditionHolds(effect, state, seat, tunables)) continue;
+    const magnitude = scaledMagnitude(effect, state, seat);
+    if (magnitude <= 0) continue;
+
     switch (effect.kind) {
       case 'DAMAGE':
-        value += effect.magnitude * (foe.life <= effect.magnitude ? 10 : 2);
+        value += magnitude * (foe.life <= magnitude ? 10 : 2);
+        break;
+      case 'PIERCE':
+        // Worth more than plain damage against a warded opponent, because it
+        // is the only thing that reaches them at all.
+        value += magnitude * (foe.life <= magnitude ? 10 : foe.ward > 0 ? 3 : 2);
         break;
       case 'HEAL':
         // Healing above the starting total is thrown away.
-        value += Math.min(effect.magnitude, Math.max(0, 30 - self.life));
+        value += Math.min(magnitude, Math.max(0, tunables.startingLife - self.life));
         break;
       case 'WARD':
-        value += self.ward > 0 ? effect.magnitude / 2 : effect.magnitude;
+        value += self.ward > 0 ? magnitude / 2 : magnitude;
         break;
       case 'DRAW':
-        value += effect.magnitude * 2;
+        value += magnitude * 2;
         break;
       case 'RESONANCE_GAIN':
-        value += effect.magnitude;
+        value += magnitude;
+        break;
+      case 'DESTROY_CONSTRUCT':
+        // Only worth anything if there is something to destroy, and each
+        // removal is worth roughly what a construct is worth to keep.
+        value += Math.min(magnitude, foe.board.length) * 5;
+        break;
+      case 'DISCARD':
+        value += Math.min(magnitude, foe.hand.length) * 2;
         break;
     }
   }
@@ -134,7 +189,7 @@ export function chooseDuelCommand(state: DuelState, seat: Seat, context: AiConte
       // Take a kill if one is on the table, otherwise spend the most resonance
       // available - curving out beats hoarding at this level.
       const lethal = playable.find(
-        (entry) => immediateDamage(entry.definition) >= foe.life + foe.ward,
+        (entry) => lethalReach(entry.definition, state, seat, context.tunables) >= foe.life,
       );
       if (lethal) return { kind: 'PLAY_CARD', handIndex: lethal.handIndex };
 
@@ -146,18 +201,20 @@ export function chooseDuelCommand(state: DuelState, seat: Seat, context: AiConte
 
     case Difficulty.Master: {
       const lethal = playable.find(
-        (entry) => immediateDamage(entry.definition) >= foe.life + foe.ward,
+        (entry) => lethalReach(entry.definition, state, seat, context.tunables) >= foe.life,
       );
       if (lethal) return { kind: 'PLAY_CARD', handIndex: lethal.handIndex };
 
       // Index breaks ties so two equally valued cards never depend on sort
       // stability - the same duel must produce the same play every time.
+      const value = (definition: CardDefinition) =>
+        valueOf(definition, state, seat, context.tunables);
       const best = [...playable].sort((a, b) => {
-        const difference = valueOf(b.definition, state, seat) - valueOf(a.definition, state, seat);
+        const difference = value(b.definition) - value(a.definition);
         return difference !== 0 ? difference : a.handIndex - b.handIndex;
       })[0]!;
 
-      if (valueOf(best.definition, state, seat) <= 0) return { kind: 'END_TURN' };
+      if (value(best.definition) <= 0) return { kind: 'END_TURN' };
       return { kind: 'PLAY_CARD', handIndex: best.handIndex };
     }
   }
