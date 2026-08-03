@@ -6,9 +6,19 @@
       "name": "Mining",
       "category": "GATHERING",
       "unlocks": [
-        { "atLevel": 1, "description": "Work resonance seams", "nodeKind": "CRYSTAL" },
-        { "atLevel": 15, "description": "Resonant crystal appears more often" },
-        { "atLevel": 40, "description": "Prismatic crystal appears more often" }
+        {
+          "atLevel": 1,
+          "description": "Work resonance seams",
+          "nodeKind": "CRYSTAL"
+        },
+        {
+          "atLevel": 15,
+          "description": "Resonant crystal appears more often"
+        },
+        {
+          "atLevel": 40,
+          "description": "Prismatic crystal appears more often"
+        }
       ]
     },
     {
@@ -16,9 +26,19 @@
       "name": "Foraging",
       "category": "GATHERING",
       "unlocks": [
-        { "atLevel": 1, "description": "Gather from mushroom patches", "nodeKind": "MUSHROOM" },
-        { "atLevel": 20, "description": "Glowspore caps appear more often" },
-        { "atLevel": 45, "description": "Dreamveil appears more often" }
+        {
+          "atLevel": 1,
+          "description": "Gather from mushroom patches",
+          "nodeKind": "MUSHROOM"
+        },
+        {
+          "atLevel": 20,
+          "description": "Glowspore caps appear more often"
+        },
+        {
+          "atLevel": 45,
+          "description": "Dreamveil appears more often"
+        }
       ]
     },
     {
@@ -26,9 +46,19 @@
       "name": "Forestry",
       "category": "GATHERING",
       "unlocks": [
-        { "atLevel": 1, "description": "Fell emberwood stands", "nodeKind": "EMBERWOOD" },
-        { "atLevel": 25, "description": "Heartwood appears more often" },
-        { "atLevel": 50, "description": "Ember cores appear more often" }
+        {
+          "atLevel": 1,
+          "description": "Fell emberwood stands",
+          "nodeKind": "EMBERWOOD"
+        },
+        {
+          "atLevel": 25,
+          "description": "Heartwood appears more often"
+        },
+        {
+          "atLevel": 50,
+          "description": "Ember cores appear more often"
+        }
       ]
     },
     {
@@ -50,6 +80,25 @@
           "atLevel": 10,
           "description": "Distil ember ink",
           "recipeId": "recipe.ink.ember"
+        }
+      ]
+    },
+    {
+      "id": "skill.scribing",
+      "name": "Scribing",
+      "category": "CRAFTING",
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Scribe common spells"
+        },
+        {
+          "atLevel": 15,
+          "description": "Appraisals grow more consistent"
+        },
+        {
+          "atLevel": 40,
+          "description": "Slabbed results become routine"
         }
       ]
     }

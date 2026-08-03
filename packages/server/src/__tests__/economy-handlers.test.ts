@@ -5,18 +5,26 @@ import {
   NODE_CATALOG,
   RECIPE_BOOK,
   SKILL_TABLE,
+  CARD_CATALOG,
+  SCHOOL_TABLE,
   asId,
   type Failure,
   type ItemDefinitionId,
   type PlayerId,
   type SessionId,
   type SkillId,
+  type CardInstanceId,
 } from '@arcanum/shared';
 import { RegistryCommandRouter } from '../net/gateway.js';
 import { InMemoryPlayerRepository } from '../persistence/repository.js';
 import { PlayerService } from '../domain/player-service.js';
+import { InMemorySerialMinter } from '../domain/serial-minter.js';
 import { registerEconomyHandlers } from '../net/handlers/economy.js';
-import { parsePlayerState, PLAYER_SCHEMA_VERSION } from '../domain/player-state.js';
+import {
+  parsePlayerState,
+  serialisePlayerState,
+  PLAYER_SCHEMA_VERSION,
+} from '../domain/player-state.js';
 import type { Session } from '../session/session-store.js';
 
 const PLAYER = asId<PlayerId>('player-1');
@@ -34,6 +42,8 @@ const SHIPPED_CATALOGS = {
   nodes: NODE_CATALOG,
   recipes: RECIPE_BOOK,
   skills: SKILL_TABLE,
+  cards: CARD_CATALOG,
+  schools: SCHOOL_TABLE,
 };
 
 function session(playerId: PlayerId = PLAYER): Session {
@@ -49,12 +59,15 @@ function session(playerId: PlayerId = PLAYER): Session {
 
 function harness(catalogOverrides: Partial<typeof SHIPPED_CATALOGS> = {}, startAtMs = 1_000_000) {
   let clock = startAtMs;
+  let instances = 0;
   const repository = new InMemoryPlayerRepository(() => clock);
   const players = new PlayerService({ repository, slotCapacity: SLOTS, now: () => clock });
   const router = new RegistryCommandRouter();
   registerEconomyHandlers(router, {
     players,
     catalogs: { ...SHIPPED_CATALOGS, ...catalogOverrides },
+    serials: new InMemorySerialMinter(),
+    newInstanceId: () => asId<CardInstanceId>(`card-instance-${(instances += 1)}`),
     tunables: DEFAULT_TUNABLES,
     now: () => clock,
   });
@@ -399,5 +412,105 @@ describe('presence', () => {
     const claimed = await h.dispatch('gathering.claimOffline');
     expect(claimed.ok).toBe(false);
     if (!claimed.ok) expect(claimed.error.reason).toBe('gathering.nothing_to_claim');
+  });
+});
+
+describe('scribing.scribe', () => {
+  const CHEAP = CARD_CATALOG.cards.find(
+    (entry) => entry.scribeSkillLevel === 1 && entry.scribeInputs.length === 1,
+  )!;
+
+  /** Fills the satchel directly, so scribing is tested without a long harvest. */
+  async function stocked(h: ReturnType<typeof harness>) {
+    await h.dispatch('player.sync');
+    const state = await h.state();
+    const stacks = CHEAP.scribeInputs.map((input) => ({
+      definitionId: input.itemId,
+      quantity: input.quantity * 5,
+    }));
+    await h.repository.save(
+      {
+        playerId: PLAYER,
+        schemaVersion: PLAYER_SCHEMA_VERSION,
+        data: {
+          ...serialisePlayerState(state),
+          inventory: { stacks, slotCapacity: SLOTS },
+          skills: { 'skill.scribing': { level: 1, xp: 0 } },
+        },
+      },
+      1,
+    );
+  }
+
+  it('refuses a card nobody defined', async () => {
+    const h = harness();
+    const result = await h.dispatch('scribing.scribe', { cardId: 'card.imaginary' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('scribing.unknown_card');
+  });
+
+  it('refuses without the materials', async () => {
+    const h = harness();
+    const result = await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('scribing.missing_materials');
+  });
+
+  it('consumes materials and adds a graded card to the collection', async () => {
+    const h = harness();
+    await stocked(h);
+
+    const result = await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const patch = result.value as { scribed: { grade: number; definitionId: string } };
+    expect(patch.scribed.definitionId).toBe(CHEAP.id);
+    expect(patch.scribed.grade).toBeGreaterThanOrEqual(DEFAULT_TUNABLES.grading.minGrade);
+    expect(patch.scribed.grade).toBeLessThanOrEqual(DEFAULT_TUNABLES.grading.maxGrade);
+
+    const state = await h.state();
+    expect(state.cards).toHaveLength(1);
+    const held = state.inventory.stacks
+      .filter((stack) => stack.definitionId === CHEAP.scribeInputs[0]!.itemId)
+      .reduce((sum, stack) => sum + stack.quantity, 0);
+    expect(held).toBe(CHEAP.scribeInputs[0]!.quantity * 4);
+  });
+
+  it('records the tunables version the grade was rolled under', async () => {
+    const h = harness();
+    await stocked(h);
+    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
+    const state = await h.state();
+    expect(state.cards[0]!.gradedUnderTunablesVersion).toBe(DEFAULT_TUNABLES.version);
+  });
+
+  it('awards scribing experience', async () => {
+    const h = harness();
+    await stocked(h);
+    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
+    const state = await h.state();
+    expect(state.skills['skill.scribing']!.xp).toBeGreaterThan(0);
+  });
+
+  it('mints a serial only when the grade earns a slab', async () => {
+    const h = harness();
+    await stocked(h);
+    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
+    const card = (await h.state()).cards[0]!;
+    // A novice cannot slab, so this card must carry no serial at all - an
+    // unslabbed card with a serial would be a claim of scarcity it never earned.
+    expect(DEFAULT_TUNABLES.grading.slabThreshold).toBeGreaterThan(card.grade);
+    expect(card.serial).toBeNull();
+  });
+
+  it('gives every scribed card a distinct instance id', async () => {
+    const h = harness();
+    await stocked(h);
+    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
+    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
+    const state = await h.state();
+    expect(state.cards).toHaveLength(2);
+    expect(state.cards[0]!.instanceId).not.toBe(state.cards[1]!.instanceId);
   });
 });

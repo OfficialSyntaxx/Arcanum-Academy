@@ -74,12 +74,16 @@ export interface PostgresPlayerRepositoryOptions {
 }
 
 export class PostgresPlayerRepository implements PlayerRepository {
-  private readonly pool: pg.Pool;
+  /**
+   * Shared with the serial minter so both use one connection budget. Free
+   * Postgres tiers cap connections well below what two pools would open.
+   */
+  readonly client: pg.Pool;
   private readonly now: () => number;
 
   constructor(options: PostgresPlayerRepositoryOptions) {
     this.now = options.now ?? (() => Date.now());
-    this.pool = new pg.Pool({
+    this.client = new pg.Pool({
       connectionString: options.connectionString,
       max: options.poolMax,
       // Managed Postgres requires TLS and presents a valid certificate, so it
@@ -91,7 +95,7 @@ export class PostgresPlayerRepository implements PlayerRepository {
 
     // An idle client erroring is normal - managed providers recycle
     // connections - and must not take the process down as an unhandled error.
-    this.pool.on('error', (error) => {
+    this.client.on('error', (error) => {
       options.logger.warn('idle pool client errored', { error: error.message });
     });
   }
@@ -106,7 +110,7 @@ export class PostgresPlayerRepository implements PlayerRepository {
    */
   async initialise(): Promise<Result<true, Failure>> {
     try {
-      await this.pool.query(CREATE_TABLE);
+      await this.client.query(CREATE_TABLE);
       return ok(true);
     } catch (error) {
       return err(storageFailure('initialise', error));
@@ -115,7 +119,7 @@ export class PostgresPlayerRepository implements PlayerRepository {
 
   async find(playerId: PlayerId): Promise<Result<PlayerRecord | null, Failure>> {
     try {
-      const result = await this.pool.query<Row>(
+      const result = await this.client.query<Row>(
         'SELECT player_id, schema_version, version, updated_at_ms, data FROM player_records WHERE player_id = $1',
         [playerId],
       );
@@ -131,7 +135,7 @@ export class PostgresPlayerRepository implements PlayerRepository {
   ): Promise<Result<PlayerRecord, Failure>> {
     const updatedAtMs = this.now();
     try {
-      const result = await this.pool.query<Row>(
+      const result = await this.client.query<Row>(
         `INSERT INTO player_records (player_id, schema_version, version, updated_at_ms, data)
          VALUES ($1, $2, 1, $3, $4)
          ON CONFLICT (player_id) DO NOTHING
@@ -158,7 +162,7 @@ export class PostgresPlayerRepository implements PlayerRepository {
   ): Promise<Result<PlayerRecord, Failure>> {
     const updatedAtMs = this.now();
     try {
-      const result = await this.pool.query<Row>(
+      const result = await this.client.query<Row>(
         `UPDATE player_records
             SET schema_version = $2, version = version + 1, updated_at_ms = $3, data = $4
           WHERE player_id = $1 AND version = $5
@@ -171,7 +175,7 @@ export class PostgresPlayerRepository implements PlayerRepository {
       // The predicate failed. Only now is a second read worth doing, and only
       // to tell the caller which of the two reasons applies - a missing row and
       // a stale version call for different handling.
-      const current = await this.pool.query<{ version: number }>(
+      const current = await this.client.query<{ version: number }>(
         'SELECT version FROM player_records WHERE player_id = $1',
         [record.playerId],
       );
@@ -195,6 +199,6 @@ export class PostgresPlayerRepository implements PlayerRepository {
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    await this.client.end();
   }
 }

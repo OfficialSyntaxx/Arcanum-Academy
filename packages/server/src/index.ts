@@ -12,6 +12,11 @@ import {
   NODE_CATALOG,
   RECIPE_BOOK,
   SKILL_TABLE,
+  CARD_CATALOG,
+  SCHOOL_TABLE,
+  asId,
+  generateId,
+  type CardInstanceId,
 } from '@arcanum/shared';
 import { loadConfig } from './config.js';
 import { Gateway, RegistryCommandRouter, type GatewaySocket } from './net/gateway.js';
@@ -20,6 +25,11 @@ import { InMemoryPlayerRepository, type PlayerRepository } from './persistence/r
 import { PostgresPlayerRepository } from './persistence/postgres-repository.js';
 import { PlayerService } from './domain/player-service.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
+import {
+  InMemorySerialMinter,
+  PostgresSerialMinter,
+  type SerialMinter,
+} from './domain/serial-minter.js';
 
 /**
  * Server entry point.
@@ -78,6 +88,19 @@ async function main(): Promise<void> {
     );
   }
 
+  // Serials are global to a card rather than owned by a player, so they get
+  // their own writer. Backed by the same database when there is one, because a
+  // serial register that resets on restart would certify nothing.
+  let serials: SerialMinter = new InMemorySerialMinter();
+  if (postgres !== null) {
+    const postgresSerials = new PostgresSerialMinter(postgres.client);
+    const prepared = await postgresSerials.initialise();
+    if (!prepared.ok) {
+      throw new Error(`Serial register unavailable: ${describeFailure(prepared.error)}`);
+    }
+    serials = postgresSerials;
+  }
+
   const players = new PlayerService({
     repository,
     slotCapacity: DEFAULT_TUNABLES.gathering.baseInventorySlots,
@@ -90,7 +113,11 @@ async function main(): Promise<void> {
       nodes: NODE_CATALOG,
       recipes: RECIPE_BOOK,
       skills: SKILL_TABLE,
+      cards: CARD_CATALOG,
+      schools: SCHOOL_TABLE,
     },
+    serials,
+    newInstanceId: () => asId<CardInstanceId>(generateId()),
     tunables: DEFAULT_TUNABLES,
     now: () => Date.now(),
   });

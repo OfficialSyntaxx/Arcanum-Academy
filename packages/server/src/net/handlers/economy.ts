@@ -15,11 +15,13 @@
 
 import {
   assertCanCraft,
+  assertCanScribe,
   assertCanWork,
   awardXp,
   HarvestMode,
   resolveCraft,
   resolveHarvest,
+  resolveScribe,
   startSession,
   type HarvestOutcome,
 } from '@arcanum/sim';
@@ -30,12 +32,17 @@ import {
   ok,
   Rng,
   type Failure,
+  type CardCatalog,
+  type CardDefinitionId,
+  type CardInstance,
+  type CardInstanceId,
   type InteractableId,
   type ItemCatalog,
   type NodeCatalog,
   type NodeDefinition,
   type RecipeBook,
   type RecipeId,
+  type SchoolTable,
   type Result,
   type SkillId,
   type SkillTable,
@@ -45,6 +52,7 @@ import type { Session } from '../../session/session-store.js';
 import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import { nodeState, skillProgress, type PlayerState } from '../../domain/player-state.js';
 import type { Mutation, PlayerService } from '../../domain/player-service.js';
+import type { SerialMinter } from '../../domain/serial-minter.js';
 
 /**
  * The content these handlers rule against.
@@ -60,14 +68,20 @@ export interface EconomyCatalogs {
   readonly nodes: NodeCatalog;
   readonly recipes: RecipeBook;
   readonly skills: SkillTable;
+  readonly cards: CardCatalog;
+  readonly schools: SchoolTable;
 }
 
 export interface EconomyHandlerOptions {
   readonly players: PlayerService;
+  readonly serials: SerialMinter;
+  readonly newInstanceId: () => CardInstanceId;
   readonly catalogs: EconomyCatalogs;
   readonly tunables: Tunables;
   readonly now: () => number;
 }
+
+const SCRIBING_SKILL = 'skill.scribing' as SkillId;
 
 function invalid(reason: string, detail: string): Failure {
   return failure(FailureCode.Validation, reason, { detail });
@@ -85,6 +99,7 @@ function project(state: PlayerState) {
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     skills: state.skills,
     gathering: state.gathering,
+    cards: state.cards,
   };
 }
 
@@ -367,6 +382,107 @@ export function registerEconomyHandlers(
     });
   };
 
+  /**
+   * Scribes a card.
+   *
+   * The serial is minted before the state is written, and only for a slab. It
+   * has to happen outside the mutation because minting is a global side effect
+   * that a retried mutation must not repeat - a second attempt would burn a
+   * serial nobody holds and make the register lie about how many exist.
+   *
+   * The cost of that ordering is a serial burned when the write then fails,
+   * which leaves a gap in the sequence. A gap is survivable; a duplicate or an
+   * overstated count is not.
+   */
+  const scribe: CommandHandler = async (session: Session, payload: unknown) => {
+    const cardId = readString(payload, 'cardId');
+    if (cardId === null) {
+      return err(invalid('scribing.card_missing', 'cardId is required'));
+    }
+    const card = catalogs.cards.get(cardId as CardDefinitionId);
+    if (card === undefined) {
+      return err(failure(FailureCode.NotFound, 'scribing.unknown_card', { context: { cardId } }));
+    }
+
+    const nowMs = now();
+    const loaded = await players.load(session.playerId);
+    if (!loaded.ok) return err(loaded.error);
+
+    const level = skillProgress(loaded.value, SCRIBING_SKILL).level;
+    // Checked before minting so an obviously refused scribe never burns one.
+    const allowed = assertCanScribe(card, level, loaded.value.inventory);
+    if (!allowed.ok) return err(allowed.error);
+
+    const preview = resolveScribe({
+      card,
+      skillLevel: level,
+      inventory: loaded.value.inventory,
+      catalog: catalogs.items,
+      grading: tunables.grading,
+      progression: tunables.progression,
+      rng: Rng.fromSeed(`${session.playerId}:${card.id}:${nowMs}`),
+    });
+    if (!preview.ok) return err(preview.error);
+
+    let serial = null as CardInstance['serial'];
+    if (preview.value.slabbed) {
+      const minted = await options.serials.mint(card.id);
+      if (!minted.ok) return err(minted.error);
+      serial = minted.value;
+    }
+
+    const instanceId = options.newInstanceId();
+    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      // Re-resolved against whatever state the write actually sees, from an
+      // identically seeded generator, so a retry produces the same grade.
+      const outcome = resolveScribe({
+        card,
+        skillLevel: skillProgress(state, SCRIBING_SKILL).level,
+        inventory: state.inventory,
+        catalog: catalogs.items,
+        grading: tunables.grading,
+        progression: tunables.progression,
+        rng: Rng.fromSeed(`${session.playerId}:${card.id}:${nowMs}`),
+      });
+      if (!outcome.ok) return err(outcome.error);
+
+      const instance: CardInstance = {
+        instanceId,
+        definitionId: card.id,
+        grade: outcome.value.grade,
+        foil: outcome.value.foil,
+        serial: outcome.value.slabbed ? serial : null,
+        scribedBy: session.playerId,
+        scribedAtMs: nowMs,
+        gradedUnderTunablesVersion: tunables.version,
+      };
+
+      const award = awardXp(
+        skillProgress(state, SCRIBING_SKILL),
+        card.scribeSkillLevel + card.cost,
+        tunables.progression,
+        catalogs.skills.get(SCRIBING_SKILL),
+      );
+
+      const next: PlayerState = {
+        ...state,
+        inventory: outcome.value.inventory,
+        skills: { ...state.skills, [SCRIBING_SKILL]: award.progress },
+        cards: [...state.cards, instance],
+        lastSeenAtMs: nowMs,
+      };
+      return ok({
+        state: next,
+        value: {
+          ...project(next),
+          scribed: instance,
+          score: outcome.value.score,
+          slabbed: outcome.value.slabbed,
+        },
+      });
+    });
+  };
+
   const sync: CommandHandler = async (session: Session) => {
     const loaded = await players.load(session.playerId);
     if (!loaded.ok) return err(loaded.error);
@@ -379,5 +495,6 @@ export function registerEconomyHandlers(
     .register('gathering.collect', collect)
     .register('gathering.claimOffline', claimOffline)
     .register('gathering.stop', stop)
-    .register('crafting.craft', craft);
+    .register('crafting.craft', craft)
+    .register('scribing.scribe', scribe);
 }

@@ -24,8 +24,12 @@ import {
   type ItemInstance,
   type ItemStack,
   type NodeId,
+  type CardDefinitionId,
+  type CardInstance,
+  type CardInstanceId,
   type NodeState,
   type PlayerId,
+  type SlabSerial,
   type Result,
   type Failure,
   type SkillId,
@@ -44,6 +48,8 @@ export interface PlayerState {
   /** Depletion and regrowth per node, tracked per player rather than globally. */
   readonly nodes: Readonly<Record<string, NodeState>>;
   readonly gathering: GatheringSession | null;
+  /** Every card the player has scribed. The collection, not the deck. */
+  readonly cards: readonly CardInstance[];
   /**
    * Last moment the player was demonstrably present.
    *
@@ -59,6 +65,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     tools: {},
     nodes: {},
     gathering: null,
+    cards: [],
     lastSeenAtMs: nowMs,
   };
 }
@@ -136,6 +143,30 @@ function readNodes(value: unknown): Record<string, NodeState> {
   return nodes;
 }
 
+function readCards(value: unknown): CardInstance[] {
+  if (!Array.isArray(value)) return [];
+  const cards: CardInstance[] = [];
+  for (const raw of value) {
+    if (!isRecord(raw)) continue;
+    const { instanceId, definitionId, scribedBy, serial } = raw;
+    if (typeof instanceId !== 'string' || typeof definitionId !== 'string') continue;
+    cards.push({
+      instanceId: instanceId as CardInstanceId,
+      definitionId: definitionId as CardDefinitionId,
+      grade: Math.max(0, Math.floor(readNumber(raw.grade, 0))),
+      foil: raw.foil === true,
+      serial: typeof serial === 'string' ? (serial as SlabSerial) : null,
+      scribedBy: (typeof scribedBy === 'string' ? scribedBy : '') as PlayerId,
+      scribedAtMs: readNumber(raw.scribedAtMs, 0),
+      gradedUnderTunablesVersion: Math.max(
+        0,
+        Math.floor(readNumber(raw.gradedUnderTunablesVersion, 0)),
+      ),
+    });
+  }
+  return cards;
+}
+
 function readGathering(value: unknown): GatheringSession | null {
   if (!isRecord(value)) return null;
   const { nodeId, rngState } = value;
@@ -170,6 +201,7 @@ export function parsePlayerState(
     tools: readTools(data.tools),
     nodes: readNodes(data.nodes),
     gathering: readGathering(data.gathering),
+    cards: readCards(data.cards),
     lastSeenAtMs: readNumber(data.lastSeenAtMs, record.updatedAtMs),
   });
 }
@@ -182,6 +214,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     tools: state.tools,
     nodes: state.nodes,
     gathering: state.gathering,
+    cards: state.cards,
     lastSeenAtMs: state.lastSeenAtMs,
   };
 }

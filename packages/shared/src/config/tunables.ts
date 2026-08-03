@@ -62,6 +62,14 @@ export interface GradingTunables {
    */
   readonly noviceCentreScore: number;
   readonly masterCentreScore: number;
+  /**
+   * Chance a scribed card comes out foil, in basis points.
+   *
+   * Purely presentational and independent of grade, so it never becomes a
+   * second axis of power. It is rolled from the same seeded generator as the
+   * grade so an audit reproduces both.
+   */
+  readonly foilChanceBasisPoints: number;
 }
 
 export interface EconomyTunables {
@@ -183,10 +191,11 @@ export interface Tunables {
 }
 
 export const DEFAULT_TUNABLES: Tunables = Object.freeze({
-  // Bumped to 3 when grading gained its appraisal centres. Per ADR-0002 the
-  // version travels with replays and with every graded card, so a grade rolled
-  // under one version is never silently compared against another's odds.
-  version: 3,
+  // Bumped to 4 when grading gained its appraisal centres, variance floor and
+  // foil chance. Per ADR-0002 the version travels with replays and with every
+  // graded card, so a grade rolled under one version is never silently
+  // compared against another version's odds.
+  version: 4,
   combat: Object.freeze({
     deckSize: 20,
     maxCopiesPerSpell: 3,
@@ -221,6 +230,7 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     // reaches a 10. A higher centre would make grade 10 routine and the slab
     // an expectation rather than an event.
     masterCentreScore: 80,
+    foilChanceBasisPoints: 200,
   }),
   economy: Object.freeze({
     marketListingTaxBasisPoints: 500,
