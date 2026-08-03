@@ -9,7 +9,7 @@ import {
   type PlayerId,
   type Result,
 } from '@arcanum/shared';
-import type { PlayerRecord, PlayerRepository } from './repository.js';
+import type { PlayerRecord, PlayerRepository, PlayerStore } from './repository.js';
 
 /**
  * Postgres adapter for the persistence port.
@@ -73,49 +73,19 @@ export interface PostgresPlayerRepositoryOptions {
   readonly now?: () => number;
 }
 
-export class PostgresPlayerRepository implements PlayerRepository {
-  /**
-   * Shared with the serial minter so both use one connection budget. Free
-   * Postgres tiers cap connections well below what two pools would open.
-   */
-  readonly client: pg.Pool;
-  private readonly now: () => number;
-
-  constructor(options: PostgresPlayerRepositoryOptions) {
-    this.now = options.now ?? (() => Date.now());
-    this.client = new pg.Pool({
-      connectionString: options.connectionString,
-      max: options.poolMax,
-      // Managed Postgres requires TLS and presents a valid certificate, so it
-      // is verified rather than waved through. A local database does not.
-      ssl: /localhost|127\.0\.0\.1/.test(options.connectionString)
-        ? false
-        : { rejectUnauthorized: true },
-    });
-
-    // An idle client erroring is normal - managed providers recycle
-    // connections - and must not take the process down as an unhandled error.
-    this.client.on('error', (error) => {
-      options.logger.warn('idle pool client errored', { error: error.message });
-    });
-  }
-
-  /**
-   * Creates the table if it is absent.
-   *
-   * Adequate while there is exactly one table and no column has ever changed.
-   * The moment a second table or a destructive alteration appears this must
-   * graduate to ordered migration files - `createMigrationRunner` in
-   * `@arcanum/shared` already models the forward-only chain to follow.
-   */
-  async initialise(): Promise<Result<true, Failure>> {
-    try {
-      await this.client.query(CREATE_TABLE);
-      return ok(true);
-    } catch (error) {
-      return err(storageFailure('initialise', error));
-    }
-  }
+/**
+ * The queries, bound to whichever connection is executing them.
+ *
+ * A transaction must run every statement on the *same* checked-out client:
+ * `BEGIN` on one connection and an `UPDATE` on another are two unrelated
+ * sessions, and the update would commit on its own. Binding the queries to a
+ * client rather than to the pool is what makes that impossible to get wrong.
+ */
+class PostgresPlayerStore implements PlayerStore {
+  constructor(
+    private readonly client: Pick<pg.Pool, 'query'> | pg.PoolClient,
+    private readonly now: () => number,
+  ) {}
 
   async find(playerId: PlayerId): Promise<Result<PlayerRecord | null, Failure>> {
     try {
@@ -172,9 +142,6 @@ export class PostgresPlayerRepository implements PlayerRepository {
       const row = result.rows[0];
       if (row !== undefined) return ok(toRecord(row));
 
-      // The predicate failed. Only now is a second read worth doing, and only
-      // to tell the caller which of the two reasons applies - a missing row and
-      // a stale version call for different handling.
       const current = await this.client.query<{ version: number }>(
         'SELECT version FROM player_records WHERE player_id = $1',
         [record.playerId],
@@ -195,6 +162,111 @@ export class PostgresPlayerRepository implements PlayerRepository {
       );
     } catch (error) {
       return err(storageFailure('save', error));
+    }
+  }
+}
+
+export class PostgresPlayerRepository implements PlayerRepository {
+  /**
+   * Shared with the serial minter so both use one connection budget. Free
+   * Postgres tiers cap connections well below what two pools would open.
+   */
+  readonly client: pg.Pool;
+  private readonly now: () => number;
+
+  constructor(options: PostgresPlayerRepositoryOptions) {
+    this.now = options.now ?? (() => Date.now());
+    this.client = new pg.Pool({
+      connectionString: options.connectionString,
+      max: options.poolMax,
+      // Managed Postgres requires TLS and presents a valid certificate, so it
+      // is verified rather than waved through. A local database does not.
+      ssl: /localhost|127\.0\.0\.1/.test(options.connectionString)
+        ? false
+        : { rejectUnauthorized: true },
+    });
+
+    // An idle client erroring is normal - managed providers recycle
+    // connections - and must not take the process down as an unhandled error.
+    this.client.on('error', (error) => {
+      options.logger.warn('idle pool client errored', { error: error.message });
+    });
+  }
+
+  /**
+   * Creates the table if it is absent.
+   *
+   * Adequate while there is exactly one table and no column has ever changed.
+   * The moment a second table or a destructive alteration appears this must
+   * graduate to ordered migration files - `createMigrationRunner` in
+   * `@arcanum/shared` already models the forward-only chain to follow.
+   */
+  async initialise(): Promise<Result<true, Failure>> {
+    try {
+      await this.client.query(CREATE_TABLE);
+      return ok(true);
+    } catch (error) {
+      return err(storageFailure('initialise', error));
+    }
+  }
+
+  private get pooled(): PlayerStore {
+    return new PostgresPlayerStore(this.client, this.now);
+  }
+
+  async find(playerId: PlayerId): Promise<Result<PlayerRecord | null, Failure>> {
+    return this.pooled.find(playerId);
+  }
+
+  async create(
+    record: Omit<PlayerRecord, 'version' | 'updatedAtMs'>,
+  ): Promise<Result<PlayerRecord, Failure>> {
+    return this.pooled.create(record);
+  }
+
+  async save(
+    record: Omit<PlayerRecord, 'version' | 'updatedAtMs'>,
+    expectedVersion: number,
+  ): Promise<Result<PlayerRecord, Failure>> {
+    return this.pooled.save(record, expectedVersion);
+  }
+
+  /**
+   * Runs work inside a real database transaction.
+   *
+   * One client is checked out and every statement runs on it, so BEGIN and the
+   * writes belong to the same session. An `Err` rolls back as surely as a
+   * throw does: a refused trade must not leave behind the half of it that had
+   * already been written.
+   *
+   * The client is released in every path. Leaking one from a pool capped at a
+   * handful of connections takes the server down within minutes.
+   */
+  async transaction<T>(
+    work: (tx: PlayerStore) => Promise<Result<T, Failure>>,
+  ): Promise<Result<T, Failure>> {
+    let client: pg.PoolClient;
+    try {
+      client = await this.client.connect();
+    } catch (error) {
+      return err(storageFailure('open transaction', error));
+    }
+
+    try {
+      await client.query('BEGIN');
+      const result = await work(new PostgresPlayerStore(client, this.now));
+      await client.query(result.ok ? 'COMMIT' : 'ROLLBACK');
+      return result;
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {
+        // A rollback that itself fails means the connection is already lost,
+        // which the pool discards. The original error is the useful one.
+      }
+      return err(storageFailure('transaction', error));
+    } finally {
+      client.release();
     }
   }
 

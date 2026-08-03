@@ -31,7 +31,8 @@ export interface PlayerRecord {
   readonly data: Readonly<Record<string, unknown>>;
 }
 
-export interface PlayerRepository {
+/** The reads and writes available both inside and outside a transaction. */
+export interface PlayerStore {
   find(playerId: PlayerId): Promise<Result<PlayerRecord | null, Failure>>;
   /** Creates a record. Fails if one already exists. */
   create(
@@ -44,10 +45,62 @@ export interface PlayerRepository {
   ): Promise<Result<PlayerRecord, Failure>>;
 }
 
+export interface PlayerRepository extends PlayerStore {
+  /**
+   * Runs work atomically: every write inside commits together or none does.
+   *
+   * This exists because trading moves assets between two records, and an
+   * invariant that spans two rows cannot be held by being careful about the
+   * order of single-row writes. Remove from the giver first and a failure
+   * loses their items; record the offer first and a failure delivers items the
+   * giver still holds, which is item duplication - a currency printer in a game
+   * with a market.
+   *
+   * Returning `Err` from `work` rolls back, so a rule that refuses a trade
+   * undoes everything it had already written without the caller unwinding by
+   * hand. A thrown error rolls back too, and is then rethrown.
+   */
+  transaction<T>(
+    work: (tx: PlayerStore) => Promise<Result<T, Failure>>,
+  ): Promise<Result<T, Failure>>;
+}
+
 export class InMemoryPlayerRepository implements PlayerRepository {
-  private readonly records = new Map<PlayerId, PlayerRecord>();
+  private records = new Map<PlayerId, PlayerRecord>();
+  /**
+   * Serialises transactions.
+   *
+   * The work inside is async, so two transactions would otherwise interleave
+   * and each commit a snapshot taken before the other's writes - losing one of
+   * them silently. A queue is heavy-handed for a store meant for tests and
+   * local development, and it is exactly right for correctness there.
+   */
+  private queue: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly now: () => number = () => Date.now()) {}
+
+  async transaction<T>(
+    work: (tx: PlayerStore) => Promise<Result<T, Failure>>,
+  ): Promise<Result<T, Failure>> {
+    const run = this.queue.then(async () => {
+      const snapshot = new Map(this.records);
+      // The work sees a copy. Committing is a swap; rolling back is simply
+      // not swapping, so a failed transaction cannot leave a partial write.
+      const scratch = new InMemoryPlayerRepository(this.now);
+      scratch.records = new Map(this.records);
+      try {
+        const result = await work(scratch);
+        if (result.ok) this.records = scratch.records;
+        else this.records = snapshot;
+        return result;
+      } catch (error) {
+        this.records = snapshot;
+        throw error;
+      }
+    });
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
 
   async find(playerId: PlayerId): Promise<Result<PlayerRecord | null, Failure>> {
     return ok(this.records.get(playerId) ?? null);
