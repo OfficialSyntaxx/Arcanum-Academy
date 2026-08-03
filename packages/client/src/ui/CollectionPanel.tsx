@@ -45,17 +45,22 @@ type Mode = 'scribe' | 'collection';
 export function CollectionPanel({
   onScribe,
   onSaveDeck,
+  onDeleteDeck,
   onClose,
 }: {
   onScribe: (cardId: string) => void;
   onSaveDeck: (deckId: string, name: string, cardDefinitionIds: string[]) => void;
+  onDeleteDeck: (deckId: string) => void;
   onClose: () => void;
 }) {
   const cards = useAppStore((state) => state.economy.cards);
   const stacks = useAppStore((state) => state.economy.stacks);
   const skills = useAppStore((state) => state.economy.skills);
+  const savedDecks = useAppStore((state) => state.economy.decks);
   const [mode, setMode] = useState<Mode>('scribe');
   const [deck, setDeck] = useState<CardDefinitionId[]>([]);
+  const [slotId, setSlotId] = useState('deck.1');
+  const [deckName, setDeckName] = useState('First Twenty');
   const [schoolFilter, setSchoolFilter] = useState<string | null>(null);
 
   const held = useMemo(() => {
@@ -164,6 +169,53 @@ export function CollectionPanel({
           </button>
         ))}
       </div>
+
+      {mode === 'collection' && (
+        <div className="collection-panel__slots">
+          <label className="collection-panel__name-field">
+            <span className="collection-panel__owned">Deck name</span>
+            <input
+              type="text"
+              value={deckName}
+              onChange={(event) => setDeckName(event.target.value)}
+              maxLength={40}
+            />
+          </label>
+          <div className="collection-panel__filters">
+            {Object.entries(savedDecks).map(([id, saved]) => (
+              <button
+                key={id}
+                type="button"
+                className="collection-panel__filter"
+                data-active={slotId === id}
+                onClick={() => {
+                  // Loading a slot replaces what is being edited, so the
+                  // builder always reflects one deck rather than a merge.
+                  setSlotId(id);
+                  setDeckName(saved.name);
+                  setDeck([...saved.cardDefinitionIds] as CardDefinitionId[]);
+                }}
+              >
+                {saved.name}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="collection-panel__filter"
+              onClick={() => {
+                const taken = new Set(Object.keys(savedDecks));
+                let next = 1;
+                while (taken.has(`deck.${next}`)) next += 1;
+                setSlotId(`deck.${next}`);
+                setDeckName(`Deck ${next}`);
+                setDeck([]);
+              }}
+            >
+              + New
+            </button>
+          </div>
+        </div>
+      )}
 
       {mode === 'scribe' ? (
         <ul className="collection-panel__list">
@@ -274,14 +326,24 @@ export function CollectionPanel({
 
       <div className="collection-panel__footer">
         {mode === 'collection' && (
-          <button
-            type="button"
-            className="prompt__button"
-            disabled={!legal}
-            onClick={() => onSaveDeck('deck.1', 'First Twenty', [...deck])}
-          >
-            Save deck
-          </button>
+          <>
+            <button
+              type="button"
+              className="prompt__button"
+              disabled={!legal || deckName.trim().length === 0}
+              onClick={() => onSaveDeck(slotId, deckName.trim(), [...deck])}
+            >
+              Save deck
+            </button>
+            <button
+              type="button"
+              className="prompt__button"
+              disabled={savedDecks[slotId] === undefined}
+              onClick={() => onDeleteDeck(slotId)}
+            >
+              Delete
+            </button>
+          </>
         )}
         <button type="button" className="prompt__button" onClick={onClose}>
           Close

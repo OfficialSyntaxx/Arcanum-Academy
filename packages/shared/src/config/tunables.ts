@@ -24,6 +24,14 @@ export interface CombatTunables {
   readonly startingLife: number;
   readonly maxHandSize: number;
   readonly maxBoardSlots: number;
+  /**
+   * Saved decks a player may keep.
+   *
+   * Capped so the stored blob stays bounded - decks are small, but unbounded
+   * anything in a document that is read and rewritten on every command is how
+   * a save file quietly becomes slow.
+   */
+  readonly maxSavedDecks: number;
 }
 
 export interface GradingTunables {
@@ -210,6 +218,7 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     startingLife: 30,
     maxHandSize: 10,
     maxBoardSlots: 5,
+    maxSavedDecks: 8,
   }),
   grading: Object.freeze({
     minGrade: 1,

@@ -95,7 +95,7 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 339 tests across 27 files — all passing.** First verified end to
+**Current test count: 344 tests across 27 files — all passing.** First verified end to
 end on 2026-08-02; before that the suite had never been run to completion on any machine
 or in CI.
 
@@ -395,7 +395,7 @@ rules to predict with already live in `sim`, so adding it is a change in one fil
 
 ---
 
-## Phase 4 — Cards, grading, slabs, collection (mostly complete, 339 tests)
+## Phase 4 — Cards, grading, slabs, collection (complete, 344 tests)
 
 **Schools are content, not a code enum:** Resonance, Verdance, Ember, Cipher, in
 `content/data/schools.json`. Each has a home in the Courtyard and a material line;
@@ -434,10 +434,8 @@ reaches grade 10 about one time in eight. Set by `noviceCentreScore`,
 
 - **Card count.** 20 authored against a roadmap target of 150+. Deliberately held: cards
   should be balanced against a resolver that exists, and that is Phase 5.
-- **Deck slots.** One deck id is hardcoded in the builder; multiple named slots need a
-  small UI and no new server work.
-- **School names.** The owner leans elemental. Schools are content, so renaming is a JSON
-  edit plus the `schoolId` references — cheapest now, dearer as the set grows.
+  Schools are named Stone, Bloom, Flame and Aether. Deck slots are named, capped at
+  `combat.maxSavedDecks`, and deletable.
 
 ---
 
@@ -448,8 +446,8 @@ reaches grade 10 about one time in eight. Set by `noviceCentreScore`,
 | 1     | ✅ Complete | Foundation, toolchain, deterministic kernel               |
 | 2     | ✅ Complete | World, navigation, camera, input, NPCs, accessibility     |
 | 3     | ✅ Complete | Inventory, gathering, crafting, skills, content pipeline  |
-| 4     | 🟡 Mostly   | Card framework, grading, slabs, deckbuilder — see below   |
-| 5     | ⬜ Planned  | Combat engine, AI opponents, duel flow                    |
+| 4     | ✅ Complete | Card framework, grading, slabs, deckbuilder               |
+| 5     | 🔵 Next     | Combat engine, AI opponents, duel flow                    |
 | 6     | ⬜ Planned  | Multiplayer lobby, trading, matchmaking, reconnect        |
 | 7     | ⬜ Planned  | Economy, marketplace, quests, daily systems, leaderboards |
 | 8     | ⬜ Planned  | Optimisation, QA, analytics, deployment, scaling          |
@@ -484,7 +482,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 339 tests)
+npm run verify       # confirm everything passes (should be 344 tests)
 npm run dev          # start the Vite dev server
 ```
 

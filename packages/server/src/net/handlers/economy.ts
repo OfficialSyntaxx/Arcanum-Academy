@@ -536,12 +536,40 @@ export function registerEconomyHandlers(
         }
       }
 
+      // Overwriting an existing slot is not a new deck, so the cap only
+      // applies when this would open one.
+      const isNew = state.decks[deckId] === undefined;
+      if (isNew && Object.keys(state.decks).length >= tunables.combat.maxSavedDecks) {
+        return err(
+          failure(FailureCode.Conflict, 'deck.slots_full', {
+            detail: `at most ${tunables.combat.maxSavedDecks} decks may be saved`,
+            context: { saved: Object.keys(state.decks).length },
+          }),
+        );
+      }
+
       const next: PlayerState = {
         ...state,
         decks: { ...state.decks, [deckId]: { id: deckId, name, cardDefinitionIds } },
         lastSeenAtMs: nowMs,
       };
       return ok({ state: next, value: { ...project(next), savedDeckId: deckId } });
+    });
+  };
+
+  const deleteDeck: CommandHandler = async (session: Session, payload: unknown) => {
+    const deckId = readString(payload, 'deckId');
+    if (deckId === null) return err(invalid('deck.identity_missing', 'deckId is required'));
+
+    const nowMs = now();
+    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      if (state.decks[deckId] === undefined) {
+        return err(failure(FailureCode.NotFound, 'deck.not_found', { context: { deckId } }));
+      }
+      const decks = { ...state.decks };
+      delete decks[deckId];
+      const next: PlayerState = { ...state, decks, lastSeenAtMs: nowMs };
+      return ok({ state: next, value: project(next) });
     });
   };
 
@@ -559,5 +587,6 @@ export function registerEconomyHandlers(
     .register('gathering.stop', stop)
     .register('crafting.craft', craft)
     .register('scribing.scribe', scribe)
-    .register('deck.save', saveDeck);
+    .register('deck.save', saveDeck)
+    .register('deck.delete', deleteDeck);
 }

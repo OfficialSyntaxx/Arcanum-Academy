@@ -109,6 +109,7 @@ export function App() {
               onCraft={(recipeId) => economy?.craft(recipeId)}
               onSaveDeck={(deckId, name, ids) => economy?.saveDeck(deckId, name, ids)}
               onScribe={(cardId) => economy?.scribe(cardId)}
+              onDeleteDeck={(deckId) => economy?.deleteDeck(deckId)}
             />
           ) : (
             <Screen />

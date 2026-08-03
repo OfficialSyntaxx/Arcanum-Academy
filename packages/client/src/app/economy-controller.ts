@@ -46,6 +46,7 @@ const OWNED = new Set([
   'crafting.craft',
   'scribing.scribe',
   'deck.save',
+  'deck.delete',
 ]);
 
 export class EconomyController {
@@ -85,6 +86,10 @@ export class EconomyController {
 
   saveDeck(deckId: string, name: string, cardDefinitionIds: readonly string[]): void {
     this.send('deck.save', { deckId, name, cardDefinitionIds });
+  }
+
+  deleteDeck(deckId: string): void {
+    this.send('deck.delete', { deckId });
   }
 
   dispose(): void {

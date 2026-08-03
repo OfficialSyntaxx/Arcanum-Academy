@@ -696,3 +696,26 @@
 .collection-panel__filter:disabled {
   opacity: 0.4;
 }
+
+.collection-panel__slots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.collection-panel__name-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.collection-panel__name-field input {
+  min-height: var(--touch-min);
+  padding: 0 var(--space-2);
+  font-family: var(--font-book);
+  font-size: var(--text-sm);
+  color: var(--haze);
+  background: var(--slate-raised);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+}

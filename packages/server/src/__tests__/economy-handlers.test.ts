@@ -626,3 +626,119 @@ describe('deck.save', () => {
     expect(state.decks['deck.1']!.cardDefinitionIds).toHaveLength(DEFAULT_TUNABLES.combat.deckSize);
   });
 });
+
+describe('deck slots', () => {
+  async function stockedCollection(h: ReturnType<typeof harness>) {
+    await h.dispatch('player.sync');
+    const state = await h.state();
+    const cards = CARD_CATALOG.cards.slice(0, 7).flatMap((entry) =>
+      Array.from({ length: 3 }, (_unused, n) => ({
+        instanceId: `${entry.id}-${n}`,
+        definitionId: entry.id,
+        grade: 5,
+        foil: false,
+        serial: null,
+        scribedBy: PLAYER,
+        scribedAtMs: 0,
+        gradedUnderTunablesVersion: DEFAULT_TUNABLES.version,
+      })),
+    );
+    await h.repository.save(
+      {
+        playerId: PLAYER,
+        schemaVersion: PLAYER_SCHEMA_VERSION,
+        data: { ...serialisePlayerState(state), cards },
+      },
+      1,
+    );
+  }
+
+  function legalList(): string[] {
+    const ids: string[] = [];
+    for (const entry of CARD_CATALOG.cards.slice(0, 7)) {
+      while (ids.length < DEFAULT_TUNABLES.combat.deckSize) {
+        if (ids.filter((id) => id === entry.id).length >= DEFAULT_TUNABLES.combat.maxCopiesPerSpell)
+          break;
+        ids.push(entry.id);
+      }
+    }
+    return ids;
+  }
+
+  it('keeps several decks side by side', async () => {
+    const h = harness();
+    await stockedCollection(h);
+    await h.dispatch('deck.save', {
+      deckId: 'deck.1',
+      name: 'One',
+      cardDefinitionIds: legalList(),
+    });
+    await h.dispatch('deck.save', {
+      deckId: 'deck.2',
+      name: 'Two',
+      cardDefinitionIds: legalList(),
+    });
+    const state = await h.state();
+    expect(Object.keys(state.decks)).toHaveLength(2);
+    expect(state.decks['deck.2']!.name).toBe('Two');
+  });
+
+  it('treats saving over a slot as an edit rather than a new deck', async () => {
+    const h = harness();
+    await stockedCollection(h);
+    await h.dispatch('deck.save', {
+      deckId: 'deck.1',
+      name: 'One',
+      cardDefinitionIds: legalList(),
+    });
+    await h.dispatch('deck.save', {
+      deckId: 'deck.1',
+      name: 'Renamed',
+      cardDefinitionIds: legalList(),
+    });
+    const state = await h.state();
+    expect(Object.keys(state.decks)).toHaveLength(1);
+    expect(state.decks['deck.1']!.name).toBe('Renamed');
+  });
+
+  it('refuses to open more slots than the cap allows', async () => {
+    const h = harness();
+    await stockedCollection(h);
+    for (let n = 1; n <= DEFAULT_TUNABLES.combat.maxSavedDecks; n += 1) {
+      const saved = await h.dispatch('deck.save', {
+        deckId: `deck.${n}`,
+        name: `Deck ${n}`,
+        cardDefinitionIds: legalList(),
+      });
+      expect(saved.ok).toBe(true);
+    }
+    const overflow = await h.dispatch('deck.save', {
+      deckId: 'deck.overflow',
+      name: 'One too many',
+      cardDefinitionIds: legalList(),
+    });
+    expect(overflow.ok).toBe(false);
+    if (!overflow.ok) expect(overflow.error.reason).toBe('deck.slots_full');
+  });
+
+  it('frees a slot when a deck is deleted', async () => {
+    const h = harness();
+    await stockedCollection(h);
+    await h.dispatch('deck.save', {
+      deckId: 'deck.1',
+      name: 'One',
+      cardDefinitionIds: legalList(),
+    });
+    const removed = await h.dispatch('deck.delete', { deckId: 'deck.1' });
+    expect(removed.ok).toBe(true);
+    const state = await h.state();
+    expect(Object.keys(state.decks)).toHaveLength(0);
+  });
+
+  it('refuses to delete a deck that is not there', async () => {
+    const h = harness();
+    const result = await h.dispatch('deck.delete', { deckId: 'deck.absent' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('deck.not_found');
+  });
+});
