@@ -71,8 +71,23 @@ export interface CommandRouter {
   dispatch(session: Session, kind: string, payload: unknown): Promise<Result<unknown, Failure>>;
 }
 
+/**
+ * Proves a client is who it claims to be.
+ *
+ * The gateway takes this rather than an identity service directly, so the
+ * network layer never learns how identity is stored - and so a test can
+ * authenticate without a database.
+ */
+export interface IdentityVerifier {
+  /** Resolves a bearer token to its player, or fails. */
+  resolve(token: string): Promise<Result<PlayerId, Failure>>;
+  /** Creates a new account and the token that owns it. */
+  issue(): Promise<Result<{ playerId: PlayerId; token: string }, Failure>>;
+}
+
 export interface GatewayOptions {
   readonly sessions: SessionStore;
+  readonly identity: IdentityVerifier;
   readonly logger: Logger;
   readonly router: CommandRouter;
   readonly maxConnections: number;
@@ -94,8 +109,14 @@ interface Connection {
 
 export interface HandshakePayload {
   readonly resumeToken?: string;
-  /** Present on a first connection. Replaced by a signed token in Phase 6. */
-  readonly playerId?: string;
+  /**
+   * Proof of ownership of an account, issued by the server on first contact.
+   *
+   * There is deliberately no `playerId` field. A client-asserted id is a claim
+   * anyone can make, and ids appear in logs - believing one is how an account
+   * is stolen by whoever reads them.
+   */
+  readonly identityToken?: string;
 }
 
 export class Gateway {
@@ -179,7 +200,7 @@ export class Gateway {
     }
 
     if (frame.op === ClientOpcode.Handshake) {
-      this.handleHandshake(connection, frame.p as HandshakePayload);
+      void this.handleHandshake(connection, frame.p as HandshakePayload);
       return;
     }
 
@@ -219,7 +240,7 @@ export class Gateway {
     }
   }
 
-  private handleHandshake(connection: Connection, payload: HandshakePayload): void {
+  private async handleHandshake(connection: Connection, payload: HandshakePayload): Promise<void> {
     if (connection.session !== null) {
       this.reject(
         connection,
@@ -241,23 +262,42 @@ export class Gateway {
         );
       }
     }
+    // The player id a client sends is a claim, not a credential. It is
+    // ignored entirely: identity comes from a token the server issued, or the
+    // connection is given a brand new account. Trusting the claim is how an
+    // account is stolen by anyone who reads a log line.
+    let issuedToken: string | null = null;
     if (!session) {
-      if (typeof payload?.playerId !== 'string' || payload.playerId.length === 0) {
-        this.reject(
-          connection,
-          failure(FailureCode.Unauthorized, 'gateway.identity_required'),
-          CloseCode.ProtocolError,
-        );
-        return;
+      const token = payload?.identityToken;
+      if (typeof token === 'string' && token.length > 0) {
+        const resolved = await this.options.identity.resolve(token);
+        if (!resolved.ok) {
+          this.reject(connection, resolved.error, CloseCode.ProtocolError);
+          return;
+        }
+        session = this.options.sessions.create(resolved.value);
+      } else {
+        const created = await this.options.identity.issue();
+        if (!created.ok) {
+          this.reject(connection, created.error, CloseCode.ProtocolError);
+          return;
+        }
+        issuedToken = created.value.token;
+        session = this.options.sessions.create(created.value.playerId);
       }
-      session = this.options.sessions.create(payload.playerId as PlayerId);
     }
+
+    // The socket may have gone while identity was being resolved.
+    if (!this.connections.has(connection)) return;
 
     connection.session = session;
     this.send(connection, ServerOpcode.HandshakeAccepted, {
       sessionId: session.id,
       resumeToken: session.resumeToken,
       playerId: session.playerId,
+      // Present only when an account was just created. The client stores it
+      // and sends it from then on; the server keeps only its hash.
+      ...(issuedToken !== null ? { identityToken: issuedToken } : {}),
       serverTime: this.now(),
     });
     this.options.logger.info('session established', {

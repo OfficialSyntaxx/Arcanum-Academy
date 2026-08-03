@@ -27,6 +27,12 @@ import { PlayerService } from './domain/player-service.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
 import { registerDuelHandlers } from './net/handlers/duel.js';
 import {
+  IdentityService,
+  InMemoryIdentityStore,
+  PostgresIdentityStore,
+  type IdentityStore,
+} from './domain/identity.js';
+import {
   InMemorySerialMinter,
   PostgresSerialMinter,
   type SerialMinter,
@@ -102,6 +108,20 @@ async function main(): Promise<void> {
     serials = postgresSerials;
   }
 
+  // Identity is proved, never asserted. Backed by the database when there is
+  // one: an identity register that reset on restart would lock every player
+  // out of the account they had a moment ago.
+  let identityStore: IdentityStore = new InMemoryIdentityStore();
+  if (postgres !== null) {
+    const postgresIdentities = new PostgresIdentityStore(postgres.client);
+    const prepared = await postgresIdentities.initialise();
+    if (!prepared.ok) {
+      throw new Error(`Identity register unavailable: ${describeFailure(prepared.error)}`);
+    }
+    identityStore = postgresIdentities;
+  }
+  const identity = new IdentityService(identityStore);
+
   const players = new PlayerService({
     repository,
     slotCapacity: DEFAULT_TUNABLES.gathering.baseInventorySlots,
@@ -132,6 +152,7 @@ async function main(): Promise<void> {
 
   const gateway = new Gateway({
     sessions,
+    identity,
     logger: logger.child('gateway'),
     router,
     maxConnections: config.MAX_CONNECTIONS,

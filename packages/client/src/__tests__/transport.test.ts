@@ -74,7 +74,7 @@ function harness(options: { random?: () => number } = {}) {
       },
       random: options.random ?? (() => 0.5),
     },
-    { playerId: 'player-1' },
+    { identityToken: 'token-1' },
   );
 
   return {

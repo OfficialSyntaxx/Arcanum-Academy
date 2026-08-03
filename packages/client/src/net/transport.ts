@@ -69,7 +69,14 @@ export interface TransportOptions {
 }
 
 export interface HandshakeIdentity {
-  readonly playerId: string;
+  /**
+   * The token the server issued on first contact, if this device has one.
+   *
+   * Absent on a genuinely new install, which is how a new account is asked
+   * for. There is deliberately no player id here: a client-asserted id is a
+   * claim the server has no reason to believe.
+   */
+  readonly identityToken?: string | undefined;
   resumeToken?: string;
 }
 
@@ -195,8 +202,8 @@ export class Transport {
   private sendHandshake(): void {
     this.outboundSeq += 1;
     const payload = this.identity.resumeToken
-      ? { playerId: this.identity.playerId, resumeToken: this.identity.resumeToken }
-      : { playerId: this.identity.playerId };
+      ? { identityToken: this.identity.identityToken, resumeToken: this.identity.resumeToken }
+      : { identityToken: this.identity.identityToken };
     this.socket?.send(
       encodeFrame(createEnvelope(ClientOpcode.Handshake, this.outboundSeq, payload, this.now())),
     );

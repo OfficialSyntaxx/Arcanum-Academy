@@ -95,7 +95,7 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 425 tests across 31 files — all passing.** First verified end to
+**Current test count: 430 tests across 31 files — all passing.** First verified end to
 end on 2026-08-02; before that the suite had never been run to completion on any machine
 or in CI.
 
@@ -481,6 +481,38 @@ remembering to write a test.
 
 ---
 
+## Phase 6 — Identity (done), multiplayer (in progress)
+
+**A live account-takeover hole is closed.** The handshake used to call
+`sessions.create(payload.playerId)` — it believed whatever id a client sent. Anyone who
+learned another player's id had their inventory, cards, decks and duels, and ids appear
+in server logs. That was deployed.
+
+Identity is now proved rather than asserted:
+
+- The server issues a 32-byte bearer token on first contact and stores **only its
+  SHA-256 hash**, so a leaked database does not hand over working logins.
+- `HandshakePayload` has no `playerId` field at all. A claim the server has no reason to
+  believe is not worth carrying.
+- An unknown token is **refused**, never silently turned into a new account — minting one
+  would turn a typo into a player logging in to an empty satchel.
+- The in-memory store compares digests in constant time; the Postgres store looks up by
+  primary key, so there is no per-row timing to observe.
+
+**This is deliberately not passwords.** There is no email service to recover one
+through, and a password nobody can reset is worse than a token that cannot be phished.
+
+**Still open in Phase 6:**
+
+- **Account recovery and device migration.** Needs a channel to send a challenge over —
+  an email or push service — which is an infrastructure decision, not a coding one. Until
+  it exists, losing local storage loses the account.
+- Hub presence fan-out (`ClientOpcode.PresenceUpdate` still only acknowledges).
+- Player-to-player trading, matchmaking, rating, and an authoritative duel service for
+  player-versus-player.
+
+---
+
 ## Phase roadmap summary
 
 | Phase | Status      | Description                                               |
@@ -490,7 +522,7 @@ remembering to write a test.
 | 3     | ✅ Complete | Inventory, gathering, crafting, skills, content pipeline  |
 | 4     | ✅ Complete | Card framework, grading, slabs, deckbuilder               |
 | 5     | ✅ Complete | Combat engine, AI opponents, duel flow                    |
-| 6     | 🔵 Next     | Multiplayer lobby, trading, matchmaking, reconnect        |
+| 6     | 🟡 Started  | Identity done; presence, trading, matchmaking remain      |
 | 7     | ⬜ Planned  | Economy, marketplace, quests, daily systems, leaderboards |
 | 8     | ⬜ Planned  | Optimisation, QA, analytics, deployment, scaling          |
 
@@ -524,7 +556,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 425 tests)
+npm run verify       # confirm everything passes (should be 430 tests)
 npm run dev          # start the Vite dev server
 ```
 

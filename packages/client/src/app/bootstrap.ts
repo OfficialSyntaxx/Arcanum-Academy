@@ -5,7 +5,6 @@ import {
   COURTYARD,
   DEFAULT_TUNABLES,
   LogLevel,
-  generateId,
   type Logger,
 } from '@arcanum/shared';
 import { GamePhase } from '@arcanum/sim';
@@ -104,15 +103,25 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
   // 3. Identity. The server owns the account; this is the handle used to claim it.
   store.setBootStep('identity', { status: 'active' });
   const identityDocument = await readDocument(storage, IDENTITY_KEY);
-  let playerId = generateId();
+  // The server owns identity now. This device keeps the token it was issued
+  // and nothing else; a player id generated here would be a claim, not proof.
+  let identityToken: string | undefined;
+  let playerId = '';
   let resumeToken: string | undefined;
   if (identityDocument.ok && identityDocument.value) {
-    const stored = identityDocument.value as { playerId?: string; resumeToken?: string };
+    const stored = identityDocument.value as {
+      playerId?: string;
+      identityToken?: string;
+      resumeToken?: string;
+    };
+    if (typeof stored.identityToken === 'string') identityToken = stored.identityToken;
     if (typeof stored.playerId === 'string') playerId = stored.playerId;
     if (typeof stored.resumeToken === 'string') resumeToken = stored.resumeToken;
   }
-  await writeDocument(storage, IDENTITY_KEY, { playerId });
-  store.setBootStep('identity', { status: 'done', detail: playerId.slice(0, 8) });
+  store.setBootStep('identity', {
+    status: 'done',
+    detail: identityToken === undefined ? 'enrolling' : playerId.slice(0, 8),
+  });
 
   // 4. Renderer.
   store.setBootStep('render', { status: 'active' });
@@ -130,7 +139,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
 
   // 5. Network. Connection failure is a banner, never a blocked boot.
   store.setBootStep('network', { status: 'active' });
-  const identity = resumeToken ? { playerId, resumeToken } : { playerId };
+  const identity = resumeToken ? { identityToken, resumeToken } : { identityToken };
   const transport = new Transport(
     {
       url: options.serverUrl,
@@ -150,9 +159,22 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
   transport.events.on('latency', ({ roundTripMs }) => store.setLatency(Math.round(roundTripMs)));
   transport.events.on('frame', (frame) => {
     if (frame.op === 's:handshake_ok') {
-      const payload = frame.p as { resumeToken?: string };
+      const payload = frame.p as {
+        resumeToken?: string;
+        identityToken?: string;
+        playerId?: string;
+      };
       if (payload?.resumeToken) {
-        void writeDocument(storage, IDENTITY_KEY, { playerId, resumeToken: payload.resumeToken });
+        // The token arrives once, on the connection that created the account.
+        // Losing it loses the account, so it is written before anything else
+        // is done with the frame.
+        if (typeof payload.identityToken === 'string') identityToken = payload.identityToken;
+        if (typeof payload.playerId === 'string') playerId = payload.playerId;
+        void writeDocument(storage, IDENTITY_KEY, {
+          playerId,
+          identityToken,
+          resumeToken: payload.resumeToken,
+        });
       }
     }
   });
