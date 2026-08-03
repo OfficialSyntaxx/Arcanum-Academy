@@ -18,6 +18,9 @@ import {
   CARD_CATALOG,
   ITEM_CATALOG,
   SCHOOL_TABLE,
+  STRINGS,
+  assertKeysResolve,
+  buildStringTable,
   asId,
   type CardDefinition,
   type CardDefinitionId,
@@ -378,5 +381,31 @@ describe('content validators', () => {
     );
     expect(built.ok).toBe(false);
     if (!built.ok) expect(built.error.detail).toContain('non-integer');
+  });
+});
+
+describe('localisation', () => {
+  it('has text for every key the shipped cards reference', () => {
+    const keys = CARD_CATALOG.cards.flatMap((entry) => [entry.nameKey, entry.textKey]);
+    const result = assertKeysResolve(STRINGS, keys);
+    expect(result.ok, result.ok ? '' : result.error.detail).toBe(true);
+  });
+
+  it('has a name for every school', () => {
+    const keys = SCHOOL_TABLE.schools.map((school) => `${school.id}.name`);
+    expect(assertKeysResolve(STRINGS, keys).ok).toBe(true);
+  });
+
+  it('falls back to the key rather than vanishing or throwing', () => {
+    // An untranslated string should look wrong in a way that is obvious and
+    // searchable, not disappear or take a screen down with it.
+    expect(STRINGS.get('card.absent.name')).toBe('card.absent.name');
+    expect(STRINGS.has('card.absent.name')).toBe(false);
+  });
+
+  it('refuses a table with an empty string', () => {
+    const built = buildStringTable('en', { 'card.a.name': '   ' });
+    expect(built.ok).toBe(false);
+    if (!built.ok) expect(built.error.reason).toBe('content.strings_invalid');
   });
 });

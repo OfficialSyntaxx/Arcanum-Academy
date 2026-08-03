@@ -27,6 +27,7 @@ import {
   type CardDefinitionId,
   type CardInstance,
   type CardInstanceId,
+  type Deck,
   type NodeState,
   type PlayerId,
   type SlabSerial,
@@ -50,6 +51,8 @@ export interface PlayerState {
   readonly gathering: GatheringSession | null;
   /** Every card the player has scribed. The collection, not the deck. */
   readonly cards: readonly CardInstance[];
+  /** Saved decks, keyed by deck id. Legality is re-checked on every save. */
+  readonly decks: Readonly<Record<string, Deck>>;
   /**
    * Last moment the player was demonstrably present.
    *
@@ -66,6 +69,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     nodes: {},
     gathering: null,
     cards: [],
+    decks: {},
     lastSeenAtMs: nowMs,
   };
 }
@@ -167,6 +171,21 @@ function readCards(value: unknown): CardInstance[] {
   return cards;
 }
 
+function readDecks(value: unknown): Record<string, Deck> {
+  if (!isRecord(value)) return {};
+  const decks: Record<string, Deck> = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (!isRecord(raw) || !Array.isArray(raw.cardDefinitionIds)) continue;
+    const ids = raw.cardDefinitionIds.filter((entry): entry is string => typeof entry === 'string');
+    decks[id] = {
+      id,
+      name: typeof raw.name === 'string' ? raw.name : id,
+      cardDefinitionIds: ids as CardDefinitionId[],
+    };
+  }
+  return decks;
+}
+
 function readGathering(value: unknown): GatheringSession | null {
   if (!isRecord(value)) return null;
   const { nodeId, rngState } = value;
@@ -202,6 +221,7 @@ export function parsePlayerState(
     nodes: readNodes(data.nodes),
     gathering: readGathering(data.gathering),
     cards: readCards(data.cards),
+    decks: readDecks(data.decks),
     lastSeenAtMs: readNumber(data.lastSeenAtMs, record.updatedAtMs),
   });
 }
@@ -215,6 +235,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     nodes: state.nodes,
     gathering: state.gathering,
     cards: state.cards,
+    decks: state.decks,
     lastSeenAtMs: state.lastSeenAtMs,
   };
 }

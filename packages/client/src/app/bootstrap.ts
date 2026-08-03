@@ -175,6 +175,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     canvas: options.canvas,
     onEngageGatheringNode: (interactableId) => economy.startGathering(interactableId),
     onEngageCraftingStation: (interactableId) => store.setOpenStation(interactableId),
+    onEngageScribingTable: () => store.setCollectionOpen(true),
   });
   if (!hubResult.ok) {
     store.setBootStep('world', { status: 'failed', detail: hubResult.error.reason });

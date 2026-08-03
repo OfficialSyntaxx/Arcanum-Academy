@@ -514,3 +514,115 @@ describe('scribing.scribe', () => {
     expect(state.cards[0]!.instanceId).not.toBe(state.cards[1]!.instanceId);
   });
 });
+
+describe('deck.save', () => {
+  const SPELL = CARD_CATALOG.cards[0]!;
+
+  /** Puts `copies` of each named card straight into the collection. */
+  async function withCollection(h: ReturnType<typeof harness>, entries: [string, number][]) {
+    await h.dispatch('player.sync');
+    const state = await h.state();
+    const cards = entries.flatMap(([definitionId, copies]) =>
+      Array.from({ length: copies }, (_unused, n) => ({
+        instanceId: `${definitionId}-${n}`,
+        definitionId,
+        grade: 5,
+        foil: false,
+        serial: null,
+        scribedBy: PLAYER,
+        scribedAtMs: 0,
+        gradedUnderTunablesVersion: DEFAULT_TUNABLES.version,
+      })),
+    );
+    await h.repository.save(
+      {
+        playerId: PLAYER,
+        schemaVersion: PLAYER_SCHEMA_VERSION,
+        data: { ...serialisePlayerState(state), cards },
+      },
+      1,
+    );
+  }
+
+  /** Twenty cards drawn from seven distinct spells, three copies each bar one. */
+  function legalList(): string[] {
+    const pool = CARD_CATALOG.cards.slice(0, 7).map((entry) => entry.id);
+    const ids: string[] = [];
+    for (const id of pool) {
+      while (ids.length < DEFAULT_TUNABLES.combat.deckSize) {
+        const used = ids.filter((entry) => entry === id).length;
+        if (used >= DEFAULT_TUNABLES.combat.maxCopiesPerSpell) break;
+        ids.push(id);
+      }
+    }
+    return ids;
+  }
+
+  it('refuses a deck that is not exactly the required size', async () => {
+    const h = harness();
+    const result = await h.dispatch('deck.save', {
+      deckId: 'deck.1',
+      name: 'Short',
+      cardDefinitionIds: [SPELL.id],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('deck.illegal');
+  });
+
+  it('refuses more copies of a spell than the limit permits', async () => {
+    const h = harness();
+    const result = await h.dispatch('deck.save', {
+      deckId: 'deck.1',
+      name: 'Stacked',
+      cardDefinitionIds: new Array(DEFAULT_TUNABLES.combat.deckSize).fill(SPELL.id),
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.detail).toContain('at most');
+  });
+
+  it('refuses cards the player has never scribed', async () => {
+    const h = harness();
+    await withCollection(h, []);
+    const result = await h.dispatch('deck.save', {
+      deckId: 'deck.1',
+      name: 'Borrowed',
+      cardDefinitionIds: legalList(),
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('deck.cards_not_owned');
+  });
+
+  it('counts copies owned, so one card is never three', async () => {
+    const h = harness();
+    // One copy of each spell, but the deck asks for three of some.
+    await withCollection(
+      h,
+      CARD_CATALOG.cards.slice(0, 7).map((entry) => [entry.id, 1] as [string, number]),
+    );
+    const result = await h.dispatch('deck.save', {
+      deckId: 'deck.1',
+      name: 'Wishful',
+      cardDefinitionIds: legalList(),
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('deck.cards_not_owned');
+  });
+
+  it('saves a legal deck the player owns', async () => {
+    const h = harness();
+    await withCollection(
+      h,
+      CARD_CATALOG.cards.slice(0, 7).map((entry) => [entry.id, 3] as [string, number]),
+    );
+    const result = await h.dispatch('deck.save', {
+      deckId: 'deck.1',
+      name: 'First Twenty',
+      cardDefinitionIds: legalList(),
+    });
+    expect(result.ok).toBe(true);
+
+    const state = await h.state();
+    expect(state.decks['deck.1']!.name).toBe('First Twenty');
+    expect(state.decks['deck.1']!.cardDefinitionIds).toHaveLength(DEFAULT_TUNABLES.combat.deckSize);
+  });
+});

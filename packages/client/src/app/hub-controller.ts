@@ -60,6 +60,8 @@ export interface HubControllerOptions {
   readonly onEngageGatheringNode?: (interactableId: string) => void;
   /** Called when the player engages a crafting station. */
   readonly onEngageCraftingStation?: (interactableId: string) => void;
+  /** Called when the player engages the scribing table. */
+  readonly onEngageScribingTable?: () => void;
 }
 
 export class HubController {
@@ -171,6 +173,8 @@ export class HubController {
       this.options.onEngageGatheringNode?.(prompt.id);
     } else if (prompt.kind === InteractableKind.CraftingStation) {
       this.options.onEngageCraftingStation?.(prompt.id);
+    } else if (prompt.kind === InteractableKind.ScribingTable) {
+      this.options.onEngageScribingTable?.();
     }
   }
 

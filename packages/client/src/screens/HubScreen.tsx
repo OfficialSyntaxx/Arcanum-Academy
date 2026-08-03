@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { HubHud, InteractionPrompt } from '../ui/HubOverlay.js';
 import { JoystickPad } from '../ui/JoystickPad.js';
 import { CommandError, CraftingPanel, GatheringHud, InventoryPanel } from '../ui/EconomyPanels.js';
+import { CollectionPanel } from '../ui/CollectionPanel.js';
 import { useAppStore } from '../state/app-store.js';
 import type { Joystick } from '../input/joystick.js';
 
@@ -24,6 +25,7 @@ export interface HubScreenProps {
   readonly onStopGathering: () => void;
   readonly onClaimOffline: () => void;
   readonly onCraft: (recipeId: string) => void;
+  readonly onSaveDeck: (deckId: string, name: string, cardDefinitionIds: string[]) => void;
 }
 
 /**
@@ -42,10 +44,13 @@ export function HubScreen({
   onStopGathering,
   onClaimOffline,
   onCraft,
+  onSaveDeck,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
   const setOpenStation = useAppStore((state) => state.setOpenStation);
+  const collectionOpen = useAppStore((state) => state.collectionOpen);
+  const setCollectionOpen = useAppStore((state) => state.setCollectionOpen);
 
   useEffect(() => {
     if (gatheringNodeId === null) return;
@@ -68,6 +73,9 @@ export function HubScreen({
         onClaimOffline={onClaimOffline}
       />
       <CommandError />
+      {collectionOpen && (
+        <CollectionPanel onSaveDeck={onSaveDeck} onClose={() => setCollectionOpen(false)} />
+      )}
       {openStationId !== null && (
         <CraftingPanel
           stationInteractableId={openStationId}

@@ -27,6 +27,13 @@ interface HarvestPatch {
   readonly yields?: readonly { itemId: string; quantity: number }[];
   readonly xpGained?: number;
   readonly overflowed?: boolean;
+  readonly cards?: readonly {
+    definitionId: string;
+    grade: number;
+    foil: boolean;
+    serial: string | null;
+  }[];
+  readonly decks?: Readonly<Record<string, { name: string; cardDefinitionIds: readonly string[] }>>;
 }
 
 /** Command kinds this controller owns, so unrelated patches are ignored. */
@@ -37,6 +44,8 @@ const OWNED = new Set([
   'gathering.claimOffline',
   'gathering.stop',
   'crafting.craft',
+  'scribing.scribe',
+  'deck.save',
 ]);
 
 export class EconomyController {
@@ -68,6 +77,14 @@ export class EconomyController {
 
   craft(recipeId: string): void {
     this.send('crafting.craft', { recipeId });
+  }
+
+  scribe(cardId: string): void {
+    this.send('scribing.scribe', { cardId });
+  }
+
+  saveDeck(deckId: string, name: string, cardDefinitionIds: readonly string[]): void {
+    this.send('deck.save', { deckId, name, cardDefinitionIds });
   }
 
   dispose(): void {
@@ -120,6 +137,8 @@ export class EconomyController {
       lastYields: patch.yields ?? [],
       lastXpGained: patch.xpGained ?? 0,
       overflowed: patch.overflowed ?? false,
+      ...(patch.cards !== undefined ? { cards: patch.cards } : {}),
+      ...(patch.decks !== undefined ? { decks: patch.decks } : {}),
     };
 
     const store = useAppStore.getState();

@@ -40,14 +40,17 @@ import {
   type SchoolTable,
   type SkillTable,
 } from './catalogs.js';
+import { buildStringTable, type StringTable } from './strings.js';
 import itemsDocument from './data/items.json';
 import nodesDocument from './data/nodes.json';
 import recipesDocument from './data/recipes.json';
 import skillsDocument from './data/skills.json';
 import schoolsDocument from './data/schools.json';
 import cardsDocument from './data/cards.json';
+import stringsDocument from './data/strings.en.json';
 
 export * from './catalogs.js';
+export * from './strings.js';
 
 /**
  * Version of the authoring format, not of the content itself.
@@ -65,6 +68,7 @@ const documents = [
   ['recipes', recipesDocument.schemaVersion],
   ['schools', schoolsDocument.schemaVersion],
   ['cards', cardsDocument.schemaVersion],
+  ['strings', stringsDocument.schemaVersion],
 ] as const;
 
 for (const [name, version] of documents) {
@@ -129,4 +133,9 @@ export const SCHOOL_TABLE: SchoolTable = expect(
 export const CARD_CATALOG: CardCatalog = expect(
   buildCardCatalog(cardDefinitions, { items: ITEM_CATALOG, schools: SCHOOL_TABLE }),
   'shipped card content is invalid',
+);
+
+export const STRINGS: StringTable = expect(
+  buildStringTable(stringsDocument.locale, stringsDocument.strings),
+  'shipped string content is invalid',
 );

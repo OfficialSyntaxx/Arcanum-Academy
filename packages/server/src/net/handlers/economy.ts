@@ -13,6 +13,7 @@
  * than one it cannot, and correctness here is worth more than the bytes.
  */
 
+import { assertLegalDeck } from '@arcanum/shared';
 import {
   assertCanCraft,
   assertCanScribe,
@@ -100,6 +101,7 @@ function project(state: PlayerState) {
     skills: state.skills,
     gathering: state.gathering,
     cards: state.cards,
+    decks: state.decks,
   };
 }
 
@@ -483,6 +485,66 @@ export function registerEconomyHandlers(
     });
   };
 
+  /**
+   * Saves a deck.
+   *
+   * Legality is re-asserted here even though the builder checks as you edit.
+   * The client's check is an affordance; this is the rule. A deck arriving by
+   * any other route - an old build, a replayed frame, a crafted payload - meets
+   * the same twenty-card, three-copy limit as one built in the interface.
+   *
+   * Ownership is checked too: a deck may only name cards the player has
+   * actually scribed, counted by distinct copies owned rather than by how many
+   * times the list mentions them.
+   */
+  const saveDeck: CommandHandler = async (session: Session, payload: unknown) => {
+    const deckId = readString(payload, 'deckId');
+    const name = readString(payload, 'name');
+    if (deckId === null || name === null) {
+      return err(invalid('deck.identity_missing', 'deckId and name are required'));
+    }
+    const raw = (payload as { cardDefinitionIds?: unknown }).cardDefinitionIds;
+    if (!Array.isArray(raw) || raw.some((entry) => typeof entry !== 'string')) {
+      return err(invalid('deck.cards_missing', 'cardDefinitionIds must be a list of ids'));
+    }
+    const cardDefinitionIds = raw as CardDefinitionId[];
+
+    const legal = assertLegalDeck(
+      cardDefinitionIds,
+      (id) => catalogs.cards.get(id),
+      tunables.combat,
+    );
+    if (!legal.ok) return err(legal.error);
+
+    const nowMs = now();
+    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      const owned = new Map<string, number>();
+      for (const card of state.cards) {
+        owned.set(card.definitionId, (owned.get(card.definitionId) ?? 0) + 1);
+      }
+      const wanted = new Map<string, number>();
+      for (const id of cardDefinitionIds) wanted.set(id, (wanted.get(id) ?? 0) + 1);
+
+      for (const [definitionId, count] of wanted) {
+        if ((owned.get(definitionId) ?? 0) < count) {
+          return err(
+            failure(FailureCode.Conflict, 'deck.cards_not_owned', {
+              detail: 'the deck names more copies than the collection holds',
+              context: { definitionId, owned: owned.get(definitionId) ?? 0, wanted: count },
+            }),
+          );
+        }
+      }
+
+      const next: PlayerState = {
+        ...state,
+        decks: { ...state.decks, [deckId]: { id: deckId, name, cardDefinitionIds } },
+        lastSeenAtMs: nowMs,
+      };
+      return ok({ state: next, value: { ...project(next), savedDeckId: deckId } });
+    });
+  };
+
   const sync: CommandHandler = async (session: Session) => {
     const loaded = await players.load(session.playerId);
     if (!loaded.ok) return err(loaded.error);
@@ -496,5 +558,6 @@ export function registerEconomyHandlers(
     .register('gathering.claimOffline', claimOffline)
     .register('gathering.stop', stop)
     .register('crafting.craft', craft)
-    .register('scribing.scribe', scribe);
+    .register('scribing.scribe', scribe)
+    .register('deck.save', saveDeck);
 }

@@ -582,3 +582,117 @@
 .crafting-panel .prompt__button:disabled {
   opacity: 0.45;
 }
+
+/* Collection and deck builder */
+
+.collection-panel {
+  pointer-events: auto;
+  position: absolute;
+  inset: calc(var(--inset-top) + var(--space-6)) var(--space-3)
+    calc(var(--inset-bottom) + var(--space-3)) var(--space-3);
+  max-width: 32rem;
+  margin: 0 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.collection-panel__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.collection-panel__filter {
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--haze-dim);
+  background: transparent;
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+}
+
+.collection-panel__filter[data-active='true'] {
+  background: var(--slate-raised);
+  color: var(--haze);
+}
+
+.collection-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.collection-panel__card {
+  padding: var(--space-3);
+  background: var(--slate-raised);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+}
+
+.collection-panel__card-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+/* The glyph carries the school independently of colour, so the card stays
+   readable with a colour vision deficiency. */
+.collection-panel__glyph {
+  font-size: var(--text-md);
+}
+
+.collection-panel__cost {
+  margin-left: auto;
+  font-family: var(--font-serial);
+  color: var(--haze);
+}
+
+.collection-panel__text {
+  margin: var(--space-2) 0;
+  font-family: var(--font-book);
+  font-size: var(--text-sm);
+  color: var(--haze-dim);
+}
+
+.collection-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.collection-panel__owned {
+  margin-right: auto;
+  font-family: var(--font-serial);
+  font-size: var(--text-xs);
+  color: var(--haze-dim);
+}
+
+.collection-panel__warning {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  color: var(--alarm);
+}
+
+.collection-panel__footer {
+  display: flex;
+  gap: var(--space-2);
+  position: sticky;
+  bottom: 0;
+  padding-top: var(--space-2);
+  background: var(--slate);
+}
+
+.collection-panel .prompt__button:disabled,
+.collection-panel__filter:disabled {
+  opacity: 0.4;
+}

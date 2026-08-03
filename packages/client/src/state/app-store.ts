@@ -48,6 +48,14 @@ export interface EconomyState {
   readonly lastXpGained: number;
   /** True when the last collection lost materials to a full bag. */
   readonly overflowed: boolean;
+  /** The collection: every card scribed, not a deck. */
+  readonly cards: readonly {
+    definitionId: string;
+    grade: number;
+    foil: boolean;
+    serial: string | null;
+  }[];
+  readonly decks: Readonly<Record<string, { name: string; cardDefinitionIds: readonly string[] }>>;
 }
 
 export const EMPTY_ECONOMY: EconomyState = {
@@ -58,6 +66,8 @@ export const EMPTY_ECONOMY: EconomyState = {
   lastYields: [],
   lastXpGained: 0,
   overflowed: false,
+  cards: [],
+  decks: {},
 };
 
 export interface AppState {
@@ -80,6 +90,7 @@ export interface AppState {
   readonly lastCommandError: string | null;
   /** The crafting station whose recipes are open, or null. */
   readonly openStationId: string | null;
+  readonly collectionOpen: boolean;
 
   setPhase(phase: GamePhase): void;
   setBootStep(id: string, patch: Partial<Omit<BootStep, 'id'>>): void;
@@ -97,6 +108,7 @@ export interface AppState {
   setEconomy(patch: Partial<EconomyState>): void;
   setLastCommandError(reason: string | null): void;
   setOpenStation(interactableId: string | null): void;
+  setCollectionOpen(open: boolean): void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -116,6 +128,7 @@ export const useAppStore = create<AppState>((set) => ({
   economy: EMPTY_ECONOMY,
   lastCommandError: null,
   openStationId: null,
+  collectionOpen: false,
 
   setPhase: (phase) => set({ phase }),
   registerBootSteps: (steps) => set({ bootSteps: steps }),
@@ -137,4 +150,5 @@ export const useAppStore = create<AppState>((set) => ({
   setEconomy: (patch) => set((state) => ({ economy: { ...state.economy, ...patch } })),
   setLastCommandError: (lastCommandError) => set({ lastCommandError }),
   setOpenStation: (openStationId) => set({ openStationId }),
+  setCollectionOpen: (collectionOpen) => set({ collectionOpen }),
 }));
