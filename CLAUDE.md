@@ -95,7 +95,7 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 484 tests across 35 files — all passing.** First verified end to
+**Current test count: 496 tests across 36 files — all passing.** First verified end to
 end on 2026-08-02; before that the suite had never been run to completion on any machine
 or in CI.
 
@@ -545,10 +545,12 @@ first and a small amount of code second.
   side's tolerance is enough - requiring both would make the widening pointless, since a
   newcomer's narrow range would block every long-waiting player. Elo with a fixed K,
   because a rating whose movement a player cannot predict feels arbitrary.
-- **Player-versus-player duels.** The engine is already deterministic and seat-agnostic,
-  so what remains is a duel service holding one state for two sessions and routing each
-  seat's commands to it - rather than the one-state-per-player-record shape the AI duel
-  uses. Matchmaking produces the pairing and seed it needs.
+- ~~Player-versus-player duels~~ **done.** One duel state serves two sessions. The AI
+  duel could live on a player record because only one player saw it; a shared duel cannot,
+  because two records are two copies and two copies diverge the moment either is written.
+  Acting out of turn is refused rather than queued - a queued command resolves against a
+  board the player never saw. Ratings move in one transaction because Elo is zero-sum,
+  and a ladder that does not add up is one nobody trusts.
 
 ---
 
@@ -561,8 +563,8 @@ first and a small amount of code second.
 | 3     | ✅ Complete | Inventory, gathering, crafting, skills, content pipeline  |
 | 4     | ✅ Complete | Card framework, grading, slabs, deckbuilder               |
 | 5     | ✅ Complete | Combat engine, AI opponents, duel flow                    |
-| 6     | 🟡 Started  | Identity done; presence, trading, matchmaking remain      |
-| 7     | ⬜ Planned  | Economy, marketplace, quests, daily systems, leaderboards |
+| 6     | 🟡 Mostly   | All built; account recovery blocked on a provider         |
+| 7     | 🔵 Next     | Economy, marketplace, quests, daily systems, leaderboards |
 | 8     | ⬜ Planned  | Optimisation, QA, analytics, deployment, scaling          |
 
 ---
@@ -595,7 +597,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 484 tests)
+npm run verify       # confirm everything passes (should be 496 tests)
 npm run dev          # start the Vite dev server
 ```
 

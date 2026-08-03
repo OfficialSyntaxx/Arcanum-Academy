@@ -70,6 +70,8 @@ export interface PlayerState {
    * not inside the rules.
    */
   readonly duel: ActiveDuel | null;
+  /** Ladder rating. Absent on a player who has never been rated. */
+  readonly rating?: number;
   /**
    * Last moment the player was demonstrably present.
    *
@@ -243,6 +245,9 @@ export function parsePlayerState(
     // A duel is read back as-is. It is written only by the engine, and a
     // partially repaired duel would be less honest than none at all.
     duel: (data.duel as ActiveDuel | undefined) ?? null,
+    ...(typeof data.rating === 'number' && Number.isFinite(data.rating)
+      ? { rating: Math.max(0, Math.floor(data.rating)) }
+      : {}),
     lastSeenAtMs: readNumber(data.lastSeenAtMs, record.updatedAtMs),
   });
 }
@@ -258,6 +263,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     cards: state.cards,
     decks: state.decks,
     duel: state.duel,
+    ...(state.rating !== undefined ? { rating: state.rating } : {}),
     lastSeenAtMs: state.lastSeenAtMs,
   };
 }
