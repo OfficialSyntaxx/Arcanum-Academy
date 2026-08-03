@@ -13,13 +13,19 @@
  */
 
 import {
+  err,
+  failure,
+  FailureCode,
+  ok,
   Rng,
+  type Failure,
   type GatheringTunables,
   type ItemCatalog,
   type ItemDefinitionId,
   type NodeDefinition,
   type NodeState,
   type NodeId,
+  type Result,
   type RngState,
 } from '@arcanum/shared';
 import { addItems, spaceFor, type Inventory } from './inventory.js';
@@ -71,6 +77,34 @@ export interface HarvestOutcome {
    * inventory is no better a reason for it than a worn pick.
    */
   readonly overflowed: boolean;
+}
+
+/**
+ * Whether a player may work a node at all.
+ *
+ * This lives here rather than in the server handler so the client refuses an
+ * under-levelled node itself, with the same reason string the server would
+ * have sent. Predicting a harvest the server is certain to reject is worse
+ * than not starting it: the player sees progress that is then taken away.
+ *
+ * The caller supplies the level because skills are player state, which the
+ * simulation never owns.
+ */
+export function assertCanWork(node: NodeDefinition, skillLevel: number): Result<true, Failure> {
+  if (skillLevel < node.requiredSkillLevel) {
+    return err(
+      failure(FailureCode.Validation, 'gathering.skill_too_low', {
+        detail: `requires ${node.requiredSkillId} level ${node.requiredSkillLevel}`,
+        context: {
+          nodeId: node.id,
+          skillId: node.requiredSkillId,
+          required: node.requiredSkillLevel,
+          actual: skillLevel,
+        },
+      }),
+    );
+  }
+  return ok(true);
 }
 
 export function startSession(nodeId: NodeId, seed: string, startedAtMs: number): GatheringSession {
