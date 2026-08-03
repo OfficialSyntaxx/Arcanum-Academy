@@ -2,32 +2,32 @@
   "schemaVersion": 1,
   "entries": [
     {
-      "id": "school.resonance",
-      "name": "Resonance",
-      "colorToken": "--school-resonance",
+      "id": "school.stone",
+      "name": "Stone",
+      "colorToken": "--school-stone",
       "glyph": "◆",
-      "description": "Struck from the seams beneath the academy. Resonance holds a shape until something breaks it, which is why its students are the ones who finish long duels."
+      "description": "Struck from the seams beneath the academy. Stone holds a shape until something breaks it, which is why its students are the ones who finish long duels."
     },
     {
-      "id": "school.verdance",
-      "name": "Verdance",
-      "colorToken": "--school-verdance",
+      "id": "school.bloom",
+      "name": "Bloom",
+      "colorToken": "--school-bloom",
       "glyph": "❋",
-      "description": "Grown rather than made. Verdance rarely wins a turn and rarely loses a match, and the terraces are full of students who learned that the hard way."
+      "description": "Grown rather than made. Bloom rarely wins a turn and rarely loses a match, and the terraces are full of students who learned that the hard way."
     },
     {
-      "id": "school.ember",
-      "name": "Ember",
-      "colorToken": "--school-ember",
+      "id": "school.flame",
+      "name": "Flame",
+      "colorToken": "--school-flame",
       "glyph": "✦",
-      "description": "Cut from wood that never cooled. Ember spends what it has early and asks the duel to end before the accounting."
+      "description": "Cut from wood that never cooled. Flame spends what it has early and asks the duel to end before the accounting."
     },
     {
-      "id": "school.cipher",
-      "name": "Cipher",
-      "colorToken": "--school-cipher",
+      "id": "school.aether",
+      "name": "Aether",
+      "colorToken": "--school-aether",
       "glyph": "❖",
-      "description": "The only school with no seam and no grove. Cipher is written rather than gathered, and its students are the ones who decide what a duel is about."
+      "description": "The only school with no seam and no grove. Aether is written rather than gathered, and its students are the ones who decide what a duel is about."
     }
   ]
 }

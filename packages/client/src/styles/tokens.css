@@ -32,10 +32,10 @@
    * Colour never carries meaning alone - every school also has a glyph, which
    * is what keeps a card readable with a colour vision deficiency.
    */
-  --school-resonance: #4fc3d9;
-  --school-verdance: #6fbf5e;
-  --school-ember: #e07a3f;
-  --school-cipher: #a482d8; /* faults, destructive actions */
+  --school-stone: #4fc3d9;
+  --school-bloom: #6fbf5e;
+  --school-flame: #e07a3f;
+  --school-aether: #a482d8; /* faults, destructive actions */
 
   /* Type */
   --font-book: 'IBM Plex Serif', Georgia, serif;
