@@ -30,6 +30,36 @@ export interface InteractionPromptState {
   readonly approach: string;
 }
 
+/**
+ * The economy as the client believes it to be.
+ *
+ * Every field here is a projection of what the server last confirmed, never a
+ * local calculation. Gathering yields are resolved server-side and arrive as a
+ * patch, so nothing in this slice can drift from the authoritative record.
+ */
+export interface EconomyState {
+  readonly stacks: readonly { definitionId: string; quantity: number }[];
+  readonly slotCapacity: number;
+  readonly skills: Readonly<Record<string, { level: number; xp: number }>>;
+  /** The node being worked, or null when nothing is running. */
+  readonly gatheringNodeId: string | null;
+  /** Yields from the most recent collection, for a transient readout. */
+  readonly lastYields: readonly { itemId: string; quantity: number }[];
+  readonly lastXpGained: number;
+  /** True when the last collection lost materials to a full bag. */
+  readonly overflowed: boolean;
+}
+
+export const EMPTY_ECONOMY: EconomyState = {
+  stacks: [],
+  slotCapacity: 0,
+  skills: {},
+  gatheringNodeId: null,
+  lastYields: [],
+  lastXpGained: 0,
+  overflowed: false,
+};
+
 export interface AppState {
   readonly phase: GamePhase;
   readonly bootSteps: readonly BootStep[];
@@ -45,6 +75,9 @@ export interface AppState {
   readonly worldMinute: number;
   readonly ambientPopulation: number;
   readonly accessibility: AccessibilityPreferences;
+  readonly economy: EconomyState;
+  /** Reason string of the last refused command, cleared when one succeeds. */
+  readonly lastCommandError: string | null;
 
   setPhase(phase: GamePhase): void;
   setBootStep(id: string, patch: Partial<Omit<BootStep, 'id'>>): void;
@@ -59,6 +92,8 @@ export interface AppState {
   setWorldMinute(minute: number): void;
   setAmbientPopulation(count: number): void;
   setAccessibility(patch: Partial<AccessibilityPreferences>): void;
+  setEconomy(patch: Partial<EconomyState>): void;
+  setLastCommandError(reason: string | null): void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -75,6 +110,8 @@ export const useAppStore = create<AppState>((set) => ({
   worldMinute: 0,
   ambientPopulation: 0,
   accessibility: DEFAULT_ACCESSIBILITY,
+  economy: EMPTY_ECONOMY,
+  lastCommandError: null,
 
   setPhase: (phase) => set({ phase }),
   registerBootSteps: (steps) => set({ bootSteps: steps }),
@@ -93,4 +130,6 @@ export const useAppStore = create<AppState>((set) => ({
   setAmbientPopulation: (ambientPopulation) => set({ ambientPopulation }),
   setAccessibility: (patch) =>
     set((state) => ({ accessibility: { ...state.accessibility, ...patch } })),
+  setEconomy: (patch) => set((state) => ({ economy: { ...state.economy, ...patch } })),
+  setLastCommandError: (lastCommandError) => set({ lastCommandError }),
 }));

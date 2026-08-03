@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { HubHud, InteractionPrompt } from '../ui/HubOverlay.js';
 import { JoystickPad } from '../ui/JoystickPad.js';
+import { CommandError, GatheringHud, InventoryPanel } from '../ui/EconomyPanels.js';
 import type { Joystick } from '../input/joystick.js';
 
 /**
@@ -14,12 +16,48 @@ import type { Joystick } from '../input/joystick.js';
  * It takes the two things it needs rather than the controller that owns them, so
  * the screen layer never depends on the composition root.
  */
-export function HubScreen({ joystick, onEngage }: { joystick: Joystick; onEngage: () => void }) {
+export interface HubScreenProps {
+  readonly joystick: Joystick;
+  readonly onEngage: () => void;
+  readonly onCollect: () => void;
+  readonly onStopGathering: () => void;
+  readonly onClaimOffline: () => void;
+}
+
+export function HubScreen({
+  joystick,
+  onEngage,
+  onCollect,
+  onStopGathering,
+  onClaimOffline,
+}: HubScreenProps) {
+  // The satchel is a panel rather than a permanent strip: it is consulted
+  // occasionally and would otherwise cost screen the world should be using.
+  const [satchelOpen, setSatchelOpen] = useState(false);
+
   return (
     <div className="hub">
       <HubHud />
       <JoystickPad joystick={joystick} />
       <InteractionPrompt onEngage={onEngage} />
+      <GatheringHud
+        onCollect={onCollect}
+        onStop={onStopGathering}
+        onClaimOffline={onClaimOffline}
+      />
+      <CommandError />
+      {satchelOpen ? (
+        <InventoryPanel onClose={() => setSatchelOpen(false)} />
+      ) : (
+        <button
+          type="button"
+          className="satchel-toggle"
+          onClick={() => setSatchelOpen(true)}
+          aria-label="Open satchel"
+        >
+          Satchel
+        </button>
+      )}
     </div>
   );
 }

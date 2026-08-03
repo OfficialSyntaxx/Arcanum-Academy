@@ -4,6 +4,7 @@ import { bootstrap } from './bootstrap.js';
 import { isHubPhase, resolveScreen } from '../screens/registry.js';
 import { HubScreen } from '../screens/HubScreen.js';
 import type { HubController } from './hub-controller.js';
+import type { EconomyController } from './economy-controller.js';
 import { StatusBar } from '../ui/StatusBar.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.js';
 import { GamePhase } from '@arcanum/sim';
@@ -53,6 +54,7 @@ export function App() {
   const setFault = useAppStore((state) => state.setFault);
   const setPhase = useAppStore((state) => state.setPhase);
   const [hub, setHub] = useState<HubController | null>(null);
+  const [economy, setEconomy] = useState<EconomyController | null>(null);
   const Screen = resolveScreen(phase);
 
   useEffect(() => {
@@ -72,6 +74,11 @@ export function App() {
           return;
         }
         setHub(container.resolve('hub'));
+        const controller = container.resolve('economy');
+        setEconomy(controller);
+        // A socket that opened before this resolved would have fired its sync
+        // with nobody listening, so ask once more now there is.
+        controller.sync();
         dispose = () => container.dispose();
       })
       .catch((error: unknown) => {
@@ -98,6 +105,9 @@ export function App() {
               onEngage={() => {
                 hub.engagePrompt();
               }}
+              onCollect={() => economy?.collect()}
+              onStopGathering={() => economy?.stopGathering()}
+              onClaimOffline={() => economy?.claimOffline()}
             />
           ) : (
             <Screen />

@@ -15,7 +15,15 @@
  *   `@arcanum/sim` and are deterministic; this file is wiring and presentation.
  */
 
-import { COURTYARD, type Failure, type Result, type Tunables, err, ok } from '@arcanum/shared';
+import {
+  COURTYARD,
+  InteractableKind,
+  type Failure,
+  type Result,
+  type Tunables,
+  err,
+  ok,
+} from '@arcanum/shared';
 import { Raycaster, Vector2, type Vector3 } from 'three';
 
 import {
@@ -42,6 +50,14 @@ export interface HubControllerOptions {
   readonly tunables: Tunables;
   readonly canvas: HTMLCanvasElement;
   readonly now?: () => number;
+  /**
+   * Called when the player engages a gathering node.
+   *
+   * The controller reports the interactable rather than sending a command
+   * itself: the world layer has no business knowing the wire protocol, and
+   * this keeps the hub testable without a socket.
+   */
+  readonly onEngageGatheringNode?: (interactableId: string) => void;
 }
 
 export class HubController {
@@ -146,6 +162,12 @@ export class HubController {
     const prompt = useAppStore.getState().interactionPrompt;
     if (prompt === null) return;
     this.player.approach(prompt.approach);
+    // The prompt only appears inside the interaction radius, so the player is
+    // already in range: the walk is presentational and the command need not
+    // wait for it to finish.
+    if (prompt.kind === InteractableKind.GatheringNode) {
+      this.options.onEngageGatheringNode?.(prompt.id);
+    }
   }
 
   setAccessibility(patch: Partial<AccessibilityPreferences>): void {

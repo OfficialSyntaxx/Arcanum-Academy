@@ -15,6 +15,7 @@ import { readDeviceSignals, resolveQuality, type QualitySettings } from '../core
 import { RenderService } from '../render/renderer.js';
 import { InputService } from '../input/input-service.js';
 import { Transport, browserSocketFactory, TransportStatus } from '../net/transport.js';
+import { EconomyController } from './economy-controller.js';
 import {
   IndexedDbStore,
   MemoryStore,
@@ -45,6 +46,7 @@ export interface ClientServices {
   render: RenderService;
   input: InputService;
   transport: Transport;
+  economy: EconomyController;
   hub: HubController;
   engine: Engine;
 }
@@ -159,12 +161,19 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
   // 6. The world. A zone that fails content validation is a hard failure: the
   // alternative is a courtyard the player can walk out of.
   store.setBootStep('world', { status: 'active' });
+  // Owns the economy commands and applies the server's patches. Constructed
+  // here rather than in the UI so the hub can be handed a way to start a
+  // harvest without ever learning what a socket is.
+  const economy = new EconomyController(transport);
+  container.register('economy', () => economy);
+
   const hubResult = HubController.create({
     render,
     input,
     quality,
     tunables: DEFAULT_TUNABLES,
     canvas: options.canvas,
+    onEngageGatheringNode: (interactableId) => economy.startGathering(interactableId),
   });
   if (!hubResult.ok) {
     store.setBootStep('world', { status: 'failed', detail: hubResult.error.reason });

@@ -394,3 +394,126 @@
     top: calc(var(--inset-top) + var(--space-2));
   }
 }
+
+/* Economy overlays */
+
+/*
+ * The satchel and the gathering readout sit above the prompt on the right,
+ * stacking upward so the thumb zone at the bottom stays clear on a phone.
+ */
+.gathering-hud {
+  position: absolute;
+  right: var(--space-3);
+  bottom: calc(var(--inset-bottom) + var(--space-8) * 2);
+  width: min(17rem, calc(100vw - var(--space-6)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.gathering-hud__yields,
+.inventory-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.gathering-hud__yields li,
+.inventory-panel__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-family: var(--font-book);
+  font-size: var(--text-sm);
+  color: var(--haze);
+}
+
+.gathering-hud__count,
+.inventory-panel__count {
+  font-family: var(--font-serial);
+  color: var(--verdigris);
+}
+
+.gathering-hud__idle,
+.inventory-panel__empty {
+  margin: 0;
+  font-family: var(--font-book);
+  font-size: var(--text-sm);
+  color: var(--haze-dim);
+}
+
+.gathering-hud__xp {
+  margin: 0;
+  font-family: var(--font-serial);
+  font-size: var(--text-xs);
+  color: var(--verdigris);
+}
+
+.gathering-hud__warning {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  color: var(--alarm);
+}
+
+.gathering-hud__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.gathering-hud__actions .prompt__button {
+  flex: 1 1 auto;
+  min-height: var(--touch-min);
+}
+
+/* Rarity is carried by the count rather than the whole row: a list where every
+ * line is a different colour is harder to scan, not easier. */
+.inventory-panel__list li[data-rarity='RARE'] .inventory-panel__count,
+.inventory-panel__list li[data-rarity='EPIC'] .inventory-panel__count {
+  color: var(--gilt);
+}
+
+.inventory-panel {
+  position: absolute;
+  inset: auto var(--space-3) calc(var(--inset-bottom) + var(--space-4)) auto;
+  width: min(20rem, calc(100vw - var(--space-6)));
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.satchel-toggle {
+  position: absolute;
+  right: var(--space-3);
+  top: calc(var(--inset-top) + var(--space-8));
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--haze);
+  background: var(--slate-raised);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+}
+
+.command-error {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(var(--inset-top) + var(--space-8));
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  color: var(--alarm);
+  background: var(--slate);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+}
