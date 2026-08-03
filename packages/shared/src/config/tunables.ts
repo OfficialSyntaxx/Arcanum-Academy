@@ -34,6 +34,16 @@ export interface GradingTunables {
   /** Appraisal roll is `skillFloor + rng(0, variance)`; both scale with skill. */
   readonly baseVariance: number;
   readonly varianceReductionPerSkillLevel: number;
+  /**
+   * Narrowest the appraisal window may ever become.
+   *
+   * Without a meaningful floor the window collapses to a point and a master is
+   * *guaranteed* the top grade, which would make every expert card a 10 and
+   * leave serials certifying nothing. Skill past this point buys a higher
+   * centre rather than more certainty - consistency is earned early, quality
+   * for the rest of the curve.
+   */
+  readonly minVariance: number;
   readonly regradeMaxAttempts: number;
   /**
    * Grade never touches duel resolution (ADR 0004). It scales post-match
@@ -42,6 +52,16 @@ export interface GradingTunables {
    */
   readonly rewardMultiplierMinBasisPoints: number;
   readonly rewardMultiplierMaxBasisPoints: number;
+  /**
+   * Appraisal score a novice and a master are centred on, out of 100.
+   *
+   * The roll is `centre - variance/2 + rng(0, variance)`, clamped. Centring
+   * rather than flooring is what lets a master reach grade 10 without being
+   * guaranteed it, and keeps a novice's spread inside the low grades instead
+   * of pinning them all at grade 1.
+   */
+  readonly noviceCentreScore: number;
+  readonly masterCentreScore: number;
 }
 
 export interface EconomyTunables {
@@ -163,10 +183,10 @@ export interface Tunables {
 }
 
 export const DEFAULT_TUNABLES: Tunables = Object.freeze({
-  // Bumped to 2 when crafting was added and gathering gained offline-rate and
-  // tool-durability dials. Per ADR-0002 the version travels with replays, so a
-  // recording made under 1 is not silently compared against 2's balance.
-  version: 2,
+  // Bumped to 3 when grading gained its appraisal centres. Per ADR-0002 the
+  // version travels with replays and with every graded card, so a grade rolled
+  // under one version is never silently compared against another's odds.
+  version: 3,
   combat: Object.freeze({
     deckSize: 20,
     maxCopiesPerSpell: 3,
@@ -186,11 +206,21 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     minGrade: 1,
     maxGrade: 10,
     slabThreshold: 9,
-    baseVariance: 40,
-    varianceReductionPerSkillLevel: 3,
+    // 60 narrowing by 1 a level to a floor of 24 reaches its narrowest around
+    // level 37, so consistency is earned across a third of the curve rather
+    // than in the first few levels.
+    baseVariance: 60,
+    varianceReductionPerSkillLevel: 1,
+    minVariance: 24,
     regradeMaxAttempts: 2,
     rewardMultiplierMinBasisPoints: 10_000,
     rewardMultiplierMaxBasisPoints: 12_500,
+    noviceCentreScore: 18,
+    // 80 rather than the top of the scale: it places a master's window across
+    // grades 8 to 10, so roughly half their work slabs and about one in eight
+    // reaches a 10. A higher centre would make grade 10 routine and the slab
+    // an expectation rather than an event.
+    masterCentreScore: 80,
   }),
   economy: Object.freeze({
     marketListingTaxBasisPoints: 500,
