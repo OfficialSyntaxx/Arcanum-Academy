@@ -95,7 +95,7 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 467 tests across 34 files — all passing.** First verified end to
+**Current test count: 484 tests across 35 files — all passing.** First verified end to
 end on 2026-08-02; before that the suite had never been run to completion on any machine
 or in CI.
 
@@ -540,7 +540,15 @@ first and a small amount of code second.
   before either commits. Any change to an offer clears both confirmations, so nobody is
   held to terms that changed after they agreed. An append-only ledger records every step,
   because a dispute is unanswerable without one.
-- Matchmaking, rating, and an authoritative duel service for player-versus-player.
+- ~~Matchmaking and rating~~ **done.** A queue rather than a lobby, so a dropped client
+  simply asks again. The accepted rating gap widens with waiting time, and **either**
+  side's tolerance is enough - requiring both would make the widening pointless, since a
+  newcomer's narrow range would block every long-waiting player. Elo with a fixed K,
+  because a rating whose movement a player cannot predict feels arbitrary.
+- **Player-versus-player duels.** The engine is already deterministic and seat-agnostic,
+  so what remains is a duel service holding one state for two sessions and routing each
+  seat's commands to it - rather than the one-state-per-player-record shape the AI duel
+  uses. Matchmaking produces the pairing and seed it needs.
 
 ---
 
@@ -587,7 +595,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 467 tests)
+npm run verify       # confirm everything passes (should be 484 tests)
 npm run dev          # start the Vite dev server
 ```
 
