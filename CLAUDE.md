@@ -395,6 +395,52 @@ rules to predict with already live in `sim`, so adding it is a change in one fil
 
 ---
 
+## Phase 4 — Cards, grading, slabs, collection (mostly complete, 339 tests)
+
+**Schools are content, not a code enum:** Resonance, Verdance, Ember, Cipher, in
+`content/data/schools.json`. Each has a home in the Courtyard and a material line;
+Cipher deliberately has neither and is scribed from refined inks alone, which is what
+gives crafting a purpose beyond materials. Each carries a **glyph as well as a colour**
+and the validator refuses two schools sharing either — colour is never the only carrier
+of meaning (risk M10).
+
+**Built:**
+
+- `cards/types.ts` — the ADR-0004 split made real. `CardDefinition` is rules;
+  `CardInstance` is grade, serial and provenance. Effects are data so the Phase 5
+  resolver is one interpreter rather than a branch per card, and magnitudes must be
+  integers because fractions cannot hash identically across platforms.
+- `cards/grading.ts` — appraisal over a window whose centre rises with skill and whose
+  width narrows to a floor. **Odds are derived from the same window the roll uses**, so
+  the published table cannot drift from the implementation; a million simulated rolls
+  are held against it at four skill levels.
+- `cards/deck.ts` — exactly twenty, at most three copies, counted on **definition ids**.
+- `sim/economy/scribing.ts` — materials in, one graded card out. No waste roll: a
+  scribed card always exists, its quality is the variable.
+- `server/domain/serial-minter.ts` — one atomic statement. Minting happens **outside**
+  the state mutation because a retried write must not re-mint; the cost is a gap in the
+  sequence, chosen over a duplicate or an inflated count.
+- `content/strings.ts` — every player-facing string behind a key, missing keys falling
+  back to the key itself so an untranslated card looks wrong rather than vanishing.
+- `deck.save` re-asserts legality and ownership server-side; the builder's check is an
+  affordance, not the rule.
+- Client: collection browser and deck builder on one surface with the scribing table.
+
+**Balance decisions worth revisiting:** a master slabs roughly half their work and
+reaches grade 10 about one time in eight. Set by `noviceCentreScore`,
+`masterCentreScore`, `baseVariance` and `minVariance`.
+
+**Still open in Phase 4:**
+
+- **Card count.** 20 authored against a roadmap target of 150+. Deliberately held: cards
+  should be balanced against a resolver that exists, and that is Phase 5.
+- **Deck slots.** One deck id is hardcoded in the builder; multiple named slots need a
+  small UI and no new server work.
+- **School names.** The owner leans elemental. Schools are content, so renaming is a JSON
+  edit plus the `schoolId` references — cheapest now, dearer as the set grows.
+
+---
+
 ## Phase roadmap summary
 
 | Phase | Status      | Description                                               |
@@ -402,7 +448,7 @@ rules to predict with already live in `sim`, so adding it is a change in one fil
 | 1     | ✅ Complete | Foundation, toolchain, deterministic kernel               |
 | 2     | ✅ Complete | World, navigation, camera, input, NPCs, accessibility     |
 | 3     | ✅ Complete | Inventory, gathering, crafting, skills, content pipeline  |
-| 4     | 🔵 Next     | Card framework, grading, slab system, deckbuilder         |
+| 4     | 🟡 Mostly   | Card framework, grading, slabs, deckbuilder — see below   |
 | 5     | ⬜ Planned  | Combat engine, AI opponents, duel flow                    |
 | 6     | ⬜ Planned  | Multiplayer lobby, trading, matchmaking, reconnect        |
 | 7     | ⬜ Planned  | Economy, marketplace, quests, daily systems, leaderboards |
