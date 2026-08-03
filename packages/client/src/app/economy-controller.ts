@@ -44,11 +44,6 @@ export class EconomyController {
 
   constructor(private readonly transport: Transport) {
     this.transport.events.on('frame', (frame) => this.onFrame(frame));
-    this.transport.events.on('status', ({ status }) => {
-      // A fresh connection may be a resumed session on a server that restarted,
-      // so the local projection is re-fetched rather than assumed still true.
-      if (status === 'open') this.sync();
-    });
   }
 
   sync(): void {
@@ -86,6 +81,17 @@ export class EconomyController {
 
   private onFrame(frame: { readonly op: string; readonly p: unknown }): void {
     if (this.disposed) return;
+
+    // Sync on the accepted handshake rather than on the socket opening. An open
+    // socket is not yet an authenticated one - the gateway refuses commands
+    // with gateway.handshake_required until the exchange completes, and the
+    // reply is a further round trip after the connection reports itself open.
+    // This also covers a resumed session, whose state may have moved on while
+    // the client was away.
+    if (frame.op === ServerOpcode.HandshakeAccepted) {
+      this.sync();
+      return;
+    }
 
     if (frame.op === ServerOpcode.CommandRejected) {
       const failure = frame.p as Failure | null;

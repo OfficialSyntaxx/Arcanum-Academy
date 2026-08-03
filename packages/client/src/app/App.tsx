@@ -74,11 +74,9 @@ export function App() {
           return;
         }
         setHub(container.resolve('hub'));
-        const controller = container.resolve('economy');
-        setEconomy(controller);
-        // A socket that opened before this resolved would have fired its sync
-        // with nobody listening, so ask once more now there is.
-        controller.sync();
+        // The controller syncs itself once the gateway accepts a handshake;
+        // asking here would race that and be refused.
+        setEconomy(container.resolve('economy'));
         dispose = () => container.dispose();
       })
       .catch((error: unknown) => {
