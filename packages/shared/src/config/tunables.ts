@@ -173,6 +173,15 @@ export interface WorldTunables {
   readonly npcWalkSpeed: number;
   /** Real milliseconds per in-world day. Drives NPC schedules and lighting. */
   readonly worldDayLengthMs: number;
+  /** Metres within which another player is reported as present. */
+  readonly presenceRadius: number;
+  /**
+   * Most other players reported to one client.
+   *
+   * The radius is what makes a crowded courtyard affordable; this is what stops
+   * everyone standing on one tile from undoing it.
+   */
+  readonly maxVisibleNeighbours: number;
 }
 
 export interface NetworkTunables {
@@ -294,6 +303,8 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     npcDwellMaxMs: 20_000,
     npcWalkSpeed: 1.5,
     worldDayLengthMs: 3_600_000,
+    presenceRadius: 40,
+    maxVisibleNeighbours: 24,
   }),
   network: Object.freeze({
     simulationTickHz: 20,

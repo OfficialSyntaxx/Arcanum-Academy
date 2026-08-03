@@ -24,6 +24,7 @@ import { SessionStore } from './session/session-store.js';
 import { InMemoryPlayerRepository, type PlayerRepository } from './persistence/repository.js';
 import { PostgresPlayerRepository } from './persistence/postgres-repository.js';
 import { PlayerService } from './domain/player-service.js';
+import { PresenceService } from './domain/presence.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
 import { registerDuelHandlers } from './net/handlers/duel.js';
 import {
@@ -150,9 +151,19 @@ async function main(): Promise<void> {
     now: () => Date.now(),
   });
 
+  const presence = new PresenceService({
+    radius: DEFAULT_TUNABLES.world.presenceRadius,
+    maxNeighbours: DEFAULT_TUNABLES.world.maxVisibleNeighbours,
+    // Two missed reports before a player is treated as gone, so an ordinary
+    // hitch does not make everyone flicker out of the courtyard.
+    staleAfterMs: Math.ceil(2_000 / DEFAULT_TUNABLES.network.hubPresenceBroadcastHz) * 2,
+    now: () => Date.now(),
+  });
+
   const gateway = new Gateway({
     sessions,
     identity,
+    presence,
     logger: logger.child('gateway'),
     router,
     maxConnections: config.MAX_CONNECTIONS,

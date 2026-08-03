@@ -16,6 +16,7 @@ import {
 import { CloseCode, Gateway, RegistryCommandRouter, type GatewaySocket } from '../net/gateway.js';
 import { SessionStore } from '../session/session-store.js';
 import { IdentityService, InMemoryIdentityStore } from '../domain/identity.js';
+import { PresenceService } from '../domain/presence.js';
 
 function harness(options: { maxConnections?: number; maxCommandsPerSecond?: number } = {}) {
   let clock = 1_000;
@@ -33,10 +34,17 @@ function harness(options: { maxConnections?: number; maxCommandsPerSecond?: numb
   const sessions = new SessionStore({ resumeWindowMs: 60_000, now });
   const router = new RegistryCommandRouter();
   const identity = new IdentityService(new InMemoryIdentityStore());
+  const presence = new PresenceService({
+    radius: 40,
+    maxNeighbours: 24,
+    staleAfterMs: 5_000,
+    now,
+  });
   const gateway = new Gateway({
     sessions,
     router,
     identity,
+    presence,
     logger: createLogger({ scope: 'test', level: LogLevel.Silent, sinks: [createMemorySink()] }),
     maxConnections: options.maxConnections ?? 10,
     heartbeatTimeoutMs: 15_000,
@@ -59,6 +67,7 @@ function harness(options: { maxConnections?: number; maxCommandsPerSecond?: numb
       clock += ms;
     },
     identity,
+    presence,
     lastOf: (op: string) => [...sent].reverse().find((entry) => entry.op === op),
     /**
      * Performs a handshake and waits for it to be accepted.
@@ -313,5 +322,42 @@ describe('identity', () => {
     expect(resolved.ok).toBe(true);
     const store = JSON.stringify(h.identity);
     expect(store).not.toContain(issued.identityToken!);
+  });
+});
+
+describe('hub presence', () => {
+  it('answers a position report with the neighbours in range', async () => {
+    const h = harness();
+    const first = h.gateway.accept(h.socket)!;
+    await h.handshake(first);
+    first.receive(h.frame(ClientOpcode.PresenceUpdate, { x: 0, z: 0, facing: 0 }));
+
+    const second = h.gateway.accept(h.socket)!;
+    await h.handshake(second);
+    second.receive(h.frame(ClientOpcode.PresenceUpdate, { x: 3, z: 0, facing: 0 }));
+
+    const delta = h.lastOf(ServerOpcode.PresenceDelta);
+    expect(delta).toBeDefined();
+    expect((delta!.payload as { neighbours: unknown[] }).neighbours).toHaveLength(1);
+  });
+
+  it('refuses a malformed position without dropping the connection', async () => {
+    const h = harness();
+    const connection = h.gateway.accept(h.socket)!;
+    await h.handshake(connection);
+    connection.receive(h.frame(ClientOpcode.PresenceUpdate, { x: 'over there' }));
+    const rejection = h.lastOf(ServerOpcode.CommandRejected)!.payload as Failure;
+    expect(rejection.reason).toBe('presence.invalid_position');
+    expect(h.closed).toHaveLength(0);
+  });
+
+  it('forgets a player as soon as their socket closes', async () => {
+    const h = harness();
+    const connection = h.gateway.accept(h.socket)!;
+    await h.handshake(connection);
+    connection.receive(h.frame(ClientOpcode.PresenceUpdate, { x: 0, z: 0, facing: 0 }));
+    expect(h.presence.size).toBe(1);
+    connection.disconnect();
+    expect(h.presence.size).toBe(0);
   });
 });

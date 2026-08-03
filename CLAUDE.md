@@ -95,7 +95,7 @@ npm run build         # production build (client + server tsc)
 npm run boundaries    # architecture boundary linter only
 ```
 
-**Current test count: 430 tests across 31 files — all passing.** First verified end to
+**Current test count: 445 tests across 32 files — all passing.** First verified end to
 end on 2026-08-02; before that the suite had never been run to completion on any machine
 or in CI.
 
@@ -502,12 +502,38 @@ Identity is now proved rather than asserted:
 **This is deliberately not passwords.** There is no email service to recover one
 through, and a password nobody can reset is worse than a token that cannot be phished.
 
+### 🔴 CRITICAL BEFORE LAUNCH — account recovery does not exist
+
+**An account lives entirely in one browser's IndexedDB.** Clear site data, switch
+device, or lose the phone, and the account is gone permanently. There is no recovery,
+no migration, and no support path — the server holds only a hash and cannot identify
+who a lost token belonged to.
+
+This is acceptable for a testing build and **is not acceptable with anything of value in
+an account.** It must be closed before real players, and certainly before slabs are
+tradeable, because a lost account will otherwise be a lost collection.
+
+What it needs is a channel to send a challenge over. Options, current as of 2026-08:
+
+- **Supabase Auth** — free tier covers email/password, magic links and OAuth. Closest to
+  a complete answer; would replace `IdentityService` rather than sit beside it.
+- **Resend** — free tier around 3,000 emails a month, if we keep our own flow and only
+  need delivery.
+- **GitHub OAuth** — free and available immediately, but requires every player to hold a
+  GitHub account. Reasonable for a closed test, wrong for a consumer game.
+- **Netlify Identity** — deprecated for new projects. Not a candidate.
+
+The shape of the work once a provider exists: bind an address to a player, verify it,
+and let a verified address mint a fresh token that invalidates the old one. The token
+scheme already supports that — issuing is a single call — so this is a provider decision
+first and a small amount of code second.
+
 **Still open in Phase 6:**
 
-- **Account recovery and device migration.** Needs a channel to send a challenge over —
-  an email or push service — which is an infrastructure decision, not a coding one. Until
-  it exists, losing local storage loses the account.
-- Hub presence fan-out (`ClientOpcode.PresenceUpdate` still only acknowledges).
+- ~~Hub presence~~ **done.** Answered on request rather than pushed: a client reports
+  where it is and receives the neighbours it can see, which bounds outbound cost to one
+  reply per request instead of one message per player per movement. Interest managed by
+  a radius, with a hard cap so a crowd standing on one tile cannot undo it.
 - Player-to-player trading, matchmaking, rating, and an authoritative duel service for
   player-versus-player.
 
@@ -556,7 +582,7 @@ adds the hub multiplayer layer on top of an already-working single-player experi
 ```bash
 # From the repo root:
 npm install          # install all workspaces
-npm run verify       # confirm everything passes (should be 430 tests)
+npm run verify       # confirm everything passes (should be 445 tests)
 npm run dev          # start the Vite dev server
 ```
 

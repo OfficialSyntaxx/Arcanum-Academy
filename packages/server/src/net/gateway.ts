@@ -85,9 +85,23 @@ export interface IdentityVerifier {
   issue(): Promise<Result<{ playerId: PlayerId; token: string }, Failure>>;
 }
 
+/** Reports and answers who else is nearby. Kept behind an interface so the
+ * gateway never learns how presence is stored or bounded. */
+export interface PresenceTracker {
+  update(
+    sessionId: SessionId,
+    playerId: PlayerId,
+    position: { x: number; z: number; facing: number },
+  ): boolean;
+  neighbours(sessionId: SessionId): readonly unknown[];
+  leave(sessionId: SessionId): void;
+  sweep(): number;
+}
+
 export interface GatewayOptions {
   readonly sessions: SessionStore;
   readonly identity: IdentityVerifier;
+  readonly presence: PresenceTracker;
   readonly logger: Logger;
   readonly router: CommandRouter;
   readonly maxConnections: number;
@@ -217,11 +231,34 @@ export class Gateway {
       case ClientOpcode.Heartbeat:
         this.send(connection, ServerOpcode.Heartbeat, { t: this.now() });
         return;
-      case ClientOpcode.PresenceUpdate:
-        // Presence fan-out lands with the hub in Phase 6; until then the frame is
-        // accepted and acknowledged so the client's transport can be exercised.
-        this.send(connection, ServerOpcode.CommandAck, { seq: frame.seq });
+      case ClientOpcode.PresenceUpdate: {
+        // Answered rather than broadcast: the reply carries the neighbours this
+        // client can see, so outbound cost is one message per request instead
+        // of one per player per movement.
+        const position = frame.p as { x?: unknown; z?: unknown; facing?: unknown } | null;
+        const accepted =
+          position !== null &&
+          typeof position.x === 'number' &&
+          typeof position.z === 'number' &&
+          typeof position.facing === 'number' &&
+          this.options.presence.update(connection.session.id, connection.session.playerId, {
+            x: position.x,
+            z: position.z,
+            facing: position.facing,
+          });
+        if (!accepted) {
+          this.reject(
+            connection,
+            failure(FailureCode.Validation, 'presence.invalid_position'),
+            null,
+          );
+          return;
+        }
+        this.send(connection, ServerOpcode.PresenceDelta, {
+          neighbours: this.options.presence.neighbours(connection.session.id),
+        });
         return;
+      }
       case ClientOpcode.Resync:
         this.send(connection, ServerOpcode.Snapshot, {
           sessionId: connection.session.id,
@@ -379,6 +416,9 @@ export class Gateway {
 
   /** Called when a socket closes, from either side. */
   private release(connection: Connection): void {
+    // Leaving the hub is immediate rather than waiting for the entry to go
+    // stale, so a player who walks out does not linger as a ghost.
+    if (connection.session !== null) this.options.presence.leave(connection.session.id);
     if (!this.connections.delete(connection)) return;
     if (connection.session) {
       // The session survives, so the player can resume within the window.
