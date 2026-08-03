@@ -108,6 +108,7 @@ export function App() {
               onClaimOffline={() => economy?.claimOffline()}
               onCraft={(recipeId) => economy?.craft(recipeId)}
               onSaveDeck={(deckId, name, ids) => economy?.saveDeck(deckId, name, ids)}
+              onScribe={(cardId) => economy?.scribe(cardId)}
             />
           ) : (
             <Screen />

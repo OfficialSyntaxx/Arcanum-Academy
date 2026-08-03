@@ -26,6 +26,7 @@ export interface HubScreenProps {
   readonly onClaimOffline: () => void;
   readonly onCraft: (recipeId: string) => void;
   readonly onSaveDeck: (deckId: string, name: string, cardDefinitionIds: string[]) => void;
+  readonly onScribe: (cardId: string) => void;
 }
 
 /**
@@ -45,6 +46,7 @@ export function HubScreen({
   onClaimOffline,
   onCraft,
   onSaveDeck,
+  onScribe,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
@@ -74,7 +76,11 @@ export function HubScreen({
       />
       <CommandError />
       {collectionOpen && (
-        <CollectionPanel onSaveDeck={onSaveDeck} onClose={() => setCollectionOpen(false)} />
+        <CollectionPanel
+          onScribe={onScribe}
+          onSaveDeck={onSaveDeck}
+          onClose={() => setCollectionOpen(false)}
+        />
       )}
       {openStationId !== null && (
         <CraftingPanel
