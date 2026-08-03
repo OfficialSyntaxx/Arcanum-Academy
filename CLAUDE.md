@@ -324,40 +324,59 @@ The free Render instance sleeps after roughly fifteen minutes idle and cold star
 
 ---
 
-## Phase 3 — what to build next
+## Phase 3 — Economy (complete, 279 tests)
 
-**Goal:** The first economic loop, server-side authoritative.
+**In `@arcanum/shared`:**
 
-**Build order within Phase 3:**
+- `items/types.ts`, `gathering/types.ts`, `crafting/types.ts`, `skills/types.ts` — the
+  economic vocabulary. Items split `ItemDefinition` (rules) from `ItemInstance`
+  (per-copy provenance) exactly as ADR-0004 splits cards; only tools need instances
+  because materials stack.
+- `content/catalogs.ts` — validators in the `buildNavGraph` mould: problems gathered and
+  reported together, distinct reason codes for empty/duplicate. They take **every zone**,
+  not one, which also catches an interactable id colliding across zones.
+- `content/data/*.json` — the authoring format, inside `src` because the package compiles
+  with `rootDir: "src"`. Compiled to frozen catalogs at import; bad content throws at
+  module load rather than mid-harvest.
+- `xpForLevel` / `levelForXp`, `wasteRateBasisPoints`.
 
-1. Content pipeline: authoring format (JSON schema), validator (reuses `buildNavGraph`
-   pattern), build step that type-checks content, content versioning. Cards, items,
-   nodes, recipes, NPCs all become data files rather than code.
-2. Item and inventory model: `ItemDefinition` / `ItemInstance` split (mirrors the card
-   split from ADR-0004), stack caps, slot caps, server-side inventory service
-3. Gathering: node types (crystal, mushroom, emberwood), tap-to-start continuous harvest,
-   depletion timers, rare-drop tables (integer weights, seeded RNG), offline accrual
-4. Refining and crafting: recipes as validated data, skill-scaled waste, station types
-5. Skills and XP: levels 1-99, `xpCurveBase * n^xpCurveExponent`, unlock gates
-6. Server-side validation: client predicts → server confirms pattern (same as will be
-   used for combat); client optimistic updates, server corrects
+**In `@arcanum/sim`** (here, not the server, so client prediction and server authority
+run identical code per ADR-0001):
 
-**Key files that will need creating:**
+- `economy/inventory.ts` — stack/slot arithmetic. Adding tops up partial stacks first;
+  removing drains smallest-first and releases emptied slots. Ties break on slot index so
+  results never depend on sort stability.
+- `economy/gathering.ts` — seeded harvest resolution. A session is a seed and a tick
+  count, never rolled results, so it replays identically. Offline accrual **stretches the
+  interval** rather than shrinking yields, keeping rare drops as rare offline as online.
+  Depletion is evaluated per tick against that tick's timestamp, so one offline claim can
+  span deplete → regrow → work again. Neither a worn tool nor a full bag halts a session.
+- `economy/crafting.ts` — waste rolled per output unit; inputs consumed before the room
+  check so refining works with a full bag, but room confirmed before the roll so
+  ingredients are never destroyed for nothing.
+- `economy/skills.ts` — level derived from cumulative XP, never stored alongside it.
 
-- `packages/shared/src/items/types.ts` — ItemDefinition, ItemInstance, Stackable
-- `packages/shared/src/items/inventory.ts` — inventory model, slot logic
-- `packages/shared/src/gathering/types.ts` — NodeDefinition, NodeInstance, DropTable
-- `packages/shared/src/crafting/types.ts` — Recipe, RecipeResult, StationKind
-- `packages/shared/src/skills/types.ts` — SkillId, SkillState, xpForLevel()
-- `content/` — JSON content files (items, nodes, recipes, NPCs)
-- `tools/scripts/validate-content.mjs` — content validator (runs in CI)
-- `packages/server/src/game/inventory-service.ts`
-- `packages/server/src/game/gathering-service.ts`
-- `packages/server/src/game/crafting-service.ts`
-- `packages/server/src/game/skill-service.ts`
-- `packages/client/src/ui/InventoryPanel.tsx`
-- `packages/client/src/ui/GatheringHud.tsx`
-- `packages/client/src/ui/CraftingPanel.tsx`
+**In `@arcanum/server`:**
+
+- `domain/player-state.ts` — the shape of the opaque blob. Parsing is **total**: anything
+  unrecognised becomes a default, because locking a player out over one strange field is
+  worse than losing a regrowth timer.
+- `domain/player-service.ts` — load/mutate/save under optimistic concurrency with a
+  bounded retry, because `Gateway.receive` does not serialise commands per player.
+- `net/handlers/economy.ts` — `player.sync`, `gathering.start/collect/claimOffline/stop`,
+  `crafting.craft`. Catalogs are **injected**, not imported, so the composition root stays
+  the only place choosing live content.
+- `persistence/postgres-repository.ts` — optimistic concurrency enforced by a conditional
+  `UPDATE`, not read-then-compare.
+
+**In `@arcanum/client`:**
+
+- `app/economy-controller.ts` — sends commands, applies `Patch` frames. Syncs on
+  `HandshakeAccepted`, not on socket open: an open socket is not an authenticated one.
+- `ui/EconomyPanels.tsx` — satchel, gathering readout, verbatim refusal notice.
+
+**No local prediction yet, deliberately.** Every number shown is server-confirmed. The
+rules to predict with already live in `sim`, so adding it is a change in one file.
 
 ---
 
@@ -367,8 +386,8 @@ The free Render instance sleeps after roughly fifteen minutes idle and cold star
 | ----- | ----------- | --------------------------------------------------------- |
 | 1     | ✅ Complete | Foundation, toolchain, deterministic kernel               |
 | 2     | ✅ Complete | World, navigation, camera, input, NPCs, accessibility     |
-| 3     | 🔵 Next     | Inventory, gathering, crafting, skills, content pipeline  |
-| 4     | ⬜ Planned  | Card framework, grading, slab system, deckbuilder         |
+| 3     | ✅ Complete | Inventory, gathering, crafting, skills, content pipeline  |
+| 4     | 🔵 Next     | Card framework, grading, slab system, deckbuilder         |
 | 5     | ⬜ Planned  | Combat engine, AI opponents, duel flow                    |
 | 6     | ⬜ Planned  | Multiplayer lobby, trading, matchmaking, reconnect        |
 | 7     | ⬜ Planned  | Economy, marketplace, quests, daily systems, leaderboards |
