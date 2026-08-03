@@ -8,12 +8,18 @@ import {
   PROTOCOL_VERSION,
   consoleSink,
   describeFailure,
+  ITEM_CATALOG,
+  NODE_CATALOG,
+  RECIPE_BOOK,
+  SKILL_TABLE,
 } from '@arcanum/shared';
 import { loadConfig } from './config.js';
 import { Gateway, RegistryCommandRouter, type GatewaySocket } from './net/gateway.js';
 import { SessionStore } from './session/session-store.js';
 import { InMemoryPlayerRepository, type PlayerRepository } from './persistence/repository.js';
 import { PostgresPlayerRepository } from './persistence/postgres-repository.js';
+import { PlayerService } from './domain/player-service.js';
+import { registerEconomyHandlers } from './net/handlers/economy.js';
 
 /**
  * Server entry point.
@@ -71,6 +77,23 @@ async function main(): Promise<void> {
       'DATABASE_URL is not set, so player progress is held in memory and will be lost on restart',
     );
   }
+
+  const players = new PlayerService({
+    repository,
+    slotCapacity: DEFAULT_TUNABLES.gathering.baseInventorySlots,
+    now: () => Date.now(),
+  });
+  registerEconomyHandlers(router, {
+    players,
+    catalogs: {
+      items: ITEM_CATALOG,
+      nodes: NODE_CATALOG,
+      recipes: RECIPE_BOOK,
+      skills: SKILL_TABLE,
+    },
+    tunables: DEFAULT_TUNABLES,
+    now: () => Date.now(),
+  });
 
   const gateway = new Gateway({
     sessions,

@@ -76,7 +76,12 @@ const LAYERS = {
     config: [],
     session: [],
     persistence: [],
-    net: ['session', 'persistence', 'config'],
+    // Game rules and player state. Depends on persistence because it owns the
+    // shape of the opaque blob the repository stores, but knows nothing about
+    // sockets, sessions or the wire - so the same rules could be driven by a
+    // job or a test without a gateway in sight.
+    domain: ['persistence', 'config'],
+    net: ['session', 'persistence', 'config', 'domain'],
   },
 };
 
