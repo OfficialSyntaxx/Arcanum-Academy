@@ -1,4 +1,11 @@
-import { ITEM_CATALOG, NODE_CATALOG, SKILL_TABLE } from '@arcanum/shared';
+import {
+  DEFAULT_TUNABLES,
+  ITEM_CATALOG,
+  NODE_CATALOG,
+  RECIPE_BOOK,
+  SKILL_TABLE,
+  wasteRateBasisPoints,
+} from '@arcanum/shared';
 import { useAppStore } from '../state/app-store.js';
 import { LabelStrip } from './LabelStrip.js';
 
@@ -96,6 +103,83 @@ export function InventoryPanel({ onClose }: { onClose: () => void }) {
               <li key={definitionId} data-rarity={definition?.rarity ?? 'COMMON'}>
                 <span className="inventory-panel__name">{itemName(definitionId)}</span>
                 <span className="inventory-panel__count">{quantity}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <button type="button" className="prompt__button" onClick={onClose}>
+        Close
+      </button>
+    </div>
+  );
+}
+
+/**
+ * The recipes craftable at a station, with what each costs and risks.
+ *
+ * Requirements are evaluated here from the same catalog and tunables the server
+ * uses, so a recipe the server would refuse is shown as unavailable rather than
+ * offered and then rejected. The server still has the last word - this only
+ * spares the player a round trip to be told no.
+ */
+export function CraftingPanel({
+  stationInteractableId,
+  onCraft,
+  onClose,
+}: {
+  stationInteractableId: string;
+  onCraft: (recipeId: string) => void;
+  onClose: () => void;
+}) {
+  const economy = useAppStore((state) => state.economy);
+  const recipes = RECIPE_BOOK.atStation(stationInteractableId as never);
+
+  const held = new Map<string, number>();
+  for (const stack of economy.stacks) {
+    held.set(stack.definitionId, (held.get(stack.definitionId) ?? 0) + stack.quantity);
+  }
+
+  return (
+    <div className="panel crafting-panel">
+      <LabelStrip title="Refining" serial={`${recipes.length} recipes`} />
+      {recipes.length === 0 ? (
+        <p className="inventory-panel__empty">Nothing is refined here.</p>
+      ) : (
+        <ul className="crafting-panel__list">
+          {recipes.map((recipe) => {
+            const level = economy.skills[recipe.requiredSkillId]?.level ?? 1;
+            const levelMet = level >= recipe.requiredSkillLevel;
+            const inputsMet = recipe.inputs.every(
+              (input) => (held.get(input.itemId) ?? 0) >= input.quantity,
+            );
+            const waste = wasteRateBasisPoints(recipe, level, DEFAULT_TUNABLES.crafting);
+            return (
+              <li key={recipe.id} className="crafting-panel__recipe">
+                <div className="crafting-panel__head">
+                  <span className="inventory-panel__name">{recipe.name}</span>
+                  <span className="inventory-panel__count">{(waste / 100).toFixed(1)}% waste</span>
+                </div>
+                <ul className="crafting-panel__inputs">
+                  {recipe.inputs.map((input) => {
+                    const have = held.get(input.itemId) ?? 0;
+                    return (
+                      <li key={input.itemId} data-met={have >= input.quantity}>
+                        {itemName(input.itemId)} {have}/{input.quantity}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button
+                  type="button"
+                  className="prompt__button"
+                  disabled={!levelMet || !inputsMet}
+                  onClick={() => onCraft(recipe.id)}
+                >
+                  {levelMet
+                    ? `Refine ${itemName(recipe.output.itemId)}`
+                    : `Needs level ${recipe.requiredSkillLevel}`}
+                </button>
               </li>
             );
           })}

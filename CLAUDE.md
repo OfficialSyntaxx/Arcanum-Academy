@@ -378,6 +378,21 @@ run identical code per ADR-0001):
 **No local prediction yet, deliberately.** Every number shown is server-confirmed. The
 rules to predict with already live in `sim`, so adding it is a change in one file.
 
+### Deliberate deferrals from Phase 3 — read before assuming these were forgotten
+
+- **Tools cannot be acquired.** They are fully modelled, validated and exercised by
+  tests: `ToolProperties`, durability spend, and the reduced yield of a worn tool all
+  work. They are simply never granted, because `repairCost` is denominated in a currency
+  that does not exist until Phase 7. Granting an unrepairable tool would hand every
+  player a strictly worsening bonus — 500 durability is roughly 25 minutes of active
+  play, after which it is permanently halved. The quartermaster's stall is already
+  placed in the Courtyard and is where acquisition and repair belong.
+- **`ClientOpcode.PresenceUpdate` acknowledges and does nothing else.** Other players in
+  the hub are Phase 6; the opcode exists so the protocol does not have to change then.
+- **Crafting has no duration.** `craftDurationMs` is authored and validated but a craft
+  resolves immediately. A timed craft needs the same pending-claim machinery as offline
+  gathering, and building it before there is a reason to wait would be ceremony.
+
 ---
 
 ## Phase roadmap summary

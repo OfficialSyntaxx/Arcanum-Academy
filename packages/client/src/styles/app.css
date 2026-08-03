@@ -525,3 +525,60 @@
   border: var(--border-hairline);
   border-radius: var(--radius-sm);
 }
+
+.crafting-panel {
+  pointer-events: auto;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--inset-bottom) + var(--space-4));
+  width: min(24rem, calc(100vw - var(--space-6)));
+  max-height: 66vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.crafting-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.crafting-panel__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-family: var(--font-book);
+  font-size: var(--text-sm);
+  color: var(--haze);
+}
+
+.crafting-panel__inputs {
+  list-style: none;
+  margin: var(--space-1) 0 var(--space-2);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-family: var(--font-serial);
+  font-size: var(--text-xs);
+}
+
+/* A shortfall is marked on the ingredient that is short, so the reason a
+   recipe is unavailable is readable without counting the satchel. */
+.crafting-panel__inputs li[data-met='false'] {
+  color: var(--alarm);
+}
+
+.crafting-panel__inputs li[data-met='true'] {
+  color: var(--haze-dim);
+}
+
+.crafting-panel .prompt__button:disabled {
+  opacity: 0.45;
+}

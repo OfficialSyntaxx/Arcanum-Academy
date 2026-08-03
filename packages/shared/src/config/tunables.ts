@@ -89,6 +89,18 @@ export interface GatheringTunables {
    * Durability is a currency sink, never a silent halt to unattended progress.
    */
   readonly depletedToolYieldMultiplierBasisPoints: number;
+  /**
+   * How long after the last contact a player still counts as present.
+   *
+   * Online collection may only reach this far past the last command. Beyond it
+   * the time is an absence, earnable at the offline rate through an explicit
+   * claim and not before - otherwise a client could close for the night, send
+   * one collect, and be paid the attended rate for all of it.
+   *
+   * Generous relative to the client's collection poll, so an ordinary hitch in
+   * a mobile connection never costs a player the online rate.
+   */
+  readonly presenceGraceMs: number;
 }
 
 export interface CraftingTunables {
@@ -207,6 +219,7 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     maxInventorySlots: 240,
     toolDurabilityLossPerHarvest: 1,
     depletedToolYieldMultiplierBasisPoints: 5_000,
+    presenceGraceMs: 60_000,
   }),
   crafting: Object.freeze({
     baseCraftDurationMs: 6_000,

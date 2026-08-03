@@ -228,20 +228,26 @@ describe('gathering.claimOffline', () => {
   });
 
   it('accrues at a quarter of the online rate', async () => {
+    // Measured over exactly the presence window, so the online arm is entitled
+    // to every tick in it and the comparison is of rates rather than of how
+    // far online collection is allowed to reach.
+    const window = DEFAULT_TUNABLES.gathering.presenceGraceMs;
+    const onlineTicks = Math.floor(window / CRYSTAL.harvestIntervalMs);
+
     const online = harness();
     await online.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
-    online.advance(CRYSTAL.harvestIntervalMs * 40);
+    online.advance(window);
     const onlineResult = await online.dispatch('gathering.collect');
 
     const offline = harness();
     await offline.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
-    offline.advance(CRYSTAL.harvestIntervalMs * 40);
+    offline.advance(window);
     const offlineResult = await offline.dispatch('gathering.claimOffline');
 
     expect(onlineResult.ok && offlineResult.ok).toBe(true);
     if (!onlineResult.ok || !offlineResult.ok) return;
-    expect((onlineResult.value as HarvestPatch).ticksResolved).toBe(40);
-    expect((offlineResult.value as HarvestPatch).ticksResolved).toBe(10);
+    expect((onlineResult.value as HarvestPatch).ticksResolved).toBe(onlineTicks);
+    expect((offlineResult.value as HarvestPatch).ticksResolved).toBe(onlineTicks / 4);
   });
 
   it('stops at the cap however long the player was away', async () => {
@@ -338,5 +344,60 @@ describe('concurrent writes', () => {
 
     const state = await h.state();
     expect(state.skills[CRYSTAL.requiredSkillId]!.xp).toBe(8 * CRYSTAL.xpPerHarvest);
+  });
+});
+
+describe('presence', () => {
+  it('does not pay the online rate for time the player was away', async () => {
+    const h = harness();
+    await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
+
+    // Eight hours with no contact, then a collect. Being away must not be
+    // worth the same as being present, whichever command the client sends.
+    h.advance(8 * 60 * 60 * 1000);
+    const result = await h.dispatch('gathering.collect');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const grace = DEFAULT_TUNABLES.gathering.presenceGraceMs;
+    const reachable = Math.floor(grace / CRYSTAL.harvestIntervalMs) + 1;
+    expect((result.value as HarvestPatch).ticksResolved).toBeLessThanOrEqual(reachable);
+  });
+
+  it('pays that same window through the offline claim instead', async () => {
+    const h = harness();
+    await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
+    h.advance(8 * 60 * 60 * 1000);
+
+    const claimed = await h.dispatch('gathering.claimOffline');
+    expect(claimed.ok).toBe(true);
+    if (!claimed.ok) return;
+    expect((claimed.value as HarvestPatch).ticksResolved).toBeGreaterThan(100);
+  });
+
+  it('leaves a continuously present player collecting at the full rate', async () => {
+    const h = harness();
+    await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
+
+    // Collecting keeps presence fresh, which is what a running client does.
+    let total = 0;
+    for (let round = 0; round < 4; round += 1) {
+      h.advance(CRYSTAL.harvestIntervalMs * 5);
+      const result = await h.dispatch('gathering.collect');
+      if (!result.ok) throw new Error(result.error.reason);
+      total += (result.value as HarvestPatch).ticksResolved;
+    }
+    expect(total).toBe(20);
+  });
+
+  it('has nothing to claim while the player never left', async () => {
+    const h = harness();
+    await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
+    h.advance(CRYSTAL.harvestIntervalMs * 5);
+    await h.dispatch('gathering.collect');
+
+    const claimed = await h.dispatch('gathering.claimOffline');
+    expect(claimed.ok).toBe(false);
+    if (!claimed.ok) expect(claimed.error.reason).toBe('gathering.nothing_to_claim');
   });
 });

@@ -174,6 +174,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     tunables: DEFAULT_TUNABLES,
     canvas: options.canvas,
     onEngageGatheringNode: (interactableId) => economy.startGathering(interactableId),
+    onEngageCraftingStation: (interactableId) => store.setOpenStation(interactableId),
   });
   if (!hubResult.ok) {
     store.setBootStep('world', { status: 'failed', detail: hubResult.error.reason });

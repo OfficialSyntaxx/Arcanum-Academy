@@ -58,6 +58,8 @@ export interface HubControllerOptions {
    * this keeps the hub testable without a socket.
    */
   readonly onEngageGatheringNode?: (interactableId: string) => void;
+  /** Called when the player engages a crafting station. */
+  readonly onEngageCraftingStation?: (interactableId: string) => void;
 }
 
 export class HubController {
@@ -167,6 +169,8 @@ export class HubController {
     // wait for it to finish.
     if (prompt.kind === InteractableKind.GatheringNode) {
       this.options.onEngageGatheringNode?.(prompt.id);
+    } else if (prompt.kind === InteractableKind.CraftingStation) {
+      this.options.onEngageCraftingStation?.(prompt.id);
     }
   }
 

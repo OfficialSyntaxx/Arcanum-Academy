@@ -106,6 +106,7 @@ export function App() {
               onCollect={() => economy?.collect()}
               onStopGathering={() => economy?.stopGathering()}
               onClaimOffline={() => economy?.claimOffline()}
+              onCraft={(recipeId) => economy?.craft(recipeId)}
             />
           ) : (
             <Screen />

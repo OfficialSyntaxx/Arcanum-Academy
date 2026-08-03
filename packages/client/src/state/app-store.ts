@@ -78,6 +78,8 @@ export interface AppState {
   readonly economy: EconomyState;
   /** Reason string of the last refused command, cleared when one succeeds. */
   readonly lastCommandError: string | null;
+  /** The crafting station whose recipes are open, or null. */
+  readonly openStationId: string | null;
 
   setPhase(phase: GamePhase): void;
   setBootStep(id: string, patch: Partial<Omit<BootStep, 'id'>>): void;
@@ -94,6 +96,7 @@ export interface AppState {
   setAccessibility(patch: Partial<AccessibilityPreferences>): void;
   setEconomy(patch: Partial<EconomyState>): void;
   setLastCommandError(reason: string | null): void;
+  setOpenStation(interactableId: string | null): void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -112,6 +115,7 @@ export const useAppStore = create<AppState>((set) => ({
   accessibility: DEFAULT_ACCESSIBILITY,
   economy: EMPTY_ECONOMY,
   lastCommandError: null,
+  openStationId: null,
 
   setPhase: (phase) => set({ phase }),
   registerBootSteps: (steps) => set({ bootSteps: steps }),
@@ -132,4 +136,5 @@ export const useAppStore = create<AppState>((set) => ({
     set((state) => ({ accessibility: { ...state.accessibility, ...patch } })),
   setEconomy: (patch) => set((state) => ({ economy: { ...state.economy, ...patch } })),
   setLastCommandError: (lastCommandError) => set({ lastCommandError }),
+  setOpenStation: (openStationId) => set({ openStationId }),
 }));

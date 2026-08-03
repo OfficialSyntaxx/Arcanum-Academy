@@ -241,7 +241,15 @@ export function registerEconomyHandlers(
   const collect: CommandHandler = async (session: Session) => {
     const nowMs = now();
     return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      const resolved = resolveActive(state, HarvestMode.Online, catalogs, tunables, nowMs);
+      // Online collection reaches only as far as the player was demonstrably
+      // present. The ledger is the session's resolvedThroughMs, so whatever
+      // this leaves behind stays available to the offline claim rather than
+      // being lost - and cannot be taken at the attended rate by asking again.
+      const presentUntilMs = Math.min(
+        nowMs,
+        state.lastSeenAtMs + tunables.gathering.presenceGraceMs,
+      );
+      const resolved = resolveActive(state, HarvestMode.Online, catalogs, tunables, presentUntilMs);
       if (!resolved.ok) return err(resolved.error);
       const next = applyHarvest(
         state,
@@ -283,8 +291,13 @@ export function registerEconomyHandlers(
     const nowMs = now();
     return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
       // Stopping settles what was earned first, so ending a session never
-      // discards the ticks that ran since the last collection.
-      const resolved = resolveActive(state, HarvestMode.Online, catalogs, tunables, nowMs);
+      // discards the ticks that ran since the last collection. It settles only
+      // the attended portion, for the same reason collect does.
+      const presentUntilMs = Math.min(
+        nowMs,
+        state.lastSeenAtMs + tunables.gathering.presenceGraceMs,
+      );
+      const resolved = resolveActive(state, HarvestMode.Online, catalogs, tunables, presentUntilMs);
       if (!resolved.ok) return err(resolved.error);
       const settled = applyHarvest(
         state,

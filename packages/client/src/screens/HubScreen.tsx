@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HubHud, InteractionPrompt } from '../ui/HubOverlay.js';
 import { JoystickPad } from '../ui/JoystickPad.js';
-import { CommandError, GatheringHud, InventoryPanel } from '../ui/EconomyPanels.js';
+import { CommandError, CraftingPanel, GatheringHud, InventoryPanel } from '../ui/EconomyPanels.js';
+import { useAppStore } from '../state/app-store.js';
 import type { Joystick } from '../input/joystick.js';
 
 /**
@@ -22,7 +23,17 @@ export interface HubScreenProps {
   readonly onCollect: () => void;
   readonly onStopGathering: () => void;
   readonly onClaimOffline: () => void;
+  readonly onCraft: (recipeId: string) => void;
 }
+
+/**
+ * How often a running session asks the server what it has earned.
+ *
+ * This is also what keeps the player counted as present: the server only pays
+ * the attended rate as far as the last contact, so a client that never spoke
+ * while gathering would be treated as away and paid a quarter.
+ */
+const COLLECTION_POLL_MS = 10_000;
 
 export function HubScreen({
   joystick,
@@ -30,7 +41,18 @@ export function HubScreen({
   onCollect,
   onStopGathering,
   onClaimOffline,
+  onCraft,
 }: HubScreenProps) {
+  const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
+  const openStationId = useAppStore((state) => state.openStationId);
+  const setOpenStation = useAppStore((state) => state.setOpenStation);
+
+  useEffect(() => {
+    if (gatheringNodeId === null) return;
+    const timer = setInterval(onCollect, COLLECTION_POLL_MS);
+    return () => clearInterval(timer);
+  }, [gatheringNodeId, onCollect]);
+
   // The satchel is a panel rather than a permanent strip: it is consulted
   // occasionally and would otherwise cost screen the world should be using.
   const [satchelOpen, setSatchelOpen] = useState(false);
@@ -46,6 +68,13 @@ export function HubScreen({
         onClaimOffline={onClaimOffline}
       />
       <CommandError />
+      {openStationId !== null && (
+        <CraftingPanel
+          stationInteractableId={openStationId}
+          onCraft={onCraft}
+          onClose={() => setOpenStation(null)}
+        />
+      )}
       {satchelOpen ? (
         <InventoryPanel onClose={() => setSatchelOpen(false)} />
       ) : (
