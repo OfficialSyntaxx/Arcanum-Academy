@@ -19,14 +19,15 @@
  *                        Emberwood Grove  Duelling Terrace  Hall of Champions
  */
 
-import type { InteractableId, NpcDefinitionId, WaypointId, ZoneId } from '../ids.js';
-import { InteractableKind, NpcActivity, NpcRole, type Zone } from './types.js';
+import type { InteractableId, NpcDefinitionId, WaypointId } from '../ids.js';
+import { BuildingDoorSide, InteractableKind, NpcActivity, NpcRole, type Zone } from './types.js';
+import { COURTYARD_ZONE_ID, FOREST_ZONE_ID, MOUNTAINS_ZONE_ID, SNOW_ZONE_ID } from './zone-ids.js';
 
 const wp = (id: string): WaypointId => id as WaypointId;
 const ix = (id: string): InteractableId => id as InteractableId;
 const npc = (id: string): NpcDefinitionId => id as NpcDefinitionId;
 
-export const COURTYARD_ZONE_ID = 'zone.courtyard' as ZoneId;
+export { COURTYARD_ZONE_ID } from './zone-ids.js';
 
 export const COURTYARD: Zone = {
   id: COURTYARD_ZONE_ID,
@@ -44,6 +45,7 @@ export const COURTYARD: Zone = {
       // The mines cut downwards.
       { minX: -24, maxX: -10, minZ: -24, maxZ: -10, height: -0.8 },
     ],
+    canals: [],
   },
   spawn: wp('wp.plaza.center'),
   atmosphere: 'courtyard.afternoon',
@@ -234,8 +236,15 @@ export const COURTYARD: Zone = {
       id: wp('wp.library.stacks'),
       position: { x: 17.5, z: -17.5 },
       radius: 1.8,
-      links: [wp('wp.library.entry')],
+      links: [wp('wp.library.entry'), wp('wp.library.gate')],
       tags: ['quests', 'lore'],
+    },
+    {
+      id: wp('wp.library.gate'),
+      position: { x: 23, z: -23 },
+      radius: 2,
+      links: [wp('wp.library.stacks')],
+      tags: ['portal'],
     },
 
     // --- Resonance Mines (north-west) ------------------------------------
@@ -250,8 +259,15 @@ export const COURTYARD: Zone = {
       id: wp('wp.mines.seam'),
       position: { x: -18, z: -18 },
       radius: 1.8,
-      links: [wp('wp.mines.entry')],
+      links: [wp('wp.mines.entry'), wp('wp.mines.gate')],
       tags: ['gathering'],
+    },
+    {
+      id: wp('wp.mines.gate'),
+      position: { x: -23, z: -23 },
+      radius: 2,
+      links: [wp('wp.mines.seam')],
+      tags: ['portal'],
     },
 
     // --- Hall of Champions (south-east) ----------------------------------
@@ -282,8 +298,15 @@ export const COURTYARD: Zone = {
       id: wp('wp.grove.stand'),
       position: { x: -18, z: 18 },
       radius: 1.8,
-      links: [wp('wp.grove.entry')],
+      links: [wp('wp.grove.entry'), wp('wp.grove.gate')],
       tags: ['gathering'],
+    },
+    {
+      id: wp('wp.grove.gate'),
+      position: { x: -23, z: 23 },
+      radius: 2,
+      links: [wp('wp.grove.stand')],
+      tags: ['portal'],
     },
   ],
 
@@ -405,6 +428,54 @@ export const COURTYARD: Zone = {
       facing: Math.PI * 1.75,
       label: 'Notice Board',
       verb: 'Read',
+    },
+
+    // --- World gates -------------------------------------------------------
+    {
+      id: ix('int.grove.gate.portal'),
+      kind: InteractableKind.ZonePortal,
+      position: { x: -24.6, z: 24.6 },
+      approach: wp('wp.grove.gate'),
+      facing: Math.PI * 1.25,
+      label: 'Path to the Emberwood Reach',
+      verb: 'Travel',
+      targetZone: FOREST_ZONE_ID,
+    },
+    {
+      id: ix('int.mines.gate.portal'),
+      kind: InteractableKind.ZonePortal,
+      position: { x: -24.6, z: -24.6 },
+      approach: wp('wp.mines.gate'),
+      facing: Math.PI * 0.25,
+      label: 'Path to the Cindermark Heights',
+      verb: 'Travel',
+      targetZone: MOUNTAINS_ZONE_ID,
+    },
+    {
+      id: ix('int.library.gate.portal'),
+      kind: InteractableKind.ZonePortal,
+      position: { x: 24.6, z: -24.6 },
+      approach: wp('wp.library.gate'),
+      facing: Math.PI * 0.75,
+      label: 'Path to the Frostgate Reaches',
+      verb: 'Travel',
+      targetZone: SNOW_ZONE_ID,
+    },
+  ],
+
+  buildings: [
+    // The Scribing Hall is a real enclosed room: four walls and a door on
+    // the plaza side, sized to the terrace it already stands on.
+    {
+      minX: -10,
+      maxX: 10,
+      minZ: -24,
+      maxZ: -13,
+      wallHeight: 3.2,
+      roofHeight: 2,
+      doorSide: BuildingDoorSide.South,
+      doorWidth: 3,
+      doorTrigger: wp('wp.scribe.stair'),
     },
   ],
 

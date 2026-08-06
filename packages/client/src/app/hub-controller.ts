@@ -21,6 +21,7 @@ import {
   type Failure,
   type Result,
   type Tunables,
+  type Zone,
   err,
   ok,
 } from '@arcanum/shared';
@@ -64,19 +65,21 @@ export interface HubControllerOptions {
   readonly onEngageScribingTable?: () => void;
   /** Called when the player engages a duel circle. */
   readonly onEngageDuelCircle?: () => void;
+  /** Called when the player engages a zone portal, with the target zone id. */
+  readonly onEngageZonePortal?: (targetZoneId: string) => void;
 }
 
 export class HubController {
   readonly joystick = new Joystick();
 
-  private readonly world: WorldService;
-  private readonly player: PlayerController;
+  private world: WorldService;
+  private player: PlayerController;
   private readonly camera: CameraRig;
-  private readonly npcs: NpcDirector;
+  private npcs: NpcDirector;
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
   private readonly now: () => number;
-  private readonly playerSlot: number;
+  private playerSlot: number;
 
   private accessibility: AccessibilityPreferences;
   private storeAccumulatorMs = 0;
@@ -122,6 +125,7 @@ export class HubController {
 
     this.bindInput();
     useAppStore.getState().setAmbientPopulation(this.npcs.population);
+    useAppStore.getState().setZone(world.zone.id, world.zone.name);
     applyAccessibility(this.accessibility, document.documentElement);
     useAppStore.getState().setAccessibility(this.accessibility);
   }
@@ -159,6 +163,7 @@ export class HubController {
       dayFraction / this.options.tunables.world.worldDayLengthMs,
       this.player.position,
     );
+    this.world.updateDoors(this.player.position, dtSeconds);
 
     this.publish(dtSeconds * 1000);
   }
@@ -179,7 +184,57 @@ export class HubController {
       this.options.onEngageScribingTable?.();
     } else if (prompt.kind === InteractableKind.DuelCircle) {
       this.options.onEngageDuelCircle?.();
+    } else if (prompt.kind === InteractableKind.ZonePortal && prompt.targetZone) {
+      this.options.onEngageZonePortal?.(prompt.targetZone);
     }
+  }
+
+  /**
+   * Tears down the current zone and stands up a new one in its place.
+   *
+   * Purely a client-side concern for now: the server has no notion of "which
+   * zone a player is in" (gathering/crafting/duels are addressed by
+   * interactable id, not by zone), so travel never touches the network. The
+   * player always arrives at the new zone's authored `spawn` waypoint.
+   */
+  switchZone(zone: Zone): Result<void, Failure> {
+    const loaded = WorldService.load(zone, this.options.quality);
+    if (!loaded.ok) return err(loaded.error);
+    const newWorld = loaded.value;
+
+    this.npcs.dispose();
+    this.world.actors.release(this.playerSlot);
+    this.options.render.scene.remove(this.world.root);
+    this.world.dispose();
+
+    this.world = newWorld;
+    const { world: worldTunables } = this.options.tunables;
+    this.player = new PlayerController({
+      world: newWorld,
+      walkSpeed: worldTunables.playerWalkSpeed,
+      runSpeed: worldTunables.playerRunSpeed,
+      turnRate: worldTunables.playerTurnRate,
+      arrivalRadius: worldTunables.waypointArrivalRadius,
+    });
+    this.playerSlot = newWorld.actors.acquire('player');
+    this.npcs = new NpcDirector(newWorld, this.options.tunables, this.now());
+
+    newWorld.attach(this.options.render.scene);
+    this.camera.snapTo({
+      x: this.player.position.x,
+      y: this.player.elevation,
+      z: this.player.position.z,
+    });
+
+    // A prompt or population count left over from the old zone is stale the
+    // instant the zone changes, not on the next throttled publish tick.
+    this.lastPromptId = null;
+    const store = useAppStore.getState();
+    store.setInteractionPrompt(null);
+    store.setAmbientPopulation(this.npcs.population);
+    store.setZone(newWorld.zone.id, newWorld.zone.name);
+
+    return ok(undefined);
   }
 
   setAccessibility(patch: Partial<AccessibilityPreferences>): void {
@@ -254,6 +309,9 @@ export class HubController {
             verb: nearest.interactable.verb,
             kind: nearest.interactable.kind,
             approach: nearest.interactable.approach,
+            ...(nearest.interactable.targetZone !== undefined
+              ? { targetZone: nearest.interactable.targetZone }
+              : {}),
           }
         : null;
       store.setInteractionPrompt(prompt);

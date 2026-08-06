@@ -49,10 +49,11 @@ function formatClock(minute: number): string {
 export function HubHud() {
   const worldMinute = useAppStore((state) => state.worldMinute);
   const population = useAppStore((state) => state.ambientPopulation);
+  const zoneName = useAppStore((state) => state.currentZoneName);
 
   return (
     <div className="hub-hud">
-      <span className="hub-hud__zone">Courtyard of the Arcanum</span>
+      <span className="hub-hud__zone">{zoneName}</span>
       <span className="hub-hud__clock">
         <time>{formatClock(worldMinute)}</time> · {periodOf(worldMinute)}
       </span>

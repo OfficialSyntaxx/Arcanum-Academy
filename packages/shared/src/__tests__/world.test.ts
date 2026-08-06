@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { buildNavGraph } from '../world/graph.js';
 import { COURTYARD } from '../world/courtyard.js';
+import { FOREST } from '../world/forest.js';
+import { MOUNTAINS } from '../world/mountains.js';
+import { SNOW } from '../world/snow.js';
+import { zoneById, ZONES_BY_ID } from '../world/zone-catalog.js';
 import { heightAt, type Waypoint, type Zone } from '../world/types.js';
 import type { WaypointId, ZoneId } from '../ids.js';
 
@@ -19,10 +23,11 @@ function zoneWith(waypoints: Waypoint[], spawn = 'a'): Zone {
     id: 'zone.test' as ZoneId,
     name: 'Test',
     bounds: { minX: -50, maxX: 50, minZ: -50, maxZ: 50 },
-    terrain: { baseHeight: 0, terraces: [] },
+    terrain: { baseHeight: 0, terraces: [], canals: [] },
     spawn: spawn as WaypointId,
     waypoints,
     interactables: [],
+    buildings: [],
     npcs: [],
     ambientPopulation: 0,
     atmosphere: 'test',
@@ -40,6 +45,27 @@ describe('buildNavGraph', () => {
     if (!result.ok) throw new Error(result.error.detail);
     expect(result.value.nodes).toHaveLength(COURTYARD.waypoints.length);
     expect(result.value.indexOf(COURTYARD.spawn)).toBeGreaterThanOrEqual(0);
+  });
+
+  it.each([
+    ['Emberwood Reach', FOREST],
+    ['Cindermark Heights', MOUNTAINS],
+    ['Frostgate Reaches', SNOW],
+  ])('compiles the %s without validation errors', (_name, zone) => {
+    const result = buildNavGraph(zone);
+    expect(result.ok, result.ok ? '' : result.error.detail).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.nodes).toHaveLength(zone.waypoints.length);
+    expect(result.value.indexOf(zone.spawn)).toBeGreaterThanOrEqual(0);
+  });
+
+  it('resolves every real zone id through the catalog, and an unknown id to null', () => {
+    expect(ZONES_BY_ID.size).toBe(4);
+    expect(zoneById(COURTYARD.id)).toBe(COURTYARD);
+    expect(zoneById(FOREST.id)).toBe(FOREST);
+    expect(zoneById(MOUNTAINS.id)).toBe(MOUNTAINS);
+    expect(zoneById(SNOW.id)).toBe(SNOW);
+    expect(zoneById('zone.nonexistent' as ZoneId)).toBeNull();
   });
 
   it('rejects a link to a waypoint that does not exist', () => {
@@ -102,6 +128,7 @@ describe('heightAt', () => {
         { minX: -5, maxX: 5, minZ: -5, maxZ: 5, height: 1 },
         { minX: -2, maxX: 2, minZ: -2, maxZ: 2, height: 3 },
       ],
+      canals: [],
     };
     expect(heightAt(terrain, { x: 0, z: 0 })).toBe(3);
     expect(heightAt(terrain, { x: 4, z: 0 })).toBe(1);

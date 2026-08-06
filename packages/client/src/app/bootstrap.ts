@@ -5,7 +5,9 @@ import {
   COURTYARD,
   DEFAULT_TUNABLES,
   LogLevel,
+  zoneById,
   type Logger,
+  type ZoneId,
 } from '@arcanum/shared';
 import { GamePhase } from '@arcanum/sim';
 import { Container } from '../core/container.js';
@@ -192,6 +194,10 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
   const economy = new EconomyController(transport);
   container.register('economy', () => economy);
 
+  // The travel callback needs to call back into the hub it is itself being
+  // constructed for; a mutable ref set right after `create()` breaks that
+  // cycle without giving HubController a self-reference of its own.
+  const hubRef: { current: HubController | undefined } = { current: undefined };
   const hubResult = HubController.create({
     render,
     input,
@@ -202,6 +208,21 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     onEngageCraftingStation: (interactableId) => store.setOpenStation(interactableId),
     onEngageScribingTable: () => store.setCollectionOpen(true),
     onEngageDuelCircle: () => store.setLadderOpen(true),
+    onEngageZonePortal: (targetZoneId) => {
+      const zone = zoneById(targetZoneId as ZoneId);
+      if (!zone) {
+        logger.warn('portal targets an unknown zone', { targetZoneId });
+        return;
+      }
+      const switched = hubRef.current?.switchZone(zone);
+      if (switched && !switched.ok) {
+        logger.error('zone failed validation on travel', {
+          reason: switched.error.reason,
+          detail: switched.error.detail ?? '',
+        });
+        store.setFault(switched.error.detail ?? switched.error.reason);
+      }
+    },
   });
   if (!hubResult.ok) {
     store.setBootStep('world', { status: 'failed', detail: hubResult.error.reason });
@@ -212,6 +233,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     throw new Error(hubResult.error.detail ?? hubResult.error.reason);
   }
   const hub = hubResult.value;
+  hubRef.current = hub;
   container.register('hub', () => hub);
   store.setBootStep('world', { status: 'done', detail: COURTYARD.name });
 

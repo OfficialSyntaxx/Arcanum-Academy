@@ -112,6 +112,20 @@ export function buildNavGraph(zone: Zone): Result<NavGraph, Failure> {
     }
   }
 
+  zone.buildings.forEach((building, index) => {
+    if (!indexById.has(building.doorTrigger)) {
+      problems.push(
+        `building [${String(index)}] door triggers unknown waypoint "${building.doorTrigger}"`,
+      );
+    }
+    if (building.minX >= building.maxX || building.minZ >= building.maxZ) {
+      problems.push(`building [${String(index)}] has a degenerate footprint`);
+    }
+    if (building.doorWidth <= 0) {
+      problems.push(`building [${String(index)}] has a non-positive door width`);
+    }
+  });
+
   for (const npc of zone.npcs) {
     if (npc.schedule.length === 0) {
       problems.push(`npc "${npc.id}" has an empty schedule`);

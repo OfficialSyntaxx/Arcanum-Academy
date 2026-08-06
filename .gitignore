@@ -11,3 +11,8 @@ coverage/
 # Source archives. The repository is the source of truth; a zip of it goes
 # stale the moment the next commit lands.
 *.zip
+
+# Local agent tooling config, machine-specific.
+.claude/
+# Vite/Vitest occasionally leaves a timestamped transient config behind.
+vitest.config.ts.timestamp-*.mjs

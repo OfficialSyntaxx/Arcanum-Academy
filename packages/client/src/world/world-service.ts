@@ -123,6 +123,27 @@ export class WorldService {
   }
 
   /**
+   * Swings every building door toward open or shut based on the player's
+   * distance from its trigger waypoint. Purely visual — there is no collision
+   * system to gate, so a door is a proximity cue, not an obstacle.
+   */
+  updateDoors(playerPosition: Vec2, dtSeconds: number): void {
+    if (this.geometry.doors.length === 0) return;
+    const OPEN_MARGIN = 1.5;
+    const LERP_RATE = 6;
+    const t = 1 - Math.exp(-LERP_RATE * dtSeconds);
+    for (const door of this.geometry.doors) {
+      const node = this.graph.nodes[this.graph.indexOf(door.triggerWaypoint)];
+      if (node === undefined) continue;
+      const d2 = distanceSquared(playerPosition, node.position);
+      const openRadius = node.radius + OPEN_MARGIN;
+      const shouldOpen = d2 <= openRadius * openRadius;
+      const target = shouldOpen ? door.openAngle : door.closedAngle;
+      door.pivot.rotation.y += (target - door.pivot.rotation.y) * t;
+    }
+  }
+
+  /**
    * Moves the key light for the time of day and keeps it centred on the player,
    * which lets a small shadow map cover the whole visible area.
    */

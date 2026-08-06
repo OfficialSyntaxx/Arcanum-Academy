@@ -145,9 +145,25 @@ export interface Terrace {
   readonly height: number;
 }
 
+/**
+ * A still, flat body of water — a canal, pond or (as a chain of segments) a
+ * river. Purely a rendered surface for now: it does not affect `heightAt` or
+ * navigation, so authoring one cannot desynchronise the walkable graph. Flow
+ * and current are a renderer concern for later; the shape and water level are
+ * authored here so that work has somewhere to attach.
+ */
+export interface Canal {
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minZ: number;
+  readonly maxZ: number;
+  readonly waterHeight: number;
+}
+
 export interface ZoneTerrain {
   readonly baseHeight: number;
   readonly terraces: readonly Terrace[];
+  readonly canals: readonly Canal[];
 }
 
 export interface ZoneBounds {
@@ -155,6 +171,40 @@ export interface ZoneBounds {
   readonly maxX: number;
   readonly minZ: number;
   readonly maxZ: number;
+}
+
+export const BuildingDoorSide = {
+  North: 'NORTH',
+  South: 'SOUTH',
+  East: 'EAST',
+  West: 'WEST',
+} as const;
+
+export type BuildingDoorSide = (typeof BuildingDoorSide)[keyof typeof BuildingDoorSide];
+
+/**
+ * An enclosed structure: four walls, a roof, and one hinged door. The
+ * footprint doubles as the building's floor — it is authored the same way a
+ * `Terrace` is, and usually sits directly on one, so a building's floor
+ * height is always `heightAt` at its own footprint rather than a second
+ * number that could drift from it.
+ *
+ * The door has no gameplay effect. It swings open when a player approaches
+ * `doorTrigger` and swings shut behind them, which is a renderer concern
+ * only — this engine has no collision to gate, so "working door" means
+ * "responds to you," not "blocks you."
+ */
+export interface Building {
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minZ: number;
+  readonly maxZ: number;
+  readonly wallHeight: number;
+  readonly roofHeight: number;
+  readonly doorSide: BuildingDoorSide;
+  readonly doorWidth: number;
+  /** The waypoint whose approach swings the door open. */
+  readonly doorTrigger: WaypointId;
 }
 
 export interface Zone {
@@ -165,6 +215,7 @@ export interface Zone {
   readonly spawn: WaypointId;
   readonly waypoints: readonly Waypoint[];
   readonly interactables: readonly Interactable[];
+  readonly buildings: readonly Building[];
   readonly npcs: readonly NpcDefinition[];
   /** How many anonymous ambient actors to populate, before quality budgeting. */
   readonly ambientPopulation: number;

@@ -28,6 +28,8 @@ export interface InteractionPromptState {
   readonly verb: string;
   readonly kind: string;
   readonly approach: string;
+  /** Set only for a ZonePortal prompt: the zone it leads to. */
+  readonly targetZone?: string;
 }
 
 /**
@@ -136,6 +138,9 @@ export interface AppState {
   readonly faultMessage: string | null;
   readonly updateAvailable: boolean;
   readonly interactionPrompt: InteractionPromptState | null;
+  /** The zone currently loaded in the world. */
+  readonly currentZoneId: string;
+  readonly currentZoneName: string;
   /** Minute of the in-world day, 0-1439. */
   readonly worldMinute: number;
   readonly ambientPopulation: number;
@@ -165,6 +170,7 @@ export interface AppState {
   setFault(message: string | null): void;
   setUpdateAvailable(available: boolean): void;
   setInteractionPrompt(prompt: InteractionPromptState | null): void;
+  setZone(id: string, name: string): void;
   setWorldMinute(minute: number): void;
   setAmbientPopulation(count: number): void;
   setAccessibility(patch: Partial<AccessibilityPreferences>): void;
@@ -191,6 +197,8 @@ export const useAppStore = create<AppState>((set) => ({
   faultMessage: null,
   updateAvailable: false,
   interactionPrompt: null,
+  currentZoneId: '',
+  currentZoneName: '',
   worldMinute: 0,
   ambientPopulation: 0,
   accessibility: DEFAULT_ACCESSIBILITY,
@@ -218,6 +226,7 @@ export const useAppStore = create<AppState>((set) => ({
   setFault: (faultMessage) => set({ faultMessage }),
   setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),
   setInteractionPrompt: (interactionPrompt) => set({ interactionPrompt }),
+  setZone: (currentZoneId, currentZoneName) => set({ currentZoneId, currentZoneName }),
   setWorldMinute: (worldMinute) => set({ worldMinute }),
   setAmbientPopulation: (ambientPopulation) => set({ ambientPopulation }),
   setAccessibility: (patch) =>

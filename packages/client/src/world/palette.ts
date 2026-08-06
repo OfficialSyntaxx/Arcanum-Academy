@@ -17,6 +17,14 @@ export const Palette = {
   /** Reserved for grade 9-10 prestige, in the world as well as in the UI. */
   gilt: 0xc9a227,
   alarm: 0xd0524a,
+  /** Still water — canals, ponds, river segments. Flat colour; flow lands later. */
+  canal: 0x3a86c8,
+  /** Walkway strips laid along waypoint links. */
+  path: 0x30404f,
+  /** Doors and roof timber. */
+  wood: 0x4a3423,
+  /** Lamps, torches, lanterns — warm decorative light, not a dynamic source. */
+  flame: 0xffb15a,
 } as const;
 
 export interface Atmosphere {
@@ -46,6 +54,36 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
     sunIntensity: 1.15,
     ambientColour: 0x8fa6c0,
     ambientIntensity: 0.55,
+  },
+  'forest.canopy': {
+    sky: 0x1f3327,
+    fog: 0x223a2c,
+    fogNear: 22,
+    fogFar: 70,
+    sunColour: 0xcfe8a8,
+    sunIntensity: 0.85,
+    ambientColour: 0x5f8f6c,
+    ambientIntensity: 0.6,
+  },
+  'mountains.overcast': {
+    sky: 0x3a3f47,
+    fog: 0x40454d,
+    fogNear: 28,
+    fogFar: 88,
+    sunColour: 0xd8dee6,
+    sunIntensity: 0.95,
+    ambientColour: 0x7c828c,
+    ambientIntensity: 0.6,
+  },
+  'snow.overcast': {
+    sky: 0xcbd9e6,
+    fog: 0xd8e4ee,
+    fogNear: 20,
+    fogFar: 76,
+    sunColour: 0xf3f8ff,
+    sunIntensity: 1.05,
+    ambientColour: 0xb9cbdc,
+    ambientIntensity: 0.75,
   },
 };
 
