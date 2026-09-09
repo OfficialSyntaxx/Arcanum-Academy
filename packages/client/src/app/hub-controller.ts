@@ -88,6 +88,8 @@ export class HubController {
   private accessibility: AccessibilityPreferences;
   private storeAccumulatorMs = 0;
   private lastPromptId: string | null = null;
+  /** One-tap skilling/travel request waiting for its route to complete. */
+  private pendingInteractionId: string | null = null;
   private disposed = false;
 
   private constructor(
@@ -151,6 +153,7 @@ export class HubController {
   update(dtSeconds: number): void {
     if (this.disposed) return;
     this.player.step(dtSeconds);
+    this.completePendingInteraction();
 
     const focus = {
       x: this.player.position.x,
@@ -270,8 +273,16 @@ export class HubController {
     // A tap on the world is a destination. It is the only movement control, so
     // there is nothing for it to arbitrate against.
     input.events.on('tap', ({ x, y }) => {
+      const interactable = this.pickInteractable(x, y);
+      if (interactable) {
+        this.routeToInteractable(interactable.id);
+        return;
+      }
       const point = this.pickGround(x, y);
-      if (point) this.player.moveTo({ x: point.x, z: point.z });
+      if (point) {
+        this.pendingInteractionId = null;
+        this.player.moveTo({ x: point.x, z: point.z });
+      }
     });
 
     input.events.on('dragmove', ({ dx, dy }) => {
@@ -312,6 +323,49 @@ export class HubController {
     const hits = this.raycaster.intersectObject(this.world.root, true);
     const hit = hits.find((candidate) => candidate.object.userData['ground'] === true);
     return hit ? hit.point : null;
+  }
+
+  /** Resolves a direct tap on an interactable's visible world marker. */
+  private pickInteractable(clientX: number, clientY: number): { readonly id: string } | null {
+    const rect = this.options.canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+    this.pointer.set(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    this.raycaster.setFromCamera(this.pointer, this.options.render.camera);
+    for (const hit of this.raycaster.intersectObject(this.world.root, true)) {
+      const interactable = this.world.interactableFromObject(hit.object);
+      if (interactable) return { id: interactable.id };
+    }
+    return null;
+  }
+
+  /** Routes to a specific world object and queues its one-tap action if any. */
+  private routeToInteractable(id: string): void {
+    const target = this.world.zone.interactables.find((interactable) => interactable.id === id);
+    if (!target) return;
+    this.player.approach(target.approach);
+    this.pendingInteractionId =
+      target.kind === InteractableKind.MerchantStall || target.kind === InteractableKind.QuestBoard
+        ? null
+        : target.id;
+  }
+
+  /** Starts a queued skilling or travel action once the avatar reaches it. */
+  private completePendingInteraction(): void {
+    const id = this.pendingInteractionId;
+    if (id === null || this.player.isTravelling) return;
+    this.pendingInteractionId = null;
+    const target = this.world.zone.interactables.find((interactable) => interactable.id === id);
+    if (!target) return;
+    if (target.kind === InteractableKind.GatheringNode) {
+      this.options.onEngageGatheringNode?.(target.id);
+    } else if (target.kind === InteractableKind.CraftingStation) {
+      this.options.onEngageCraftingStation?.(target.id);
+    } else if (target.kind === InteractableKind.ZonePortal && target.targetZone) {
+      this.options.onEngageZonePortal?.(target.targetZone);
+    }
   }
 
   /** Throttled projection of world state into the UI store. */
