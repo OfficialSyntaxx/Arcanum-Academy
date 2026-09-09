@@ -16,3 +16,4 @@ coverage/
 .claude/
 # Vite/Vitest occasionally leaves a timestamped transient config behind.
 vitest.config.ts.timestamp-*.mjs
+dist-shot/
