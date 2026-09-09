@@ -302,6 +302,38 @@ three levels of content is worse than no skill.
 | Boss encounters | Enrage phases, slam attacks, multi-phase behaviour. | isorpg; ALA `archetypes.js` (design) |
 | Aggression / safe zones | Which monsters attack on sight, and where they can't. | — |
 
+#### 3.4.0 The bestiary — broad, but one world
+
+Owner decision, 2026-09-09. **The range is wide** — ordinary wildlife, mythical beasts, imps,
+bandits, constructs, and fully custom creatures modelled in Blender. Nothing is ruled out by
+category.
+
+**What *is* ruled out is anything that looks imported.** The single rule:
+
+> **Every creature must look like it was made for this world.** A player should never be able
+> to tell which came from a free pack, which was custom-modelled, and which arrived last.
+
+This is the failure that killed the look of a previous project, and its own post-mortem
+diagnosed it precisely: **asset coherence is a texture and material problem, not a polycount
+problem** (§12). Packs that individually look fine read as a jumble the moment they share a
+scene, because each carries its own material scheme, texel density and colour temperature.
+
+**What that means in practice — apply to every creature, sourced or authored:**
+
+- **One material scheme.** Flat colour or a shared swatch atlas, matched to the environment
+  art. Never a creature with per-object 2K PBR maps standing next to atlas-textured ones.
+- **One palette.** Run every creature through the warm palette (§6.1). A cool-grey wolf beside
+  honey-toned stone is the tell.
+- **One silhouette language.** Rounded and chunky (§6.1). No spiky outliers.
+- **Consistent scale.** Establish the player's height and hold every creature against it.
+- **One rig where humanoid** (§6.1.1) — bandits and imps retarget onto the player skeleton.
+- **PG by construction** (§1.1.1): bandits are mischievous, not murderous; nothing bleeds;
+  defeated creatures fade rather than die on screen.
+
+**The admission gate:** no creature enters the live world until it has been reviewed *beside*
+existing ones in an isolated review scene — not alone, where everything looks fine. isorpg
+built exactly this (`docs/ASSET_ADMISSION.md`) after making the mistake; take it.
+
 #### 3.4.1 Combat feel — a 600 ms tick the player never feels
 
 Owner decision, 2026-09-09: **keep the true OSRS 600 ms tick, and make it feel fast through
@@ -458,7 +490,7 @@ game:
 |---|---|---|
 | PWA install | Manifest, `display: standalone`, apple-touch-icon, `apple-mobile-web-app-*` meta. **Functional requirement, not polish** — iOS Safari has no Fullscreen API, so a home-screen launch is the only way to get a chrome-less game. | Oakenfall (complete and correct) |
 | Service worker | Network-first with cache fallback, root-relative paths so it survives a host move. | Oakenfall `sw.js` |
-| Offline play | ⚠️ **UNRESOLVED — see §14.2 Q3.** This requirement contradicts ADR-0001 (server-authoritative, §4.4). Both are currently written as true. Resolve before G2. | Oakenfall |
+| Offline play | **Required and settled.** The client runs the sim locally and plays with no network; the server stores and validates on sync (ADR-0001 as amended, §4.4). | Oakenfall |
 | Safe-area insets | `env(safe-area-inset-*)` on every fixed-position element. Notch and home indicator. | Oakenfall (`index.html` — the reference implementation) |
 | Orientation support | Portrait primary; landscape re-docks panels to the side. | Oakenfall |
 | 44px minimum touch targets | Non-negotiable. | Oakenfall |
@@ -567,11 +599,34 @@ client → shared, sim
 
 Four rules that carry over from `Arcanum-Academy` and must survive:
 
-- **ADR-0001 — server-authoritative deterministic simulation.** The server owns all outcomes.
-  Client and server share `@alderfell/sim` — identical logic, no duplication. The client
-  predicts; the server verifies by state-hash comparison; a mismatch triggers a resync, not
-  a disconnect. *Keep this even while single-player.* Gutting it to save hosting cost is the
-  one change that would be expensive to reverse.
+- **ADR-0001 (amended 2026-09-09) — one deterministic kernel, offline-first trust.**
+  Client and server share `@alderfell/sim` — identical logic, no duplication. **The client
+  runs the kernel and owns outcomes while single-player;** the server stores the save and
+  *replays the command log to validate it* rather than refereeing it live.
+
+  This replaces the original "the server owns all outcomes", which was written for a card
+  game with live PvP. The premise changed: Alderfell is single-player Ironman with no
+  trading, so a lie affects nobody but the liar — while requiring a server to play costs
+  offline play entirely and puts a 30–60 second free-tier cold start at the front of every
+  session.
+
+  **The architecture does not change, only where it is trusted.** That is exactly what the
+  shared kernel buys. Concretely:
+
+  - The client plays fully offline, from IndexedDB, always. **This is a hard requirement**
+    (§3.8) and it is why the game opens instantly.
+  - The client records a command log; on reconnect it syncs, and the server replays that log
+    through the same kernel and stores the result.
+  - A save that fails validation is **not destroyed** — it is flagged and kept. Deleting a
+    player's progress over a desync is worse than the desync.
+  - An account whose history has only ever come from server-validated sessions carries a
+    **`verified` flag**. Hiscores (M-1) show verified accounts only. Same mechanism as
+    `adminTouched` (§9.2).
+  - **Live multiplayer (M-2+) moves the trust boundary back to the server for players in it.**
+    No system is rewritten; the same kernel is simply trusted from the other end.
+
+  **Do not hard-code either assumption.** Anything that reads "the server decides" or "the
+  client decides" outside the sync layer is a bug.
 - **ADR-0002 — balance lives in versioned data.** Every tunable number lives in one
   `DEFAULT_TUNABLES` file. Gameplay code never hardcodes a literal. The tunables version is
   recorded in replays.
@@ -1065,18 +1120,23 @@ verb, four zones, inventory, skills.
 1. **Rename the project to Alderfell** in `Arcanum-Academy`: package scope `@arcanum/*` →
    `@alderfell/*`, the PWA manifest, the README, the Netlify site name. Keep the repository,
    keep the git history, keep the deployment.
-2. **Delete the cut features** (§3.7): `sim/combat/` (card duel), `cards/`, deck builder,
+2. **Replace the stale docs.** `CLAUDE.md` still describes the card game in full detail and
+   would actively mislead any agent that opens the repository — Codex included. It becomes a
+   short pointer to this document. The same goes for `docs/adr/ADR-0004` (grade vs duel
+   resolution, about a system that no longer exists) and the phase roadmap. **One source of
+   truth, nothing to drift.**
+3. **Delete the cut features** (§3.7): `sim/combat/` (card duel), `cards/`, deck builder,
    scribing, grading, serial minter, `content/data/cards.json`, `schools.json`,
    `DuelScreen.tsx`, `CollectionPanel.tsx`. This is a large, satisfying deletion and it
    should be one commit with a clear message.
-3. **Disable, do not delete, the multiplayer layer.** Trading, matchmaking, PvP and presence
+4. **Disable, do not delete, the multiplayer layer.** Trading, matchmaking, PvP and presence
    move behind a feature flag. They are correct, tested, and expensive to rewrite (§8).
-4. **Port isorpg's TypeScript systems** into `packages/sim` — see §11.2. This is the single
-   highest-value transfer in the whole plan: OSRS combat maths, 12 skills, XP tables, drop
+5. **Port isorpg's TypeScript systems** into `packages/sim` — see §11.2. This is the single
+   highest-value transfer in the whole plan: OSRS combat maths, the skill systems, XP tables, drop
    tables, quests, clues, dungeons, farming, shops, all in TypeScript, all already tested.
-5. **Port Oakenfall's shell and pipeline** — see §11.3.
-6. **Rework the camera and delete the joystick** (§5).
-7. **Do the art pass on one zone** before building anything else (§13, Gate 1).
+6. **Port Oakenfall's shell and pipeline** — see §11.3.
+7. **Rework the camera and delete the joystick** (§5).
+8. **Do the art pass on one zone** before building anything else (§13, Gate 1).
 
 ### 10.4 The rule that keeps this from becoming a mess
 
@@ -1283,7 +1343,7 @@ to the repo.
 
 | Gate | What | Passes when |
 |---|---|---|
-| **G0 — Foundation reset** | Rename to Alderfell. Delete the cut features and the offline-accrual code. Flag off multiplayer. Camera → orthographic free-yaw, joystick deleted, tap-to-walk + rotate + pinch + long-press. | `npm run verify` green; the game boots and you can walk around by tapping. |
+| **G0 — Foundation reset** | Rename to Alderfell. Replace `CLAUDE.md` and the stale `docs/` with pointers to this document. Delete the cut features and the offline-accrual code. Flag off multiplayer. Camera → orthographic free-yaw, joystick deleted, tap-to-walk + rotate + pinch + long-press. | `npm run verify` green; the game boots and you can walk around by tapping. |
 | **G1 — The look** ⚠️ | Port Oakenfall's palette, asset pipeline and PWA shell. Dress **the Shorelands** with real environment art — terrain, foliage, water, lighting — characters still placeholder (§6.5). | **A screenshot from the owner's actual iPhone, launched from the home screen, that looks good.** Nothing else proceeds until this passes. This is the gate isorpg identified as the most important in its plan, and the one previous projects failed. |
 | **G2 — The loop** | Port isorpg's skills, XP, nodes, recipes. Grant tools. Bank. Walk → gather → craft → equip, all in the world. | A stranger plays 10 minutes and levels a skill without guidance. |
 | **G3 — Combat** | Port the OSRS combat maths, attack styles, drop tables, food, death. | Killing one monster is satisfying twenty times in a row. |
@@ -1325,27 +1385,15 @@ to the repo.
 | D21 | **One authored main quest line plus diaries** as the long tail. A quest changes the world; a diary task recognises what you did (§3.5.1). | 2026-09-09 |
 | D22 | **Tone is warm, cosy and PG** — a fallen realm being reclaimed, not mourned. **Oakenfall's dark palette and darkening GRADE step are explicitly not inherited** (§1.1.1, §6.1). | 2026-09-09 |
 | D23 | **Full audio** — music, ambience and SFX. Music streams, SFX bundle, first-tap unlock on iOS, and the game stays fully playable muted (§6.6). | 2026-09-09 |
+| D24 | **Offline-first.** The client runs the kernel and plays with no network; the server stores the save and validates by replaying the command log. ADR-0001 amended accordingly; the trust boundary moves back to the server only for live multiplayer (§4.4). | 2026-09-09 |
+| D25 | **A wide bestiary — animals, mythical beasts, imps, bandits, constructs, custom Blender creatures — held to one visual world.** Coherence is enforced by a shared material scheme, palette, silhouette language and an admission review beside existing assets (§3.4.0). | 2026-09-09 |
+| D26 | **`AI_HANDOVER.md` is the single source of truth.** `CLAUDE.md` and the existing `docs/` are replaced by short pointers to it (§10.3). | 2026-09-09 |
 
 ### 14.2 Still open
 
 **Q1 — Grading/serials.** §3.7 flags serialised provenance as salvageable. Does a rare drop
 knowing it is the 47th ever made add anything in an Ironman game where nobody trades? Lean
 no; revisit only if a standard trading mode ever ships.
-
-**Q3 — Offline play vs. server authority. 🔴 Resolve before G2.**
-
-These two commitments contradict each other and both are currently written into this document:
-
-- §3.8 / Oakenfall's hard constraint: *the client must open and be usable with no network.*
-- §4.4 / ADR-0001: *the server owns all outcomes; the client predicts and the server verifies.*
-
-As written, no server means no play — on a plane, on the underground, in a lift, and during
-the free Render instance's 30–60 second cold start at the beginning of every session.
-
-The owner has asked for the trade-off to be written up properly before choosing. Until it is
-decided, **do not build anything that hard-codes either assumption.** Both paths are served by
-the same `packages/sim` kernel — that is precisely what the shared-kernel design buys — so the
-decision is about where the kernel is *trusted*, not about which code exists.
 
 **Q2 — The differentiator.** The most important open question, and the one four repositories
 have not answered. From ALA's own migration doc: *"the game is a broad, well-tested systems
