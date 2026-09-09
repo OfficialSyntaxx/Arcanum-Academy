@@ -51,7 +51,9 @@ for (const [name, width, height] of [
 test('phone: walk to a resource, earn XP, inspect skills, and reach a crafting station', async ({
   page,
 }, info) => {
-  test.setTimeout(100_000);
+  // Two real waypoint routes plus the authoritative collection interval can
+  // take longer on an unloaded CI runner; allow the game path to finish.
+  test.setTimeout(180_000);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.clock.setFixedTime(new Date('2026-09-09T12:30:00Z'));
   await page.goto('/');
