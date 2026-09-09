@@ -56,8 +56,10 @@ Base: `1be587ca441563f74ad1a965f7f1a06b047e65c6`, the G0 branch
 
 ## Remaining G1 work / decisions
 
-1. Get a green follow-up CI run, then use a real iPhone/home-screen session to judge the
-   rendered scene; the Linux compositor cannot be used for that visual decision.
+1. GitHub Actions run 48 is green: formatting, lint, boundaries, typecheck, 363 tests,
+   production build, three responsive renderer submissions and the complete phone journey.
+   Use the Netlify deploy preview on a real iPhone/home-screen session to judge the rendered
+   scene; the Linux compositor cannot be used for that visual decision.
 2. Tune framing/pitch against the rendered zone with the owner; current camera tunables
    are preserved, as the handover reserves feel changes for the owner.
 3. Have the owner judge a real iPhone home-screen screenshot and measure performance.
