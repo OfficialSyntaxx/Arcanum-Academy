@@ -14,6 +14,7 @@
 import {
   BoxGeometry,
   BufferGeometry,
+  Color,
   ConeGeometry,
   CylinderGeometry,
   Float32BufferAttribute,
@@ -81,8 +82,8 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
     return item;
   };
 
-  const stone = track(
-    new MeshStandardMaterial({ color: Palette.slate, roughness: 0.92, metalness: 0.02 }),
+  const meadow = track(
+    new MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0 }),
   );
   const stoneRaised = track(
     new MeshStandardMaterial({ color: Palette.slateRaised, roughness: 0.85, metalness: 0.04 }),
@@ -117,6 +118,15 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   const doorWood = track(
     new MeshStandardMaterial({ color: 0x392116, roughness: 0.82, metalness: 0.03 }),
   );
+  const terraceTop = track(
+    new MeshStandardMaterial({ color: 0xc39152, roughness: 0.94, metalness: 0.01 }),
+  );
+  const mineTop = track(
+    new MeshStandardMaterial({ color: 0x4a5b57, roughness: 0.97, metalness: 0 }),
+  );
+  const plazaStone = track(
+    new MeshStandardMaterial({ color: 0xd4b46f, roughness: 0.82, metalness: 0.03 }),
+  );
   const flame = track(
     new MeshStandardMaterial({
       color: Palette.flame,
@@ -130,7 +140,7 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   // --- Floors -----------------------------------------------------------
   const { bounds, terrain } = zone;
   const baseGeometry = track(buildBaseGround(zone));
-  const baseFloor = new Mesh(baseGeometry, stone);
+  const baseFloor = new Mesh(baseGeometry, meadow);
   baseFloor.userData['ground'] = true;
   baseFloor.receiveShadow = quality.shadowsEnabled;
   group.add(baseFloor);
@@ -149,6 +159,35 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
     );
     slab.receiveShadow = quality.shadowsEnabled;
     group.add(slab);
+
+    // A smaller top surface leaves a darker retaining edge around every level.
+    // This stops authored terraces reading as one enormous undifferentiated box.
+    const inset = Math.min(0.55, width / 5, depth / 5);
+    const top = new Mesh(
+      track(new BoxGeometry(width - inset * 2, 0.04, depth - inset * 2)),
+      terrace.height < terrain.baseHeight ? mineTop : terraceTop,
+    );
+    top.position.set(
+      (terrace.minX + terrace.maxX) / 2,
+      terrace.height + 0.025,
+      (terrace.minZ + terrace.maxZ) / 2,
+    );
+    top.receiveShadow = quality.shadowsEnabled;
+    group.add(top);
+  }
+
+  // The spawn needs an immediately recognisable place, not just another point
+  // on the grass. This paved medallion also gives the lighter route material a
+  // visual home in the first phone screen.
+  if (zone.waypoints.some((waypoint) => waypoint.tags?.includes('spawn'))) {
+    const medallion = new Mesh(track(new CylinderGeometry(5.8, 5.8, 0.1, 12)), plazaStone);
+    medallion.position.set(0, heightAt(terrain, { x: 0, z: 0 }) + 0.04, 0);
+    medallion.receiveShadow = quality.shadowsEnabled;
+    group.add(medallion);
+    const inlay = new Mesh(track(new RingGeometry(3.7, 4.7, 12)), crystal);
+    inlay.rotation.x = -Math.PI / 2;
+    inlay.position.set(0, heightAt(terrain, { x: 0, z: 0 }) + 0.1, 0);
+    group.add(inlay);
   }
 
   // --- Canals -------------------------------------------------------------
@@ -710,13 +749,23 @@ const UP_AXIS = new Vector3(0, 1, 0);
  * One geometry retains the one-draw-call floor and matches heightAt's regions. */
 export function buildBaseGround(zone: Zone): BufferGeometry {
   const { bounds, terrain } = zone;
+  const grid = (min: number, max: number) =>
+    Array.from({ length: Math.round((max - min) / 2) + 1 }, (_, index) => min + index * 2);
   const xs = [
-    ...new Set([bounds.minX, bounds.maxX, ...terrain.terraces.flatMap((t) => [t.minX, t.maxX])]),
+    ...new Set([
+      ...grid(bounds.minX, bounds.maxX),
+      ...terrain.terraces.flatMap((t) => [t.minX, t.maxX]),
+    ]),
   ].sort((a, b) => a - b);
   const zs = [
-    ...new Set([bounds.minZ, bounds.maxZ, ...terrain.terraces.flatMap((t) => [t.minZ, t.maxZ])]),
+    ...new Set([
+      ...grid(bounds.minZ, bounds.maxZ),
+      ...terrain.terraces.flatMap((t) => [t.minZ, t.maxZ]),
+    ]),
   ].sort((a, b) => a - b);
   const vertices: number[] = [];
+  const colours: number[] = [];
+  const grass = [0x355f36, 0x426f3c, 0x4d7841, 0x3d6734];
   for (let i = 0; i < xs.length - 1; i++)
     for (let j = 0; j < zs.length - 1; j++) {
       const x0 = xs[i]!,
@@ -730,9 +779,12 @@ export function buildBaseGround(zone: Zone): BufferGeometry {
         continue;
       const y = terrain.baseHeight;
       vertices.push(x0, y, z0, x0, y, z1, x1, y, z1, x0, y, z0, x1, y, z1, x1, y, z0);
+      const colour = new Color(grass[Math.abs(i * 13 + j * 7) % grass.length]!);
+      for (let vertex = 0; vertex < 6; vertex += 1) colours.push(colour.r, colour.g, colour.b);
     }
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute('color', new Float32BufferAttribute(colours, 3));
   geometry.computeVertexNormals();
   return geometry;
 }
