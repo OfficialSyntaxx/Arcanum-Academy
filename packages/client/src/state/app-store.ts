@@ -97,6 +97,8 @@ export interface AppState {
   readonly playerId: string;
   /** Non-null while waiting for the ladder to pair you. */
   readonly queued: { readonly queueSize: number } | null;
+  /** Increments whenever movement begins, so contextual UI can dismiss together. */
+  readonly travelRevision: number;
 
   setPhase(phase: GamePhase): void;
   setBootStep(id: string, patch: Partial<Omit<BootStep, 'id'>>): void;
@@ -140,6 +142,7 @@ export const useAppStore = create<AppState>((set) => ({
   openStationId: null,
   playerId: '',
   queued: null,
+  travelRevision: 0,
 
   setPhase: (phase) => set({ phase }),
   registerBootSteps: (steps) => set({ bootSteps: steps }),
@@ -164,4 +167,11 @@ export const useAppStore = create<AppState>((set) => ({
   setOpenStation: (openStationId) => set({ openStationId }),
   setPlayerId: (playerId) => set({ playerId }),
   setQueued: (queued) => set({ queued }),
+  beginTravel: () =>
+    set((state) => ({
+      travelRevision: state.travelRevision + 1,
+      interactionPrompt: null,
+      openStationId: null,
+      lastCommandError: null,
+    })),
 }));
