@@ -42,6 +42,8 @@ export class RenderService {
   private readonly resizeObserver: ResizeObserver;
   private contextLost = false;
   private visible = true;
+  private width = 0;
+  private height = 0;
 
   constructor(private readonly options: RendererOptions) {
     this.renderer = new WebGLRenderer({
@@ -103,6 +105,12 @@ export class RenderService {
   resize(): void {
     const { clientWidth, clientHeight } = this.options.canvas;
     if (clientWidth === 0 || clientHeight === 0) return;
+    if (this.width === clientWidth && this.height === clientHeight) {
+      this.onViewportChange?.(clientWidth, clientHeight);
+      return;
+    }
+    this.width = clientWidth;
+    this.height = clientHeight;
     // `false` leaves CSS sizing to the layout, which keeps safe-area insets working.
     this.renderer.setSize(clientWidth, clientHeight, false);
     // The rig owns the frustum; the renderer only reports the shape of the

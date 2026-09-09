@@ -41,6 +41,8 @@ import {
 } from '@alderfell/shared';
 
 import { Palette } from './palette.js';
+import type { QualitySettings } from '../core/device.js';
+import { buildEnvironment } from './environment-assets.js';
 
 /** A door's swing pivot, and the waypoint whose proximity opens it. */
 export interface DoorHandle {
@@ -69,7 +71,7 @@ const MARKER_COLOURS: Readonly<Record<string, number>> = {
   [InteractableKind.QuestBoard]: Palette.haze,
 };
 
-export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean }): ZoneGeometry {
+export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeometry {
   const group = new Group();
   group.name = `zone:${zone.id}`;
 
@@ -122,6 +124,7 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
     new BoxGeometry(bounds.maxX - bounds.minX, 0.4, bounds.maxZ - bounds.minZ),
   );
   const baseFloor = new Mesh(baseGeometry, stone);
+  baseFloor.userData['ground'] = true;
   baseFloor.position.set(
     (bounds.minX + bounds.maxX) / 2,
     terrain.baseHeight - 0.2,
@@ -136,6 +139,7 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
     const thickness = Math.abs(terrace.height - terrain.baseHeight) + 0.4;
     const geometry = track(new BoxGeometry(width, thickness, depth));
     const slab = new Mesh(geometry, stoneRaised);
+    slab.userData['ground'] = true;
     slab.position.set(
       (terrace.minX + terrace.maxX) / 2,
       terrace.height - thickness / 2,
@@ -257,18 +261,18 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
   }
 
   if (columnPositions.length > 0) {
-    const columnGeometry = track(new CylinderGeometry(0.32, 0.4, 5.2, 7));
+    const columnGeometry = track(new CylinderGeometry(0.32, 0.4, 1.2, 7));
     const columns = new InstancedMesh(columnGeometry, stoneRaised, columnPositions.length);
     columns.castShadow = quality.shadowsEnabled;
     columns.receiveShadow = quality.shadowsEnabled;
-    writeInstances(columns, columnPositions, 2.6);
+    writeInstances(columns, columnPositions, 0.6);
     group.add(columns);
   }
 
   // --- Crystal spires ---------------------------------------------------
   // One spire per corner precinct, tall enough to be a landmark from the plaza.
   const spirePositions = zone.waypoints
-    .filter((w) => w.links.length === 1)
+    .filter((w) => w.links.length === 1 && zone.id !== 'zone.courtyard')
     .map((w) => new Vector3(w.position.x, heightAt(terrain, w.position), w.position.z));
 
   if (spirePositions.length > 0) {
@@ -312,7 +316,7 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
   if (lampPositions.length > 0) {
     const finialGeometry = track(new SphereGeometry(0.22, 10, 8));
     const finials = new InstancedMesh(finialGeometry, flame, lampPositions.length);
-    writeInstances(finials, lampPositions, 5.4);
+    writeInstances(finials, lampPositions, 1.4);
     group.add(finials);
   }
 
@@ -356,11 +360,29 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
     group.add(marker);
   }
 
+  const environment = zone.id === 'zone.courtyard' ? buildEnvironment(zone, quality) : null;
+  if (environment) {
+    group.add(environment.group);
+    // Coast outside the navigable boundary; no walkable terrain is replaced.
+    const seaGeometry = track(new BoxGeometry(180, 0.12, 100));
+    const sea = new Mesh(seaGeometry, water);
+    sea.position.set(0, -0.48, 76);
+    sea.raycast = () => {};
+    group.add(sea);
+    const beachGeometry = track(new BoxGeometry(54, 0.22, 3.5));
+    const beachMaterial = track(new MeshStandardMaterial({ color: 0xdcc38e, roughness: 1 }));
+    const beach = new Mesh(beachGeometry, beachMaterial);
+    beach.position.set(0, -0.24, 27.3);
+    beach.raycast = () => {};
+    group.add(beach);
+  }
+
   return {
     group,
     markers,
     doors,
     dispose(): void {
+      environment?.dispose();
       group.traverse((child) => {
         if (child instanceof InstancedMesh) child.dispose();
       });

@@ -11,7 +11,7 @@
  * problems and are diagnosed for hours.
  */
 
-import { DirectionalLight, Group, HemisphereLight, Fog, type Scene } from 'three';
+import { Color, DirectionalLight, Group, HemisphereLight, Fog, type Scene } from 'three';
 import {
   buildNavGraph,
   distanceSquared,
@@ -92,6 +92,7 @@ export class WorldService {
 
   attach(scene: Scene): void {
     scene.add(this.root);
+    scene.background = new Color(this.atmosphere.sky);
     scene.fog = new Fog(this.atmosphere.fog, this.atmosphere.fogNear, this.atmosphere.fogFar);
   }
 

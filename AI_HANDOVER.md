@@ -5,7 +5,8 @@
 **Written:** 2026-09-09 · **Author:** Claude Code, from a full read of all four repositories
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G0 complete and pushed. G1 is next and unstarted (§13.1).
+**Code state:** G0 complete. G1 environment implementation is on `codex/g1-shorelands`;
+**not passed**. See `docs/G1_RETURN.md` for validation and outstanding human evidence.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.

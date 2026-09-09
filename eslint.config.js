@@ -8,7 +8,15 @@ import reactHooks from 'eslint-plugin-react-hooks';
  * architecture problems.
  */
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/coverage/**', '**/*.tsbuildinfo', 'packages/client/dev-dist/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      '**/*.tsbuildinfo',
+      'packages/client/dev-dist/**',
+      'packages/client/public/assets/draco/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

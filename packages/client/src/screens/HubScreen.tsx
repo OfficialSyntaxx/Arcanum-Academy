@@ -54,6 +54,7 @@ export function HubScreen({ onEngage, onCollect, onStopGathering, onCraft }: Hub
   return (
     <div className="hub">
       <HubHud />
+      <div className="hub-help">Tap to walk · Drag to look · Pinch to zoom</div>
       <InteractionPrompt onEngage={onEngage} />
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
       <CommandError />

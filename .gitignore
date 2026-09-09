@@ -17,3 +17,7 @@ coverage/
 # Vite/Vitest occasionally leaves a timestamped transient config behind.
 vitest.config.ts.timestamp-*.mjs
 dist-shot/
+
+# Browser verification output
+test-results/
+playwright-report/

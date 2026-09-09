@@ -57,10 +57,10 @@ const IDENTITY_KEY = 'identity';
 const BOOT_STEPS = [
   { id: 'device', label: 'Reading device capabilities', status: 'pending' as const },
   { id: 'storage', label: 'Opening local storage', status: 'pending' as const },
-  { id: 'identity', label: 'Restoring your enrolment', status: 'pending' as const },
+  { id: 'identity', label: 'Restoring your journey', status: 'pending' as const },
   { id: 'render', label: 'Starting the renderer', status: 'pending' as const },
-  { id: 'network', label: 'Contacting the academy', status: 'pending' as const },
-  { id: 'world', label: 'Raising the courtyard', status: 'pending' as const },
+  { id: 'network', label: 'Connecting to the realm', status: 'pending' as const },
+  { id: 'world', label: 'Opening the Shorelands', status: 'pending' as const },
   { id: 'engine', label: 'Starting the frame loop', status: 'pending' as const },
 ];
 

@@ -82,3 +82,10 @@ npm run dev:server  # the gateway
 G0 (foundation reset) is complete. **G1 — the art gate — is next, and it is the one that
 matters**: dress one zone with real environment art and produce a screenshot from a real
 iPhone, launched from the home screen, that looks good. Nothing else proceeds until it passes.
+
+## G1 Codex branch
+
+`codex/g1-shorelands` adds the environment asset layer, warm palette, mobile HUD and
+Playwright smoke harness. See `docs/G1_RETURN.md`. G1 remains provisional until visual
+checks and the owner's actual iPhone/home-screen evidence pass. The simulation, server,
+shared world graph and gameplay tunables have not changed.

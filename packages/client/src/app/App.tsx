@@ -29,6 +29,9 @@ function resolveServerUrl(): string {
   const configured = import.meta.env['VITE_SERVER_URL'];
   if (configured !== undefined && configured !== '') return configured;
 
+  if (import.meta.env.DEV) {
+    return `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/gateway`;
+  }
   const host = window.location.hostname;
   if (host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]') {
     console.warn(

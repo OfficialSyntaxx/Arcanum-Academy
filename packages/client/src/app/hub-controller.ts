@@ -303,7 +303,7 @@ export class HubController {
     );
     this.raycaster.setFromCamera(this.pointer, this.options.render.camera);
     const hits = this.raycaster.intersectObject(this.world.root, true);
-    const hit = hits.find((candidate) => candidate.point.y <= 2.5);
+    const hit = hits.find((candidate) => candidate.object.userData['ground'] === true);
     return hit ? hit.point : null;
   }
 

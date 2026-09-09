@@ -551,3 +551,103 @@
 .crafting-panel .prompt__button:disabled {
   opacity: 0.45;
 }
+
+/* G1: a bright world framed by warm, compact game chrome. */
+.hub-hud {
+  top: calc(var(--inset-top) + 1rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.1rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(29, 22, 16, 0.93);
+  border: 1px solid #9c6f2c;
+  max-width: 22rem;
+  white-space: normal;
+}
+.hub-hud__zone {
+  font:
+    600 1.1rem Georgia,
+    serif;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.hub-hud__clock {
+  font-size: 0.8125rem;
+}
+.hub-hud__population {
+  display: none;
+}
+.satchel-toggle {
+  top: calc(var(--inset-top) + 1rem);
+  min-height: 48px;
+  border-color: #9c6f2c;
+}
+.status-bar {
+  position: absolute;
+  bottom: calc(var(--inset-bottom) + 0.75rem);
+  left: calc(var(--inset-left) + 0.75rem);
+  background: rgba(29, 22, 16, 0.88);
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+.prompt__label {
+  color: var(--haze);
+  font-size: 0.875rem;
+}
+.panel {
+  background: linear-gradient(160deg, #302519, #19140f);
+  border-color: #7d6240;
+}
+.prompt__button {
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+}
+.command-error {
+  top: calc(var(--inset-top) + 6.5rem);
+  max-width: calc(100vw - 2rem);
+}
+.gathering-hud {
+  right: calc(var(--inset-right) + 0.75rem);
+  bottom: calc(var(--inset-bottom) + 9rem);
+}
+.inventory-panel,
+.crafting-panel {
+  bottom: calc(var(--inset-bottom) + 4rem);
+  max-height: calc(100dvh - var(--inset-top) - var(--inset-bottom) - 11rem);
+}
+.hub-help {
+  position: absolute;
+  bottom: calc(var(--inset-bottom) + 3.25rem);
+  left: calc(var(--inset-left) + 0.75rem);
+  padding: 0.35rem 0.65rem;
+  background: rgba(29, 22, 16, 0.86);
+  color: var(--haze);
+  font: 0.8125rem var(--font-label);
+  pointer-events: none;
+  border-radius: 3px;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .hub-hud {
+    max-width: 21rem;
+    padding: 0.35rem 0.75rem;
+    top: calc(var(--inset-top) + 0.5rem);
+  }
+  .satchel-toggle {
+    top: calc(var(--inset-top) + 0.5rem);
+  }
+  .inventory-panel,
+  .crafting-panel {
+    left: auto;
+    right: calc(var(--inset-right) + 0.75rem);
+    transform: none;
+    top: calc(var(--inset-top) + 4rem);
+    bottom: calc(var(--inset-bottom) + 0.75rem);
+    max-height: none;
+  }
+  .gathering-hud {
+    right: calc(var(--inset-right) + 9rem);
+    bottom: calc(var(--inset-bottom) + 1rem);
+    max-height: 65dvh;
+    overflow-y: auto;
+  }
+}

@@ -8,7 +8,7 @@ export function FaultScreen() {
   return (
     <section className="panel fault">
       <LabelStrip title="Cannot continue" serial="FAULT-ENGINE" />
-      <p>The academy could not finish starting. Reloading tries again from the beginning.</p>
+      <p>Alderfell could not finish starting. Reloading tries again from the beginning.</p>
       <p className="fault__detail">{faultMessage ?? 'No detail was reported.'}</p>
       <button type="button" data-variant="primary" onClick={() => window.location.reload()}>
         Reload
