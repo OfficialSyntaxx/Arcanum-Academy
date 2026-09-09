@@ -47,7 +47,18 @@ export function HubScreen({
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
+  const travelRevision = useAppStore((state) => state.travelRevision);
   const setOpenStation = useAppStore((state) => state.setOpenStation);
+
+  // Satchel and map are local presentation state, while crafting and prompts
+  // live in the app store. They all subscribe to the same travel boundary.
+  const [satchelOpen, setSatchelOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+
+  useEffect(() => {
+    setSatchelOpen(false);
+    setMapOpen(false);
+  }, [travelRevision]);
 
   useEffect(() => {
     if (gatheringNodeId === null) return;
@@ -57,8 +68,6 @@ export function HubScreen({
 
   // The satchel is a panel rather than a permanent strip: it is consulted
   // occasionally and would otherwise cost screen the world should be using.
-  const [satchelOpen, setSatchelOpen] = useState(false);
-  const [mapOpen, setMapOpen] = useState(false);
 
   return (
     <div className="hub">
