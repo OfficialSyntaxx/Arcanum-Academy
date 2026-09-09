@@ -1,5 +1,5 @@
 /**
- * @arcanum/shared - the only package both the client and the server may depend
+ * @alderfell/shared - the only package both the client and the server may depend
  * on. It contains no rendering, no I/O and no gameplay rules: purely the
  * vocabulary (ids, results, failures), the deterministic primitives (rng), the
  * wire protocol and the balance tunables.
@@ -20,6 +20,3 @@ export * from './gathering/types.js';
 export * from './crafting/types.js';
 export * from './skills/types.js';
 export * from './content/index.js';
-export * from './cards/types.js';
-export * from './cards/grading.js';
-export * from './cards/deck.js';

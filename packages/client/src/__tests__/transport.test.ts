@@ -7,7 +7,7 @@ import {
   encodeFrame,
   LogLevel,
   ServerOpcode,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { Transport, TransportStatus, type SocketLike } from '../net/transport.js';
 
 class FakeSocket implements SocketLike {

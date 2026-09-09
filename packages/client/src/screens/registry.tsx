@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { GamePhase } from '@arcanum/sim';
+import { GamePhase } from '@alderfell/sim';
 import { BootScreen } from './BootScreen.js';
 import { FaultScreen } from './FaultScreen.js';
 import { SystemsScreen } from './SystemsScreen.js';

@@ -12,7 +12,7 @@
  * two runs of the same search return byte-identical paths on every machine.
  */
 
-import type { NavGraph, Vec2 } from '@arcanum/shared';
+import type { NavGraph, Vec2 } from '@alderfell/shared';
 
 /** Reusable scratch space, sized to the largest graph seen so far. */
 interface Scratch {

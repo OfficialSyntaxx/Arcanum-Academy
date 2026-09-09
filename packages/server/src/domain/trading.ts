@@ -25,14 +25,13 @@ import {
   FailureCode,
   generateId,
   ok,
-  type CardInstance,
   type Failure,
   type ItemCatalog,
   type ItemStack,
   type PlayerId,
   type Result,
-} from '@arcanum/shared';
-import { addItems, removeItems, type Inventory } from '@arcanum/sim';
+} from '@alderfell/shared';
+import { addItems, removeItems, type Inventory } from '@alderfell/sim';
 import type { PlayerRepository, PlayerStore } from '../persistence/repository.js';
 import {
   parsePlayerState,
@@ -50,7 +49,6 @@ export type TradeState = (typeof TradeState)[keyof typeof TradeState];
 
 export interface TradeOffer {
   readonly stacks: readonly ItemStack[];
-  readonly cardInstanceIds: readonly string[];
   readonly confirmed: boolean;
 }
 
@@ -58,14 +56,6 @@ export interface Trade {
   readonly id: string;
   readonly participants: readonly [PlayerId, PlayerId];
   readonly offers: Readonly<Record<string, TradeOffer>>;
-  /**
-   * The card instances actually held in escrow, per player.
-   *
-   * Carried on the trade rather than referenced by id on a player record, so
-   * settlement never has to trust either side's copy for what was offered.
-   * `offers` says what was promised; this is what is held.
-   */
-  readonly escrow: Readonly<Record<string, readonly CardInstance[]>>;
   readonly state: TradeState;
   readonly openedAtMs: number;
   /**
@@ -107,7 +97,7 @@ export class InMemoryTradeStore implements TradeStore {
 }
 
 function emptyOffer(): TradeOffer {
-  return { stacks: [], cardInstanceIds: [], confirmed: false };
+  return { stacks: [], confirmed: false };
 }
 
 function otherParty(trade: Trade, playerId: PlayerId): PlayerId {
@@ -168,7 +158,6 @@ export class TradingService {
       id: generateId(),
       participants: [initiator, partner],
       offers: { [initiator]: emptyOffer(), [partner]: emptyOffer() },
-      escrow: { [initiator]: [], [partner]: [] },
       state: TradeState.Open,
       openedAtMs: this.options.now(),
       ledger: [`${this.options.now()} opened by ${initiator} with ${partner}`],
@@ -188,7 +177,6 @@ export class TradingService {
     tradeId: string,
     playerId: PlayerId,
     stacks: readonly ItemStack[],
-    cardInstanceIds: readonly string[],
   ): Promise<Result<Trade, Failure>> {
     const loaded = await this.options.trades.get(tradeId);
     if (!loaded.ok) return err(loaded.error);
@@ -219,27 +207,13 @@ export class TradingService {
         if (!returned.ok) return err(returned.error);
         inventory = returned.value;
       }
-      let cards = [...state.cards, ...(trade.escrow[playerId] ?? [])];
-
       for (const stack of stacks) {
         const taken = removeItems(inventory, stack.definitionId, stack.quantity);
         if (!taken.ok) return err(taken.error);
         inventory = taken.value;
       }
 
-      const escrowedCards: CardInstance[] = [];
-      for (const instanceId of cardInstanceIds) {
-        const index = cards.findIndex((card) => card.instanceId === instanceId);
-        if (index === -1) {
-          return err(
-            failure(FailureCode.Conflict, 'trade.card_not_owned', { context: { instanceId } }),
-          );
-        }
-        escrowedCards.push(cards[index]!);
-        cards = [...cards.slice(0, index), ...cards.slice(index + 1)];
-      }
-
-      const next: PlayerState = { ...state, inventory, cards };
+      const next: PlayerState = { ...state, inventory };
       const stored = await this.store(tx, playerId, next, record.version);
       if (!stored.ok) return err(stored.error);
 
@@ -249,12 +223,11 @@ export class TradingService {
         ...trade,
         offers: {
           ...clearedConfirmations(trade),
-          [playerId]: { stacks, cardInstanceIds, confirmed: false },
+          [playerId]: { stacks, confirmed: false },
         },
-        escrow: { ...trade.escrow, [playerId]: escrowedCards },
         ledger: [
           ...trade.ledger,
-          `${this.options.now()} ${playerId} offered ${stacks.length} stack(s), ${cardInstanceIds.length} card(s)`,
+          `${this.options.now()} ${playerId} offered ${stacks.length} stack(s)`,
         ],
       };
       return ok({ trade: updated });
@@ -338,11 +311,7 @@ export class TradingService {
           inventory = added.value;
         }
 
-        const next: PlayerState = {
-          ...state,
-          inventory,
-          cards: [...state.cards, ...(trade.escrow[giver] ?? [])],
-        };
+        const next: PlayerState = { ...state, inventory };
         const stored = await this.store(tx, receiver, next, record.version);
         if (!stored.ok) return err(stored.error);
       }
@@ -375,7 +344,7 @@ export class TradingService {
     const returned = await this.options.repository.transaction(async (tx) => {
       for (const owner of trade.participants) {
         const offer = trade.offers[owner] ?? emptyOffer();
-        if (offer.stacks.length === 0 && offer.cardInstanceIds.length === 0) continue;
+        if (offer.stacks.length === 0) continue;
 
         const loadedOwner = await this.load(tx, owner);
         if (!loadedOwner.ok) return err(loadedOwner.error);
@@ -392,11 +361,7 @@ export class TradingService {
           if (!added.ok) return err(added.error);
           inventory = added.value;
         }
-        const next: PlayerState = {
-          ...state,
-          inventory,
-          cards: [...state.cards, ...(trade.escrow[owner] ?? [])],
-        };
+        const next: PlayerState = { ...state, inventory };
         const stored = await this.store(tx, owner, next, record.version);
         if (!stored.ok) return err(stored.error);
       }

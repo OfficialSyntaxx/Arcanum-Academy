@@ -27,18 +27,23 @@ export default defineConfig({
       },
     },
   },
-  server: { port: 5173, host: true },
+  server: {
+    port: 5173,
+    host: true,
+    allowedHosts: ['terminal.local'],
+    proxy: { '/gateway': { target: 'ws://127.0.0.1:8787', ws: true } },
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'The Arcanum Academy',
-        short_name: 'Arcanum',
-        description: 'Gather, scribe, grade and duel in a living magical academy.',
-        theme_color: '#11161d',
-        background_color: '#11161d',
+        name: 'Alderfell',
+        short_name: 'Alderfell',
+        description: 'Explore a fallen realm, gather resources and master your craft in Alderfell.',
+        theme_color: '#0c0a08',
+        background_color: '#0c0a08',
         display: 'standalone',
         orientation: 'any',
         start_url: '/',
@@ -49,7 +54,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,glb,wasm}'],
         runtimeCaching: [
           {
             urlPattern: /\/(healthz|version|metrics)$/,

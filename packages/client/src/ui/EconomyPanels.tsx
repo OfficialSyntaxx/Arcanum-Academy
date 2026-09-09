@@ -5,7 +5,9 @@ import {
   RECIPE_BOOK,
   SKILL_TABLE,
   wasteRateBasisPoints,
-} from '@arcanum/shared';
+  levelForXp,
+  xpForLevel,
+} from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
 import { LabelStrip } from './LabelStrip.js';
 
@@ -28,15 +30,7 @@ function itemName(definitionId: string): string {
  * server owns the outcome, and a local counter would be a prediction the rest
  * of this layer deliberately avoids making.
  */
-export function GatheringHud({
-  onCollect,
-  onStop,
-  onClaimOffline,
-}: {
-  onCollect: () => void;
-  onStop: () => void;
-  onClaimOffline: () => void;
-}) {
+export function GatheringHud({ onCollect, onStop }: { onCollect: () => void; onStop: () => void }) {
   const economy = useAppStore((state) => state.economy);
   if (economy.gatheringNodeId === null) return null;
 
@@ -58,7 +52,7 @@ export function GatheringHud({
           ))}
         </ul>
       ) : (
-        <p className="gathering-hud__idle">Working the seam…</p>
+        <p className="gathering-hud__idle">Gathering resources…</p>
       )}
 
       {economy.lastXpGained > 0 && <p className="gathering-hud__xp">+{economy.lastXpGained} xp</p>}
@@ -69,9 +63,6 @@ export function GatheringHud({
       <div className="gathering-hud__actions">
         <button type="button" className="prompt__button" onClick={onCollect}>
           Collect
-        </button>
-        <button type="button" className="prompt__button" onClick={onClaimOffline}>
-          Claim away time
         </button>
         <button type="button" className="prompt__button" onClick={onStop}>
           Stop
@@ -108,6 +99,34 @@ export function InventoryPanel({ onClose }: { onClose: () => void }) {
           })}
         </ul>
       )}
+      <section className="skill-list" aria-label="Skill progress">
+        <h3>Skills</h3>
+        {SKILL_TABLE.skills
+          .filter(
+            (skill) =>
+              NODE_CATALOG.nodes.some((node) => node.requiredSkillId === skill.id) ||
+              RECIPE_BOOK.recipes.some((recipe) => recipe.requiredSkillId === skill.id),
+          )
+          .map((skill) => {
+            const xp = economy.skills[skill.id]?.xp ?? 0;
+            const level = levelForXp(xp, DEFAULT_TUNABLES.progression);
+            const floor = xpForLevel(level, DEFAULT_TUNABLES.progression);
+            const ceiling = xpForLevel(level + 1, DEFAULT_TUNABLES.progression);
+            return (
+              <div key={skill.id} className="skill-list__row">
+                <span>{skill.name}</span>
+                <span>
+                  Level {level} · {xp} XP
+                </span>
+                <progress
+                  aria-label={`${skill.name} level progress`}
+                  value={ceiling === floor ? 1 : xp - floor}
+                  max={Math.max(1, ceiling - floor)}
+                />
+              </div>
+            );
+          })}
+      </section>
       <button type="button" className="prompt__button" onClick={onClose}>
         Close
       </button>

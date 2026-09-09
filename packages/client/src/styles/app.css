@@ -250,11 +250,22 @@
   pointer-events: none;
 }
 
+/* Width reserved at the top-right for the satchel button, so the HUD strip and
+   the button share one row and cannot overlap however long a zone name gets.
+   Centring the strip is what let it run underneath the button: a centred
+   element with `nowrap` grows in both directions, so no top offset is ever far
+   enough. Anchoring both edges makes the collision impossible rather than
+   unlikely. */
+:root {
+  --hud-reserve: 6.5rem;
+}
+
 .hub-hud {
   position: absolute;
   top: calc(var(--inset-top) + var(--space-6));
-  left: 50%;
-  transform: translateX(-50%);
+  left: calc(var(--inset-left) + var(--space-3));
+  right: calc(var(--inset-right) + var(--space-3) + var(--hud-reserve));
+  overflow: hidden;
   display: flex;
   gap: var(--space-3);
   align-items: baseline;
@@ -271,7 +282,12 @@
   backdrop-filter: none;
 }
 
+/* The zone name is the one item allowed to lose characters; the clock and the
+   population are short and fixed, so truncating them would save nothing. */
 .hub-hud__zone {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
   font-family: var(--font-label);
   font-size: var(--text-xs);
   letter-spacing: 0.09em;
@@ -291,44 +307,12 @@
   color: var(--haze-dim);
 }
 
-/* A generous invisible zone: the thumb is already here, so the control finds
-   the thumb rather than the other way round. */
-.joystick-zone {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 55%;
-  max-width: 22rem;
-  height: 48%;
-  pointer-events: auto;
-  touch-action: none;
-}
-
-.joystick {
-  position: fixed;
-  width: 0;
-  height: 0;
-}
-
-.joystick__base,
-.joystick__knob {
-  position: absolute;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.joystick__base {
-  width: 7rem;
-  height: 7rem;
-  border: 1px solid var(--hairline-strong);
-  background: color-mix(in srgb, var(--slate) 42%, transparent);
-}
-
-.joystick__knob {
-  width: 3.25rem;
-  height: 3.25rem;
-  background: color-mix(in srgb, var(--verdigris) 72%, transparent);
-  border: 1px solid var(--verdigris);
+/* Narrow phones: the population count is the least useful of the three HUD
+   items, so it goes before the zone name is allowed to crush. */
+@media (max-width: 380px) {
+  .hub-hud__population {
+    display: none;
+  }
 }
 
 .prompt {
@@ -368,28 +352,12 @@
   cursor: pointer;
 }
 
-.prompt__button[data-kind='DUEL_CIRCLE'] {
-  background: var(--alarm);
-  border-color: var(--alarm);
-}
-
-.prompt__button[data-kind='GRADING_DESK'],
-.prompt__button[data-kind='DISPLAY_PEDESTAL'] {
-  background: var(--gilt);
-  border-color: var(--gilt);
-}
-
 .prompt__button:active {
   filter: brightness(0.88);
 }
 
-/* Landscape on a short screen: keep the stick clear of the prompt. */
+/* Landscape on a short screen: pull the HUD tight against the top edge. */
 @media (orientation: landscape) and (max-height: 480px) {
-  .joystick-zone {
-    width: 38%;
-    height: 70%;
-  }
-
   .hub-hud {
     top: calc(var(--inset-top) + var(--space-2));
   }
@@ -495,8 +463,9 @@
 .satchel-toggle {
   pointer-events: auto;
   position: absolute;
-  right: var(--space-3);
-  top: calc(var(--inset-top) + var(--space-8));
+  right: calc(var(--inset-right) + var(--space-3));
+  /* Same row as the HUD strip, which reserves --hud-reserve for it. */
+  top: calc(var(--inset-top) + var(--space-6));
   min-height: var(--touch-min);
   padding: 0 var(--space-3);
   font-family: var(--font-label);
@@ -583,321 +552,176 @@
   opacity: 0.45;
 }
 
-/* Collection and deck builder */
-
-.collection-panel {
-  pointer-events: auto;
+/* G1: a bright world framed by warm, compact game chrome. */
+.hub-hud {
+  top: calc(var(--inset-top) + 1rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.1rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(29, 22, 16, 0.93);
+  border: 1px solid #9c6f2c;
+  max-width: 22rem;
+  white-space: normal;
+}
+.hub-hud__zone {
+  font:
+    600 1.1rem Georgia,
+    serif;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.hub-hud__clock {
+  font-size: 0.8125rem;
+}
+.hub-hud__population {
+  display: none;
+}
+.satchel-toggle {
+  top: calc(var(--inset-top) + 1rem);
+  min-height: 48px;
+  border-color: #9c6f2c;
+}
+.status-bar {
   position: absolute;
-  inset: calc(var(--inset-top) + var(--space-6)) var(--space-3)
-    calc(var(--inset-bottom) + var(--space-3)) var(--space-3);
-  max-width: 32rem;
-  margin: 0 auto;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  bottom: calc(var(--inset-bottom) + 0.75rem);
+  left: calc(var(--inset-left) + 0.75rem);
+  background: rgba(29, 22, 16, 0.88);
+  font-size: 0.75rem;
+  pointer-events: none;
 }
-
-.collection-panel__filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.collection-panel__filter {
-  min-height: var(--touch-min);
-  padding: 0 var(--space-3);
-  font-family: var(--font-label);
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--haze-dim);
-  background: transparent;
-  border: var(--border-hairline);
-  border-radius: var(--radius-sm);
-}
-
-.collection-panel__filter[data-active='true'] {
-  background: var(--slate-raised);
+.prompt__label {
   color: var(--haze);
+  font-size: 0.875rem;
 }
-
-.collection-panel__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+.panel {
+  background: linear-gradient(160deg, #302519, #19140f);
+  border-color: #7d6240;
 }
-
-.collection-panel__card {
-  padding: var(--space-3);
-  background: var(--slate-raised);
-  border: var(--border-hairline);
-  border-radius: var(--radius-sm);
+.prompt__button {
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
 }
-
-.collection-panel__card-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
+.command-error {
+  top: calc(var(--inset-top) + 6.5rem);
+  max-width: calc(100vw - 2rem);
 }
-
-/* The glyph carries the school independently of colour, so the card stays
-   readable with a colour vision deficiency. */
-.collection-panel__glyph {
-  font-size: var(--text-md);
+.gathering-hud {
+  right: calc(var(--inset-right) + 0.75rem);
+  bottom: calc(var(--inset-bottom) + 9rem);
 }
-
-.collection-panel__cost {
-  margin-left: auto;
-  font-family: var(--font-serial);
+.inventory-panel,
+.crafting-panel {
+  bottom: calc(var(--inset-bottom) + 4rem);
+  max-height: calc(100dvh - var(--inset-top) - var(--inset-bottom) - 11rem);
+}
+.hub-help {
+  position: absolute;
+  bottom: calc(var(--inset-bottom) + 3.25rem);
+  left: calc(var(--inset-left) + 0.75rem);
+  padding: 0.35rem 0.65rem;
+  background: rgba(29, 22, 16, 0.86);
   color: var(--haze);
+  font: 0.8125rem var(--font-label);
+  pointer-events: none;
+  border-radius: 3px;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .hub-hud {
+    max-width: 21rem;
+    padding: 0.35rem 0.75rem;
+    top: calc(var(--inset-top) + 0.5rem);
+  }
+  .satchel-toggle {
+    top: calc(var(--inset-top) + 0.5rem);
+  }
+  .inventory-panel,
+  .crafting-panel {
+    left: auto;
+    right: calc(var(--inset-right) + 0.75rem);
+    transform: none;
+    top: calc(var(--inset-top) + 4rem);
+    bottom: calc(var(--inset-bottom) + 0.75rem);
+    max-height: none;
+  }
+  .gathering-hud {
+    right: calc(var(--inset-right) + 9rem);
+    bottom: calc(var(--inset-bottom) + 1rem);
+    max-height: 65dvh;
+    overflow-y: auto;
+  }
 }
 
-.collection-panel__text {
-  margin: var(--space-2) 0;
-  font-family: var(--font-book);
-  font-size: var(--text-sm);
-  color: var(--haze-dim);
+.map-toggle {
+  position: absolute;
+  pointer-events: auto;
+  left: calc(var(--inset-left) + 0.75rem);
+  bottom: calc(var(--inset-bottom) + 6rem);
+  min-width: 5.5rem;
+  min-height: 48px;
+  border-color: #9c6f2c;
 }
-
-.collection-panel__actions {
+.world-map {
+  pointer-events: auto;
+  color: var(--haze);
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - var(--inset-top) - var(--inset-bottom) - 2rem);
+  overflow: auto;
+}
+.world-map::backdrop {
+  background: rgba(12, 10, 8, 0.55);
+}
+.world-map__head {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: space-between;
+  gap: 1rem;
 }
-
-.collection-panel__owned {
-  margin-right: auto;
-  font-family: var(--font-serial);
-  font-size: var(--text-xs);
-  color: var(--haze-dim);
+.world-map h2,
+.world-map p {
+  margin: 0 0 0.65rem;
 }
-
-.collection-panel__warning {
-  margin: 0;
-  font-family: var(--font-label);
-  font-size: var(--text-xs);
-  color: var(--alarm);
+.world-map svg {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  background: #394b31;
+  border-radius: 4px;
 }
-
-.collection-panel__footer {
-  display: flex;
-  gap: var(--space-2);
-  position: sticky;
-  bottom: 0;
-  padding-top: var(--space-2);
-  background: var(--slate);
-}
-
-.collection-panel .prompt__button:disabled,
-.collection-panel__filter:disabled {
-  opacity: 0.4;
-}
-
-.collection-panel__slots {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.collection-panel__name-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.collection-panel__name-field input {
-  min-height: var(--touch-min);
-  padding: 0 var(--space-2);
-  font-family: var(--font-book);
-  font-size: var(--text-sm);
-  color: var(--haze);
-  background: var(--slate-raised);
-  border: var(--border-hairline);
-  border-radius: var(--radius-sm);
-}
-
-/* Duel */
-
-.duel {
-  position: absolute;
-  inset: 0;
-  pointer-events: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: calc(var(--inset-top) + var(--space-2)) var(--space-2)
-    calc(var(--inset-bottom) + var(--space-2));
-  background: var(--ink);
-  overflow-y: auto;
-}
-
-.duel__side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.duel__side--you {
-  margin-top: auto;
-}
-
-.duel__stats {
-  display: flex;
-  gap: var(--space-3);
-  font-family: var(--font-serial);
-  font-size: var(--text-xs);
-  color: var(--haze-dim);
-}
-
-.duel__ward {
-  color: var(--school-stone);
-}
-
-.duel__board,
-.duel__hand {
-  display: flex;
-  gap: var(--space-2);
-  overflow-x: auto;
-  padding-bottom: var(--space-1);
-}
-
-/* The hand scrolls rather than shrinking: a card small enough to fit ten on a
-   phone is a card nobody can read. */
-.duel-card {
-  flex: 0 0 8.5rem;
-  min-height: 7rem;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  text-align: left;
-  background: var(--slate-raised);
-  border: 2px solid var(--haze-dim);
-  border-radius: var(--radius-md);
-}
-
-.duel-card:disabled {
-  opacity: 0.45;
-}
-
-.duel-card__cost {
-  align-self: flex-end;
-  font-family: var(--font-serial);
-  font-size: var(--text-sm);
-  color: var(--haze);
-}
-
-.duel-card__glyph {
-  font-size: var(--text-md);
-}
-
-.duel-card__name {
-  font-family: var(--font-label);
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--haze);
-}
-
-.duel-card__text {
-  font-family: var(--font-book);
-  font-size: var(--text-xs);
-  color: var(--haze-dim);
-}
-
-.duel__log {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: var(--space-2);
-  font-family: var(--font-serial);
-  font-size: var(--text-xs);
-  color: var(--haze-dim);
-}
-
-.duel__log p {
-  margin: 0 0 var(--space-1);
-}
-
-.duel__outcome {
-  margin: 0;
-  font-family: var(--font-book);
-  font-size: var(--text-md);
-  color: var(--haze);
-}
-
-.duel__reason {
-  font-family: var(--font-serial);
-  font-size: var(--text-xs);
-  color: var(--haze-dim);
-}
-
-.duel__actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.duel__actions .prompt__button {
-  flex: 1 1 auto;
-}
-
-.duel-start {
-  pointer-events: auto;
-  position: absolute;
-  right: var(--space-3);
-  top: calc(var(--inset-top) + var(--space-8) + var(--touch-min) + var(--space-2));
-  min-height: var(--touch-min);
-  padding: 0 var(--space-3);
-  font-family: var(--font-label);
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--alarm);
-  background: var(--slate-raised);
-  border: var(--border-hairline);
-  border-radius: var(--radius-sm);
-}
-
-/* Ladder and trading */
-
-.ladder-panel,
-.trade-panel {
-  pointer-events: auto;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(var(--inset-bottom) + var(--space-4));
-  width: min(26rem, calc(100vw - var(--space-6)));
-  max-height: 70vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-/* Both offers side by side: a trade you cannot inspect before agreeing to is
-   how people are defrauded. */
-.trade-panel__sides {
+.world-map__places {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
-
-.trade-panel__sides section {
-  padding: var(--space-2);
-  background: var(--slate-raised);
-  border: var(--border-hairline);
-  border-radius: var(--radius-sm);
+.world-map__places button {
+  min-height: 48px;
+  padding: 0.5rem;
+  text-align: left;
+  font: 0.875rem var(--font-label);
 }
-
-.trade-panel__sides h3 {
-  margin: 0 0 var(--space-2);
+.world-map__places span {
+  color: var(--verdigris);
 }
-
-.ladder-panel .prompt__button,
-.trade-panel .prompt__button {
-  min-height: var(--touch-min);
+.skill-list h3 {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+.skill-list__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.75rem;
+  font: 0.875rem var(--font-label);
+}
+.skill-list progress {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 0.5rem;
+  accent-color: var(--verdigris);
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .world-map svg {
+    max-height: 120px;
+  }
 }

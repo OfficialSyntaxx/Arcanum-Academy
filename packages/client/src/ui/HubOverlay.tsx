@@ -53,7 +53,9 @@ export function HubHud() {
 
   return (
     <div className="hub-hud">
-      <span className="hub-hud__zone">{zoneName}</span>
+      <span className="hub-hud__zone">
+        {zoneName === 'Courtyard of the Arcanum' ? 'The Shorelands' : zoneName}
+      </span>
       <span className="hub-hud__clock">
         <time>{formatClock(worldMinute)}</time> · {periodOf(worldMinute)}
       </span>

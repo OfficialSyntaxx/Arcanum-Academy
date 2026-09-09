@@ -19,8 +19,7 @@ export const GamePhase = {
   WorldExploration: 'WORLD_EXPLORATION',
   IdleGathering: 'IDLE_GATHERING',
   Crafting: 'CRAFTING',
-  DeckBuilding: 'DECK_BUILDING',
-  CardCombat: 'CARD_COMBAT',
+  Combat: 'COMBAT',
   Market: 'MARKET',
   QuestDialog: 'QUEST_DIALOG',
   Paused: 'PAUSED',
@@ -39,7 +38,7 @@ export const PHASE_TRANSITIONS: Readonly<Record<GamePhase, readonly GamePhase[]>
   [GamePhase.Syncing]: [
     GamePhase.WorldExploration,
     GamePhase.SocialHub,
-    GamePhase.CardCombat,
+    GamePhase.Combat,
     GamePhase.Loading,
     GamePhase.Fault,
   ],
@@ -47,8 +46,7 @@ export const PHASE_TRANSITIONS: Readonly<Record<GamePhase, readonly GamePhase[]>
     GamePhase.SocialHub,
     GamePhase.IdleGathering,
     GamePhase.Crafting,
-    GamePhase.DeckBuilding,
-    GamePhase.CardCombat,
+    GamePhase.Combat,
     GamePhase.Market,
     GamePhase.QuestDialog,
     GamePhase.Syncing,
@@ -57,8 +55,7 @@ export const PHASE_TRANSITIONS: Readonly<Record<GamePhase, readonly GamePhase[]>
   ],
   [GamePhase.SocialHub]: [
     GamePhase.WorldExploration,
-    GamePhase.CardCombat,
-    GamePhase.DeckBuilding,
+    GamePhase.Combat,
     GamePhase.Market,
     GamePhase.Syncing,
     GamePhase.Paused,
@@ -73,21 +70,18 @@ export const PHASE_TRANSITIONS: Readonly<Record<GamePhase, readonly GamePhase[]>
   ],
   [GamePhase.Crafting]: [
     GamePhase.WorldExploration,
-    GamePhase.DeckBuilding,
     GamePhase.Syncing,
     GamePhase.Paused,
     GamePhase.Fault,
   ],
-  [GamePhase.DeckBuilding]: [
+  // Combat resolves in the world rather than on a separate screen, so it exits
+  // back to exploration. Syncing stays reachable for a server-driven resync.
+  [GamePhase.Combat]: [
     GamePhase.WorldExploration,
-    GamePhase.SocialHub,
-    GamePhase.CardCombat,
     GamePhase.Syncing,
     GamePhase.Paused,
     GamePhase.Fault,
   ],
-  // Leaving a duel always routes through Syncing: the server owns the result.
-  [GamePhase.CardCombat]: [GamePhase.Syncing, GamePhase.Paused, GamePhase.Fault],
   [GamePhase.Market]: [
     GamePhase.WorldExploration,
     GamePhase.SocialHub,
@@ -106,8 +100,7 @@ export const PHASE_TRANSITIONS: Readonly<Record<GamePhase, readonly GamePhase[]>
     GamePhase.SocialHub,
     GamePhase.IdleGathering,
     GamePhase.Crafting,
-    GamePhase.DeckBuilding,
-    GamePhase.CardCombat,
+    GamePhase.Combat,
     GamePhase.Market,
     GamePhase.QuestDialog,
     GamePhase.Syncing,

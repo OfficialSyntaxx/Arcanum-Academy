@@ -1,28 +1,21 @@
-/**
- * The 3D palette, kept in lockstep with `styles/tokens.css`.
- *
- * The world and the UI have to read as one artefact: a duel circle glowing a
- * different green from the button that starts the duel is the kind of small
- * incoherence that makes a game feel assembled rather than designed. These are
- * the same nine values the stylesheet uses, expressed as hex numbers for three.
- */
+/** Warm honey stone and green foliage; UI uses Oakenfall timber and amber. */
 
 export const Palette = {
   ink: 0x11161d,
-  slate: 0x1b2531,
-  slateRaised: 0x24303f,
-  haze: 0xc6cfd8,
-  hazeDim: 0x8496a8,
-  verdigris: 0x3fa88e,
-  /** Reserved for grade 9-10 prestige, in the world as well as in the UI. */
-  gilt: 0xc9a227,
+  slate: 0x3f6f3b,
+  slateRaised: 0xa87a47,
+  haze: 0xf0dfb0,
+  hazeDim: 0x8a785f,
+  verdigris: 0x2bbbaa,
+  /** Warm accent for navigation and landmarks. */
+  gilt: 0xf0a62e,
   alarm: 0xd0524a,
   /** Still water — canals, ponds, river segments. Flat colour; flow lands later. */
-  canal: 0x3a86c8,
+  canal: 0x258db5,
   /** Walkway strips laid along waypoint links. */
-  path: 0x30404f,
+  path: 0xe0c27e,
   /** Doors and roof timber. */
-  wood: 0x4a3423,
+  wood: 0x5c3524,
   /** Lamps, torches, lanterns — warm decorative light, not a dynamic source. */
   flame: 0xffb15a,
 } as const;
@@ -46,20 +39,20 @@ export interface Atmosphere {
  */
 const PRESETS: Readonly<Record<string, Atmosphere>> = {
   'courtyard.afternoon': {
-    sky: 0x2a3849,
-    fog: 0x24303f,
-    fogNear: 34,
-    fogFar: 96,
-    sunColour: 0xffe9c4,
-    sunIntensity: 1.15,
-    ambientColour: 0x8fa6c0,
-    ambientIntensity: 0.55,
+    sky: 0x78b5c4,
+    fog: 0x89a56c,
+    fogNear: 155,
+    fogFar: 300,
+    sunColour: 0xffd18a,
+    sunIntensity: 1.35,
+    ambientColour: 0x86b7a8,
+    ambientIntensity: 0.48,
   },
   'forest.canopy': {
     sky: 0x1f3327,
     fog: 0x223a2c,
-    fogNear: 22,
-    fogFar: 70,
+    fogNear: 135,
+    fogFar: 260,
     sunColour: 0xcfe8a8,
     sunIntensity: 0.85,
     ambientColour: 0x5f8f6c,
@@ -68,8 +61,8 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
   'mountains.overcast': {
     sky: 0x3a3f47,
     fog: 0x40454d,
-    fogNear: 28,
-    fogFar: 88,
+    fogNear: 155,
+    fogFar: 310,
     sunColour: 0xd8dee6,
     sunIntensity: 0.95,
     ambientColour: 0x7c828c,
@@ -78,8 +71,8 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
   'snow.overcast': {
     sky: 0xcbd9e6,
     fog: 0xd8e4ee,
-    fogNear: 20,
-    fogFar: 76,
+    fogNear: 135,
+    fogFar: 270,
     sunColour: 0xf3f8ff,
     sunIntensity: 1.05,
     ambientColour: 0xb9cbdc,

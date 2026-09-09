@@ -2,12 +2,12 @@ import {
   AmbientLight,
   Clock,
   Color,
-  PerspectiveCamera,
+  OrthographicCamera,
   Scene,
   WebGLRenderer,
   type Object3D,
 } from 'three';
-import type { Logger } from '@arcanum/shared';
+import type { Logger } from '@alderfell/shared';
 import type { QualitySettings } from '../core/device.js';
 
 /**
@@ -36,12 +36,14 @@ export interface RendererOptions {
 
 export class RenderService {
   readonly scene = new Scene();
-  readonly camera: PerspectiveCamera;
+  readonly camera: OrthographicCamera;
   private readonly renderer: WebGLRenderer;
   private readonly clock = new Clock();
   private readonly resizeObserver: ResizeObserver;
   private contextLost = false;
   private visible = true;
+  private width = 0;
+  private height = 0;
 
   constructor(private readonly options: RendererOptions) {
     this.renderer = new WebGLRenderer({
@@ -58,7 +60,10 @@ export class RenderService {
     this.scene.background = new Color('#11161d');
     this.scene.add(new AmbientLight(0xffffff, 0.6));
 
-    this.camera = new PerspectiveCamera(55, 1, 0.1, 400);
+    // The frustum is sized by CameraRig, which owns zoom and aspect. A far
+    // plane generous enough for the rig's boom length, and a near plane behind
+    // the camera so nothing clips when it swings through terrain.
+    this.camera = new OrthographicCamera(-10, 10, 10, -10, -200, 600);
     this.camera.position.set(0, 6, 10);
     this.camera.lookAt(0, 1, 0);
 
@@ -92,18 +97,34 @@ export class RenderService {
   render(): void {
     if (!this.isRenderable) return;
     this.renderer.render(this.scene, this.camera);
+    // An opt-in hook for browser smoke checks. Some Linux CI compositors return
+    // a black screenshot for a valid WebGL canvas, so the test verifies the
+    // renderer's own submitted draw work rather than treating that platform
+    // limitation as a game failure. It is never enabled for players.
+    if ((globalThis as { __alderfellDiagnostics?: boolean }).__alderfellDiagnostics) {
+      this.options.canvas.dataset.renderCalls = String(this.renderer.info.render.calls);
+      this.options.canvas.dataset.renderTriangles = String(this.renderer.info.render.triangles);
+    }
   }
+
+  /** Set by the hub controller so the camera rig can resize its frustum. */
+  onViewportChange: ((width: number, height: number) => void) | null = null;
 
   resize(): void {
     const { clientWidth, clientHeight } = this.options.canvas;
     if (clientWidth === 0 || clientHeight === 0) return;
+    if (this.width === clientWidth && this.height === clientHeight) {
+      this.onViewportChange?.(clientWidth, clientHeight);
+      return;
+    }
+    this.width = clientWidth;
+    this.height = clientHeight;
     // `false` leaves CSS sizing to the layout, which keeps safe-area insets working.
     this.renderer.setSize(clientWidth, clientHeight, false);
-    this.camera.aspect = clientWidth / clientHeight;
-    // A phone in portrait needs a wider vertical field of view to frame the same
-    // subject, so the fov follows the aspect rather than being fixed.
-    this.camera.fov = this.camera.aspect < 1 ? 68 : 55;
-    this.camera.updateProjectionMatrix();
+    // The rig owns the frustum; the renderer only reports the shape of the
+    // surface. Absent a rig (before the hub loads) the camera keeps its
+    // constructed frustum, which is only ever seen empty.
+    this.onViewportChange?.(clientWidth, clientHeight);
   }
 
   stats(): { drawCalls: number; triangles: number; programs: number; geometries: number } {

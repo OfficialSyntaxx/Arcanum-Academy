@@ -9,7 +9,7 @@
  * Two rule sets:
  *
  * 1. Package rules - which workspace packages and which third-party runtimes a
- *    package may depend on. This is what keeps `@arcanum/sim` headless, so the
+ *    package may depend on. This is what keeps `@alderfell/sim` headless, so the
  *    same simulation runs on the server and in the browser.
  * 2. Layer rules - inside a package, which directories may import which. This is
  *    what keeps rendering out of game logic and the network out of the UI.
@@ -31,9 +31,9 @@ const FORBIDDEN_RUNTIME = {
 /** Workspace packages each package may import. */
 const ALLOWED_WORKSPACE = {
   shared: [],
-  sim: ['@arcanum/shared'],
-  server: ['@arcanum/shared', '@arcanum/sim'],
-  client: ['@arcanum/shared', '@arcanum/sim'],
+  sim: ['@alderfell/shared'],
+  server: ['@alderfell/shared', '@alderfell/sim'],
+  client: ['@alderfell/shared', '@alderfell/sim'],
 };
 
 /**
@@ -43,15 +43,23 @@ const ALLOWED_WORKSPACE = {
 /**
  * Imports a specific layer may never make, whatever the package rules allow.
  *
- * ADR-0004 requires that the combat resolver cannot read a card's grade,
- * serial or owner. Stating it as a rule the linter enforces is the difference
- * between a decision and a convention: a resolver that imports CardInstance
- * would make grade mechanically relevant, and an open market plus grade-driven
- * power is pay-to-win however carefully the rest is written.
+ * Currently empty, and deliberately kept rather than deleted.
+ *
+ * This previously enforced ADR-0004 - the card duel resolver could not import
+ * `CardInstance` or `SlabSerial`, so a card's grade could never become
+ * mechanically relevant. The card game is cut, so the rule now guards a module
+ * and two symbols that no longer exist. Replacing it with an invented rule
+ * would be worse than leaving it empty: a linter that enforces something
+ * nobody decided teaches the next reader to ignore it.
+ *
+ * The mechanism below is intact and matters, including its handling of
+ * type-only imports. The next real subject for it is the tick-based combat
+ * resolver at G3: when `sim/combat` returns it must not import anything
+ * presentational or provenance-shaped, for the same reason ADR-0004 existed -
+ * "the resolver cannot see it" is a rule; "the resolver does not currently look
+ * at it" is a habit.
  */
-const FORBIDDEN_SYMBOLS = {
-  'sim/combat': ['CardInstance', 'SlabSerial'],
-};
+const FORBIDDEN_SYMBOLS = {};
 
 const LAYERS = {
   client: {
@@ -192,7 +200,7 @@ for (const packageName of Object.keys(ALLOWED_WORKSPACE)) {
         .slice(0, specifier.startsWith('@') ? 2 : 1)
         .join('/');
 
-      if (specifier.startsWith('@arcanum/')) {
+      if (specifier.startsWith('@alderfell/')) {
         if (!ALLOWED_WORKSPACE[packageName].includes(bare)) {
           violations.push(`${location}: may not import ${bare}`);
         }

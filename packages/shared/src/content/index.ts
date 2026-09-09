@@ -25,19 +25,14 @@ import type { ItemDefinition } from '../items/types.js';
 import type { NodeDefinition } from '../gathering/types.js';
 import type { RecipeDefinition } from '../crafting/types.js';
 import type { SkillDefinition } from '../skills/types.js';
-import type { CardDefinition, SchoolDefinition } from '../cards/types.js';
 import {
-  buildCardCatalog,
   buildItemCatalog,
   buildNodeCatalog,
   buildRecipeBook,
-  buildSchoolTable,
   buildSkillTable,
-  type CardCatalog,
   type ItemCatalog,
   type NodeCatalog,
   type RecipeBook,
-  type SchoolTable,
   type SkillTable,
 } from './catalogs.js';
 import { buildStringTable, type StringTable } from './strings.js';
@@ -45,8 +40,6 @@ import itemsDocument from './data/items.json';
 import nodesDocument from './data/nodes.json';
 import recipesDocument from './data/recipes.json';
 import skillsDocument from './data/skills.json';
-import schoolsDocument from './data/schools.json';
-import cardsDocument from './data/cards.json';
 import stringsDocument from './data/strings.en.json';
 
 export * from './catalogs.js';
@@ -66,8 +59,6 @@ const documents = [
   ['items', itemsDocument.schemaVersion],
   ['nodes', nodesDocument.schemaVersion],
   ['recipes', recipesDocument.schemaVersion],
-  ['schools', schoolsDocument.schemaVersion],
-  ['cards', cardsDocument.schemaVersion],
   ['strings', stringsDocument.schemaVersion],
 ] as const;
 
@@ -92,8 +83,6 @@ const skillDefinitions = skillsDocument.entries as unknown as readonly SkillDefi
 const itemDefinitions = itemsDocument.entries as unknown as readonly ItemDefinition[];
 const nodeDefinitions = nodesDocument.entries as unknown as readonly NodeDefinition[];
 const recipeDefinitions = recipesDocument.entries as unknown as readonly RecipeDefinition[];
-const schoolDefinitions = schoolsDocument.entries as unknown as readonly SchoolDefinition[];
-const cardDefinitions = cardsDocument.entries as unknown as readonly CardDefinition[];
 
 // Dependency order: items bind tools to skills, and nodes and recipes reference
 // both. Building in any other order would validate against a half-built world.
@@ -123,16 +112,6 @@ export const RECIPE_BOOK: RecipeBook = expect(
     zones: [COURTYARD],
   }),
   'shipped recipe content is invalid',
-);
-
-export const SCHOOL_TABLE: SchoolTable = expect(
-  buildSchoolTable(schoolDefinitions),
-  'shipped school content is invalid',
-);
-
-export const CARD_CATALOG: CardCatalog = expect(
-  buildCardCatalog(cardDefinitions, { items: ITEM_CATALOG, schools: SCHOOL_TABLE }),
-  'shipped card content is invalid',
 );
 
 export const STRINGS: StringTable = expect(

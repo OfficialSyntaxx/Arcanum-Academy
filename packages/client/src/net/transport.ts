@@ -6,7 +6,7 @@ import {
   EventBus,
   type Logger,
   type ServerEnvelope,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 /**
  * Reconnecting client transport.

@@ -1,5 +1,5 @@
 {
-  "name": "@arcanum/sim",
+  "name": "@alderfell/sim",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,6 +12,6 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@arcanum/shared": "0.1.0"
+    "@alderfell/shared": "0.1.0"
   }
 }

@@ -1,7 +1,7 @@
 /**
- * @arcanum/sim - the deterministic simulation kernel.
+ * @alderfell/sim - the deterministic simulation kernel.
  *
- * Depends only on @arcanum/shared. Contains no rendering, no DOM, no network and
+ * Depends only on @alderfell/shared. Contains no rendering, no DOM, no network and
  * no persistence, so the exact same module runs in the browser, in Node on the
  * authoritative server, and in a test harness.
  */
@@ -19,7 +19,3 @@ export * from './economy/inventory.js';
 export * from './economy/gathering.js';
 export * from './economy/crafting.js';
 export * from './economy/skills.js';
-export * from './economy/scribing.js';
-export * from './combat/duel.js';
-export * from './combat/ai.js';
-export * from './combat/replay.js';

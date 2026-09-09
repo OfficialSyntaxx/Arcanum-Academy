@@ -155,15 +155,6 @@ export const SNOW: Zone = {
       verb: 'Craft',
     },
     {
-      id: ix('int.spire.shrine'),
-      kind: InteractableKind.DisplayPedestal,
-      position: { x: -29.4, z: 3 },
-      approach: wp('wp.spire.clearing'),
-      facing: Math.PI * 0.5,
-      label: 'The Frozen Spire',
-      verb: 'Commune',
-    },
-    {
       id: ix('int.frost.berries'),
       kind: InteractableKind.GatheringNode,
       position: { x: 41.4, z: -6 },

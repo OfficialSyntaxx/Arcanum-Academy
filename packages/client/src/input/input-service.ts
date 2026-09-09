@@ -1,4 +1,4 @@
-import { EventBus } from '@arcanum/shared';
+import { EventBus } from '@alderfell/shared';
 
 /**
  * Pointer abstraction.
@@ -53,6 +53,8 @@ export class InputService {
   private readonly now: () => number;
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
   private pinchStartDistance = 0;
+  /** Prevents either finger of a completed pinch becoming a stray tap. */
+  private readonly pinchPointerIds = new Set<number>();
 
   constructor(private readonly options: InputOptions) {
     this.dragThreshold = options.dragThresholdPx ?? 10;
@@ -76,6 +78,7 @@ export class InputService {
     element.removeEventListener('pointercancel', this.handleUp);
     if (this.longPressTimer) clearTimeout(this.longPressTimer);
     this.pointers.clear();
+    this.pinchPointerIds.clear();
     this.events.clear();
   }
 
@@ -93,6 +96,7 @@ export class InputService {
 
     if (this.pointers.size === 2) {
       this.pinchStartDistance = this.pointerDistance();
+      for (const pointerId of this.pointers.keys()) this.pinchPointerIds.add(pointerId);
       if (this.longPressTimer) clearTimeout(this.longPressTimer);
       return;
     }
@@ -122,6 +126,11 @@ export class InputService {
           centerX: (a.x + b.x) / 2,
           centerY: (a.y + b.y) / 2,
         });
+        // Consumers apply each pinch scale directly to their current state.
+        // Re-basing here turns the cumulative browser distance into a small,
+        // stable per-frame delta instead of repeatedly compounding from the
+        // first two-finger position.
+        this.pinchStartDistance = distance;
       }
       return;
     }
@@ -149,6 +158,7 @@ export class InputService {
   private readonly handleUp = (event: PointerEvent): void => {
     const pointer = this.pointers.get(event.pointerId);
     this.pointers.delete(event.pointerId);
+    const completedPinch = this.pinchPointerIds.delete(event.pointerId);
     if (this.pointers.size < 2) this.pinchStartDistance = 0;
     if (this.longPressTimer) clearTimeout(this.longPressTimer);
     if (!pointer) return;
@@ -157,7 +167,7 @@ export class InputService {
       this.events.emit('dragend', { x: pointer.x, y: pointer.y, pointerId: event.pointerId });
       return;
     }
-    if (!pointer.longPressFired) {
+    if (!pointer.longPressFired && !completedPinch) {
       this.events.emit('tap', { x: pointer.x, y: pointer.y, pointerId: event.pointerId });
     }
   };

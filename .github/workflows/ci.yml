@@ -43,6 +43,22 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Install visual-check browser
+        # ubuntu-24.04 already carries Chromium's shared libraries. Avoid
+        # refreshing unrelated third-party apt indexes, which can race mirrors.
+        run: npx playwright install chromium
+
+      - name: Render phone, landscape and desktop; prove blank-world detector
+        run: npx playwright test
+
+      - name: Save visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorelands-visual-evidence
+          path: test-results/
+          retention-days: 14
+
       - name: Report client bundle size
         run: |
           echo "### Client bundle" >> "$GITHUB_STEP_SUMMARY"

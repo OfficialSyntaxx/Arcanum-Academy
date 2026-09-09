@@ -7,7 +7,7 @@ import type { HubController } from './hub-controller.js';
 import type { EconomyController } from './economy-controller.js';
 import { StatusBar } from '../ui/StatusBar.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.js';
-import { GamePhase } from '@arcanum/sim';
+import { GamePhase } from '@alderfell/sim';
 
 const LOCAL_SERVER_URL = 'ws://localhost:8787';
 
@@ -29,6 +29,9 @@ function resolveServerUrl(): string {
   const configured = import.meta.env['VITE_SERVER_URL'];
   if (configured !== undefined && configured !== '') return configured;
 
+  if (import.meta.env.DEV) {
+    return `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/gateway`;
+  }
   const host = window.location.hostname;
   if (host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]') {
     console.warn(
@@ -55,7 +58,6 @@ export function App() {
   const setPhase = useAppStore((state) => state.setPhase);
   const [hub, setHub] = useState<HubController | null>(null);
   const [economy, setEconomy] = useState<EconomyController | null>(null);
-  const playerId = useAppStore((state) => state.playerId);
   const Screen = resolveScreen(phase);
 
   useEffect(() => {
@@ -100,30 +102,13 @@ export function App() {
         <ErrorBoundary onError={(error) => setFault(error.message)}>
           {hub !== null && isHubPhase(phase) ? (
             <HubScreen
-              joystick={hub.joystick}
+              onNavigate={(id) => hub.navigateToInteractable(id)}
               onEngage={() => {
                 hub.engagePrompt();
               }}
               onCollect={() => economy?.collect()}
               onStopGathering={() => economy?.stopGathering()}
-              onClaimOffline={() => economy?.claimOffline()}
               onCraft={(recipeId) => economy?.craft(recipeId)}
-              onSaveDeck={(deckId, name, ids) => economy?.saveDeck(deckId, name, ids)}
-              onScribe={(cardId) => economy?.scribe(cardId)}
-              onDeleteDeck={(deckId) => economy?.deleteDeck(deckId)}
-              onStartDuel={(deckId, difficulty) => economy?.startDuel(deckId, difficulty)}
-              onDuelAct={(command, handIndex) => economy?.duelAct(command, handIndex)}
-              onForfeitDuel={() => economy?.forfeitDuel()}
-              playerId={playerId}
-              onQueue={(deckId) => economy?.queueForMatch(deckId)}
-              onLeaveQueue={() => economy?.leaveQueue()}
-              onPvpAct={(matchId, command, handIndex) =>
-                economy?.pvpAct(matchId, command, handIndex)
-              }
-              onForfeitPvp={(matchId) => economy?.forfeitPvp(matchId)}
-              onTradeOffer={(tradeId, stacks, ids) => economy?.offerTrade(tradeId, stacks, ids)}
-              onTradeConfirm={(tradeId) => economy?.confirmTrade(tradeId)}
-              onTradeCancel={(tradeId) => economy?.cancelTrade(tradeId)}
             />
           ) : (
             <Screen />

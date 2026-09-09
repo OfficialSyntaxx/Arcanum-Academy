@@ -15,16 +15,21 @@ describe('phase state machine', () => {
 
   it('rejects undeclared transitions', () => {
     const fsm = machine();
-    const result = fsm.transition(GamePhase.CardCombat, 'skip ahead');
+    const result = fsm.transition(GamePhase.Combat, 'skip ahead');
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.reason).toBe('fsm.illegal_transition');
     expect(fsm.current).toBe(GamePhase.Boot);
   });
 
-  it('forces duel exit through syncing so the server owns the result', () => {
-    const fsm = machine(GamePhase.CardCombat);
-    expect(fsm.can(GamePhase.WorldExploration)).toBe(false);
+  it('lets combat exit straight back to the world, and still allows a resync', () => {
+    const fsm = machine(GamePhase.Combat);
+    // Combat happens in the world rather than on a separate screen, so killing
+    // a wolf returns the player to exploration without a round trip. The card
+    // duel this replaced had to route through Syncing because the server owned
+    // a result the client had never computed; a tick-based fight is resolved by
+    // the same kernel on both sides, so there is nothing to go and fetch.
+    expect(fsm.can(GamePhase.WorldExploration)).toBe(true);
     expect(fsm.can(GamePhase.Syncing)).toBe(true);
   });
 
@@ -60,9 +65,9 @@ describe('phase state machine', () => {
     });
     fsm.transition(GamePhase.Market);
     fsm.transition(GamePhase.WorldExploration);
-    fsm.transition(GamePhase.DeckBuilding);
+    fsm.transition(GamePhase.Crafting);
     expect(fsm.recentTransitions).toHaveLength(2);
-    expect(fsm.recentTransitions.at(-1)?.to).toBe(GamePhase.DeckBuilding);
+    expect(fsm.recentTransitions.at(-1)?.to).toBe(GamePhase.Crafting);
   });
 
   it('lets every phase reach Fault', () => {

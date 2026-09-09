@@ -15,39 +15,25 @@
 import {
   createInventory,
   initialProgress,
-  type Difficulty,
-  type DuelState,
   type GatheringSession,
   type Inventory,
-} from '@arcanum/sim';
+} from '@alderfell/sim';
 import {
   ok,
   type ItemDefinitionId,
   type ItemInstance,
   type ItemStack,
   type NodeId,
-  type CardDefinitionId,
-  type CardInstance,
-  type CardInstanceId,
-  type Deck,
   type NodeState,
   type PlayerId,
-  type SlabSerial,
   type Result,
   type Failure,
   type SkillId,
   type SkillProgress,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import type { PlayerRecord } from '../persistence/repository.js';
 
 export const PLAYER_SCHEMA_VERSION = 1;
-
-export interface ActiveDuel {
-  readonly state: DuelState;
-  readonly seed: string;
-  readonly difficulty: Difficulty;
-}
-
 export interface PlayerState {
   readonly inventory: Inventory;
   /** Progress per skill. Absent means untouched, which reads as level one. */
@@ -58,20 +44,6 @@ export interface PlayerState {
   readonly nodes: Readonly<Record<string, NodeState>>;
   readonly gathering: GatheringSession | null;
   /** Every card the player has scribed. The collection, not the deck. */
-  readonly cards: readonly CardInstance[];
-  /** Saved decks, keyed by deck id. Legality is re-checked on every save. */
-  readonly decks: Readonly<Record<string, Deck>>;
-  /**
-   * The duel in progress, with the seed and difficulty it was opened under.
-   *
-   * Stored on the record rather than held in memory so a dropped connection
-   * does not destroy a duel the player is entitled to return to. The engine
-   * state stays pure - seed and difficulty live in the envelope around it,
-   * not inside the rules.
-   */
-  readonly duel: ActiveDuel | null;
-  /** Ladder rating. Absent on a player who has never been rated. */
-  readonly rating?: number;
   /**
    * Last moment the player was demonstrably present.
    *
@@ -87,9 +59,6 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     tools: {},
     nodes: {},
     gathering: null,
-    cards: [],
-    decks: {},
-    duel: null,
     lastSeenAtMs: nowMs,
   };
 }
@@ -167,45 +136,6 @@ function readNodes(value: unknown): Record<string, NodeState> {
   return nodes;
 }
 
-function readCards(value: unknown): CardInstance[] {
-  if (!Array.isArray(value)) return [];
-  const cards: CardInstance[] = [];
-  for (const raw of value) {
-    if (!isRecord(raw)) continue;
-    const { instanceId, definitionId, scribedBy, serial } = raw;
-    if (typeof instanceId !== 'string' || typeof definitionId !== 'string') continue;
-    cards.push({
-      instanceId: instanceId as CardInstanceId,
-      definitionId: definitionId as CardDefinitionId,
-      grade: Math.max(0, Math.floor(readNumber(raw.grade, 0))),
-      foil: raw.foil === true,
-      serial: typeof serial === 'string' ? (serial as SlabSerial) : null,
-      scribedBy: (typeof scribedBy === 'string' ? scribedBy : '') as PlayerId,
-      scribedAtMs: readNumber(raw.scribedAtMs, 0),
-      gradedUnderTunablesVersion: Math.max(
-        0,
-        Math.floor(readNumber(raw.gradedUnderTunablesVersion, 0)),
-      ),
-    });
-  }
-  return cards;
-}
-
-function readDecks(value: unknown): Record<string, Deck> {
-  if (!isRecord(value)) return {};
-  const decks: Record<string, Deck> = {};
-  for (const [id, raw] of Object.entries(value)) {
-    if (!isRecord(raw) || !Array.isArray(raw.cardDefinitionIds)) continue;
-    const ids = raw.cardDefinitionIds.filter((entry): entry is string => typeof entry === 'string');
-    decks[id] = {
-      id,
-      name: typeof raw.name === 'string' ? raw.name : id,
-      cardDefinitionIds: ids as CardDefinitionId[],
-    };
-  }
-  return decks;
-}
-
 function readGathering(value: unknown): GatheringSession | null {
   if (!isRecord(value)) return null;
   const { nodeId, rngState } = value;
@@ -240,14 +170,6 @@ export function parsePlayerState(
     tools: readTools(data.tools),
     nodes: readNodes(data.nodes),
     gathering: readGathering(data.gathering),
-    cards: readCards(data.cards),
-    decks: readDecks(data.decks),
-    // A duel is read back as-is. It is written only by the engine, and a
-    // partially repaired duel would be less honest than none at all.
-    duel: (data.duel as ActiveDuel | undefined) ?? null,
-    ...(typeof data.rating === 'number' && Number.isFinite(data.rating)
-      ? { rating: Math.max(0, Math.floor(data.rating)) }
-      : {}),
     lastSeenAtMs: readNumber(data.lastSeenAtMs, record.updatedAtMs),
   });
 }
@@ -260,10 +182,6 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     tools: state.tools,
     nodes: state.nodes,
     gathering: state.gathering,
-    cards: state.cards,
-    decks: state.decks,
-    duel: state.duel,
-    ...(state.rating !== undefined ? { rating: state.rating } : {}),
     lastSeenAtMs: state.lastSeenAtMs,
   };
 }

@@ -10,10 +10,10 @@
  * server confirmed, which is the safest place to start: a wrong prediction
  * shows a player materials that then vanish, and gathering is slow enough that
  * a round trip is not felt. The rules needed to predict already live in
- * `@arcanum/sim`, so adding it later is a change here and nowhere else.
+ * `@alderfell/sim`, so adding it later is a change here and nowhere else.
  */
 
-import { ClientOpcode, ServerOpcode, type Failure } from '@arcanum/shared';
+import { ClientOpcode, ServerOpcode, type Failure } from '@alderfell/shared';
 import type { Transport } from '../net/transport.js';
 import { useAppStore, type EconomyState } from '../state/app-store.js';
 
@@ -41,18 +41,9 @@ const OWNED = new Set([
   'player.sync',
   'gathering.start',
   'gathering.collect',
-  'gathering.claimOffline',
   'gathering.stop',
   'crafting.craft',
-  'scribing.scribe',
-  'deck.save',
-  'deck.delete',
 ]);
-
-/** Duel patches replace the duel view wholesale rather than merging. */
-const DUEL_KINDS = new Set(['duel.start', 'duel.act', 'duel.forfeit', 'duel.state']);
-const TRADE_KINDS = new Set(['trade.open', 'trade.offer', 'trade.confirm', 'trade.cancel']);
-const PVP_KINDS = new Set(['pvp.act', 'pvp.forfeit']);
 
 export class EconomyController {
   private disposed = false;
@@ -73,79 +64,12 @@ export class EconomyController {
     this.send('gathering.collect');
   }
 
-  claimOffline(): void {
-    this.send('gathering.claimOffline');
-  }
-
   stopGathering(): void {
     this.send('gathering.stop');
   }
 
   craft(recipeId: string): void {
     this.send('crafting.craft', { recipeId });
-  }
-
-  scribe(cardId: string): void {
-    this.send('scribing.scribe', { cardId });
-  }
-
-  saveDeck(deckId: string, name: string, cardDefinitionIds: readonly string[]): void {
-    this.send('deck.save', { deckId, name, cardDefinitionIds });
-  }
-
-  deleteDeck(deckId: string): void {
-    this.send('deck.delete', { deckId });
-  }
-
-  startDuel(deckId: string, difficulty: string): void {
-    this.send('duel.start', { deckId, difficulty });
-  }
-
-  duelAct(command: string, handIndex?: number): void {
-    this.send('duel.act', handIndex === undefined ? { command } : { command, handIndex });
-  }
-
-  forfeitDuel(): void {
-    this.send('duel.forfeit');
-  }
-
-  openTrade(partnerId: string): void {
-    this.send('trade.open', { partnerId });
-  }
-
-  offerTrade(
-    tradeId: string,
-    stacks: readonly { definitionId: string; quantity: number }[],
-    cardInstanceIds: readonly string[],
-  ): void {
-    this.send('trade.offer', { tradeId, stacks, cardInstanceIds });
-  }
-
-  confirmTrade(tradeId: string): void {
-    this.send('trade.confirm', { tradeId });
-  }
-
-  cancelTrade(tradeId: string): void {
-    this.send('trade.cancel', { tradeId });
-  }
-
-  queueForMatch(deckId: string): void {
-    this.send('match.queue', { deckId });
-  }
-
-  leaveQueue(): void {
-    this.send('match.leave');
-  }
-
-  pvpAct(matchId: string, command: string, handIndex?: number): void {
-    this.send(
-      'pvp.act',
-      handIndex === undefined ? { matchId, command } : { matchId, command, handIndex },
-    );
-  }
-
-  forfeitPvp(matchId: string): void {
-    this.send('pvp.forfeit', { matchId });
   }
 
   dispose(): void {
@@ -183,42 +107,6 @@ export class EconomyController {
     if (frame.op !== ServerOpcode.Patch) return;
     const envelope = frame.p as { readonly kind?: string; readonly state?: HarvestPatch } | null;
     if (envelope?.kind === undefined) return;
-
-    if (TRADE_KINDS.has(envelope.kind)) {
-      useAppStore.getState().setTrade((envelope.state ?? null) as never);
-      useAppStore.getState().setLastCommandError(null);
-      return;
-    }
-
-    if (PVP_KINDS.has(envelope.kind)) {
-      useAppStore.getState().setPvp((envelope.state ?? null) as never);
-      useAppStore.getState().setLastCommandError(null);
-      return;
-    }
-
-    if (envelope.kind === 'match.queue' || envelope.kind === 'match.leave') {
-      const patch = envelope.state as unknown as
-        { queued?: boolean; queueSize?: number; matchId?: string } | undefined;
-      const store = useAppStore.getState();
-      // A pairing answers the queue command directly, so the same reply either
-      // says "still waiting" or is the duel itself.
-      if (patch?.matchId !== undefined) {
-        store.setQueued(null);
-        store.setPvp(patch as never);
-      } else {
-        store.setQueued(patch?.queued === true ? { queueSize: patch.queueSize ?? 0 } : null);
-      }
-      store.setLastCommandError(null);
-      return;
-    }
-
-    if (DUEL_KINDS.has(envelope.kind)) {
-      // A duel patch is the whole duel, so it replaces rather than merges - a
-      // partially applied duel would be a state neither side believes in.
-      useAppStore.getState().setDuel((envelope.state ?? null) as never);
-      useAppStore.getState().setLastCommandError(null);
-      return;
-    }
 
     if (!OWNED.has(envelope.kind)) return;
     const patch = envelope.state;

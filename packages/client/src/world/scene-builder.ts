@@ -14,7 +14,7 @@
 import {
   BoxGeometry,
   BufferGeometry,
-  CircleGeometry,
+  Color,
   ConeGeometry,
   CylinderGeometry,
   Float32BufferAttribute,
@@ -39,9 +39,11 @@ import {
   type Interactable,
   type WaypointId,
   type Zone,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 import { Palette } from './palette.js';
+import type { QualitySettings } from '../core/device.js';
+import { buildEnvironment } from './environment-assets.js';
 
 /** A door's swing pivot, and the waypoint whose proximity opens it. */
 export interface DoorHandle {
@@ -65,16 +67,12 @@ export interface ZoneGeometry {
 const MARKER_COLOURS: Readonly<Record<string, number>> = {
   [InteractableKind.GatheringNode]: Palette.verdigris,
   [InteractableKind.CraftingStation]: Palette.hazeDim,
-  [InteractableKind.ScribingTable]: Palette.haze,
-  [InteractableKind.GradingDesk]: Palette.gilt,
-  [InteractableKind.DuelCircle]: Palette.alarm,
   [InteractableKind.MerchantStall]: Palette.hazeDim,
-  [InteractableKind.DisplayPedestal]: Palette.gilt,
   [InteractableKind.ZonePortal]: Palette.verdigris,
   [InteractableKind.QuestBoard]: Palette.haze,
 };
 
-export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean }): ZoneGeometry {
+export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeometry {
   const group = new Group();
   group.name = `zone:${zone.id}`;
 
@@ -84,8 +82,8 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
     return item;
   };
 
-  const stone = track(
-    new MeshStandardMaterial({ color: Palette.slate, roughness: 0.92, metalness: 0.02 }),
+  const meadow = track(
+    new MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0 }),
   );
   const stoneRaised = track(
     new MeshStandardMaterial({ color: Palette.slateRaised, roughness: 0.85, metalness: 0.04 }),
@@ -111,6 +109,24 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
   const wood = track(
     new MeshStandardMaterial({ color: Palette.wood, roughness: 0.8, metalness: 0.05 }),
   );
+  const plaster = track(
+    new MeshStandardMaterial({ color: 0xd6ba82, roughness: 0.96, metalness: 0 }),
+  );
+  const roofTile = track(
+    new MeshStandardMaterial({ color: 0x9b4e35, roughness: 0.9, metalness: 0.02 }),
+  );
+  const doorWood = track(
+    new MeshStandardMaterial({ color: 0x392116, roughness: 0.82, metalness: 0.03 }),
+  );
+  const terraceTop = track(
+    new MeshStandardMaterial({ color: 0xc39152, roughness: 0.94, metalness: 0.01 }),
+  );
+  const mineTop = track(
+    new MeshStandardMaterial({ color: 0x4a5b57, roughness: 0.97, metalness: 0 }),
+  );
+  const plazaStone = track(
+    new MeshStandardMaterial({ color: 0xd4b46f, roughness: 0.82, metalness: 0.03 }),
+  );
   const flame = track(
     new MeshStandardMaterial({
       color: Palette.flame,
@@ -123,15 +139,9 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
 
   // --- Floors -----------------------------------------------------------
   const { bounds, terrain } = zone;
-  const baseGeometry = track(
-    new BoxGeometry(bounds.maxX - bounds.minX, 0.4, bounds.maxZ - bounds.minZ),
-  );
-  const baseFloor = new Mesh(baseGeometry, stone);
-  baseFloor.position.set(
-    (bounds.minX + bounds.maxX) / 2,
-    terrain.baseHeight - 0.2,
-    (bounds.minZ + bounds.maxZ) / 2,
-  );
+  const baseGeometry = track(buildBaseGround(zone));
+  const baseFloor = new Mesh(baseGeometry, meadow);
+  baseFloor.userData['ground'] = true;
   baseFloor.receiveShadow = quality.shadowsEnabled;
   group.add(baseFloor);
 
@@ -141,6 +151,7 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
     const thickness = Math.abs(terrace.height - terrain.baseHeight) + 0.4;
     const geometry = track(new BoxGeometry(width, thickness, depth));
     const slab = new Mesh(geometry, stoneRaised);
+    slab.userData['ground'] = true;
     slab.position.set(
       (terrace.minX + terrace.maxX) / 2,
       terrace.height - thickness / 2,
@@ -148,6 +159,35 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
     );
     slab.receiveShadow = quality.shadowsEnabled;
     group.add(slab);
+
+    // A smaller top surface leaves a darker retaining edge around every level.
+    // This stops authored terraces reading as one enormous undifferentiated box.
+    const inset = Math.min(0.55, width / 5, depth / 5);
+    const top = new Mesh(
+      track(new BoxGeometry(width - inset * 2, 0.04, depth - inset * 2)),
+      terrace.height < terrain.baseHeight ? mineTop : terraceTop,
+    );
+    top.position.set(
+      (terrace.minX + terrace.maxX) / 2,
+      terrace.height + 0.025,
+      (terrace.minZ + terrace.maxZ) / 2,
+    );
+    top.receiveShadow = quality.shadowsEnabled;
+    group.add(top);
+  }
+
+  // The spawn needs an immediately recognisable place, not just another point
+  // on the grass. This paved medallion also gives the lighter route material a
+  // visual home in the first phone screen.
+  if (zone.waypoints.some((waypoint) => waypoint.tags?.includes('spawn'))) {
+    const medallion = new Mesh(track(new CylinderGeometry(5.8, 5.8, 0.1, 12)), plazaStone);
+    medallion.position.set(0, heightAt(terrain, { x: 0, z: 0 }) + 0.04, 0);
+    medallion.receiveShadow = quality.shadowsEnabled;
+    group.add(medallion);
+    const inlay = new Mesh(track(new RingGeometry(3.7, 4.7, 12)), crystal);
+    inlay.rotation.x = -Math.PI / 2;
+    inlay.position.set(0, heightAt(terrain, { x: 0, z: 0 }) + 0.1, 0);
+    group.add(inlay);
   }
 
   // --- Canals -------------------------------------------------------------
@@ -180,7 +220,7 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
       x: (building.minX + building.maxX) / 2,
       z: (building.minZ + building.maxZ) / 2,
     });
-    const built = buildBuilding(building, floorY, { wood, track });
+    const built = buildBuilding(building, floorY, { wood, plaster, roofTile, doorWood, track });
     doors.push(built.door);
     group.add(built.object);
   }
@@ -262,18 +302,18 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
   }
 
   if (columnPositions.length > 0) {
-    const columnGeometry = track(new CylinderGeometry(0.32, 0.4, 5.2, 7));
+    const columnGeometry = track(new CylinderGeometry(0.32, 0.4, 1.2, 7));
     const columns = new InstancedMesh(columnGeometry, stoneRaised, columnPositions.length);
     columns.castShadow = quality.shadowsEnabled;
     columns.receiveShadow = quality.shadowsEnabled;
-    writeInstances(columns, columnPositions, 2.6);
+    writeInstances(columns, columnPositions, 0.6);
     group.add(columns);
   }
 
   // --- Crystal spires ---------------------------------------------------
   // One spire per corner precinct, tall enough to be a landmark from the plaza.
   const spirePositions = zone.waypoints
-    .filter((w) => w.links.length === 1)
+    .filter((w) => w.links.length === 1 && zone.id !== 'zone.courtyard')
     .map((w) => new Vector3(w.position.x, heightAt(terrain, w.position), w.position.z));
 
   if (spirePositions.length > 0) {
@@ -317,7 +357,7 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
   if (lampPositions.length > 0) {
     const finialGeometry = track(new SphereGeometry(0.22, 10, 8));
     const finials = new InstancedMesh(finialGeometry, flame, lampPositions.length);
-    writeInstances(finials, lampPositions, 5.4);
+    writeInstances(finials, lampPositions, 1.4);
     group.add(finials);
   }
 
@@ -361,19 +401,21 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
     group.add(marker);
   }
 
-  // --- Duel circle inlays ----------------------------------------------
-  const circleGeometry = track(new CircleGeometry(2.6, 28));
-  const circleMaterial = track(
-    new MeshStandardMaterial({ color: Palette.ink, roughness: 1, metalness: 0 }),
-  );
-  for (const interactable of zone.interactables) {
-    if (interactable.kind !== InteractableKind.DuelCircle) continue;
-    const inlay = new Mesh(circleGeometry, circleMaterial);
-    const approach = zone.waypoints.find((w) => w.id === interactable.approach);
-    const at = approach?.position ?? interactable.position;
-    inlay.rotation.x = -Math.PI / 2;
-    inlay.position.set(at.x, heightAt(terrain, at) + 0.02, at.z);
-    group.add(inlay);
+  const environment = zone.id === 'zone.courtyard' ? buildEnvironment(zone, quality) : null;
+  if (environment) {
+    group.add(environment.group);
+    // Coast outside the navigable boundary; no walkable terrain is replaced.
+    const seaGeometry = track(new BoxGeometry(180, 0.12, 100));
+    const sea = new Mesh(seaGeometry, water);
+    sea.position.set(0, -0.48, 76);
+    sea.raycast = () => {};
+    group.add(sea);
+    const beachGeometry = track(new BoxGeometry(54, 0.22, 3.5));
+    const beachMaterial = track(new MeshStandardMaterial({ color: 0xdcc38e, roughness: 1 }));
+    const beach = new Mesh(beachGeometry, beachMaterial);
+    beach.position.set(0, -0.24, 27.3);
+    beach.raycast = () => {};
+    group.add(beach);
   }
 
   return {
@@ -381,6 +423,7 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
     markers,
     doors,
     dispose(): void {
+      environment?.dispose();
       group.traverse((child) => {
         if (child instanceof InstancedMesh) child.dispose();
       });
@@ -400,6 +443,9 @@ interface MarkerParts {
 function buildMarker(interactable: Interactable, parts: MarkerParts): Object3D {
   const marker = new Group();
   marker.name = `interactable:${interactable.id}`;
+  // Raycasts land on a child mesh, so the id lives on the marker root and is
+  // resolved by walking up the hit object's parent chain.
+  marker.userData['interactableId'] = interactable.id;
 
   const ring = new Mesh(parts.ring, parts.material);
   ring.rotation.x = -Math.PI / 2;
@@ -536,6 +582,9 @@ function doorFlankPoints(
 
 interface BuildingParts {
   readonly wood: Material;
+  readonly plaster: Material;
+  readonly roofTile: Material;
+  readonly doorWood: Material;
   readonly track: <T extends BufferGeometry | Material>(item: T) => T;
 }
 
@@ -561,7 +610,7 @@ function buildBuilding(
   const addWall = (cx: number, cz: number, sx: number, sz: number): void => {
     if (sx <= 0.02 || sz <= 0.02) return;
     const geometry = parts.track(new BoxGeometry(sx, building.wallHeight, sz));
-    const wall = new Mesh(geometry, parts.wood);
+    const wall = new Mesh(geometry, parts.plaster);
     wall.position.set(cx, floorY + building.wallHeight / 2, cz);
     object.add(wall);
   };
@@ -625,7 +674,7 @@ function buildBuilding(
   const roofGeometry = parts.track(
     buildHipRoofGeometry(width + 0.6, depth + 0.6, building.roofHeight),
   );
-  const roof = new Mesh(roofGeometry, parts.wood);
+  const roof = new Mesh(roofGeometry, parts.roofTile);
   roof.position.set(centerX, floorY + building.wallHeight, centerZ);
   object.add(roof);
 
@@ -635,7 +684,7 @@ function buildBuilding(
   const doorHeight = building.wallHeight * 0.86;
   const doorThickness = 0.1;
   const doorGeometry = parts.track(new BoxGeometry(building.doorWidth, doorHeight, doorThickness));
-  const doorMesh = new Mesh(doorGeometry, parts.wood);
+  const doorMesh = new Mesh(doorGeometry, parts.doorWood);
   doorMesh.position.set(building.doorWidth / 2, doorHeight / 2, 0);
 
   const pivot = new Group();
@@ -697,6 +746,51 @@ const scratchMatrix = new Matrix4();
 const scratchQuaternion = new Quaternion();
 const unitScale = new Vector3(1, 1, 1);
 const UP_AXIS = new Vector3(0, 1, 0);
+
+/** Cut terraces out of the base surface. A full rectangle at y=0 used to
+ * bury the negative-height mine even though actors correctly stood at -0.8.
+ * One geometry retains the one-draw-call floor and matches heightAt's regions. */
+export function buildBaseGround(zone: Zone): BufferGeometry {
+  const { bounds, terrain } = zone;
+  const grid = (min: number, max: number) =>
+    Array.from({ length: Math.round((max - min) / 2) + 1 }, (_, index) => min + index * 2);
+  const xs = [
+    ...new Set([
+      ...grid(bounds.minX, bounds.maxX),
+      ...terrain.terraces.flatMap((t) => [t.minX, t.maxX]),
+    ]),
+  ].sort((a, b) => a - b);
+  const zs = [
+    ...new Set([
+      ...grid(bounds.minZ, bounds.maxZ),
+      ...terrain.terraces.flatMap((t) => [t.minZ, t.maxZ]),
+    ]),
+  ].sort((a, b) => a - b);
+  const vertices: number[] = [];
+  const colours: number[] = [];
+  const grass = [0x355f36, 0x426f3c, 0x4d7841, 0x3d6734];
+  for (let i = 0; i < xs.length - 1; i++)
+    for (let j = 0; j < zs.length - 1; j++) {
+      const x0 = xs[i]!,
+        x1 = xs[i + 1]!,
+        z0 = zs[j]!,
+        z1 = zs[j + 1]!;
+      const x = (x0 + x1) / 2,
+        z = (z0 + z1) / 2;
+      if (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ) continue;
+      if (terrain.terraces.some((t) => x > t.minX && x < t.maxX && z > t.minZ && z < t.maxZ))
+        continue;
+      const y = terrain.baseHeight;
+      vertices.push(x0, y, z0, x0, y, z1, x1, y, z1, x0, y, z0, x1, y, z1, x1, y, z0);
+      const colour = new Color(grass[Math.abs(i * 13 + j * 7) % grass.length]!);
+      for (let vertex = 0; vertex < 6; vertex += 1) colours.push(colour.r, colour.g, colour.b);
+    }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute('color', new Float32BufferAttribute(colours, 3));
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
 function writeInstances(mesh: InstancedMesh, positions: Vector3[], yOffset: number): void {
   positions.forEach((position, index) => {

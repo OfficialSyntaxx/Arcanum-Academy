@@ -3,7 +3,7 @@
  * Bundles the server into a single ESM file.
  *
  * Why bundle a server at all: the workspace is configured for
- * `moduleResolution: "Bundler"`, and `@arcanum/shared` and `@arcanum/sim`
+ * `moduleResolution: "Bundler"`, and `@alderfell/shared` and `@alderfell/sim`
  * publish TypeScript source rather than compiled JavaScript. Node cannot
  * resolve that at runtime - it does not rewrite the `.js` specifiers the
  * NodeNext convention requires into the `.ts` files that actually exist. The

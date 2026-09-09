@@ -10,7 +10,7 @@ import {
   type ItemDefinition,
   type ItemDefinitionId,
   type SkillId,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import {
   addItems,
   createInventory,

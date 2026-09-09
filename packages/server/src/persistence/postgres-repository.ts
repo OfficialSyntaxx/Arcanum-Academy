@@ -8,7 +8,7 @@ import {
   type Logger,
   type PlayerId,
   type Result,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import type { PlayerRecord, PlayerRepository, PlayerStore } from './repository.js';
 
 /**
@@ -199,7 +199,7 @@ export class PostgresPlayerRepository implements PlayerRepository {
    * Adequate while there is exactly one table and no column has ever changed.
    * The moment a second table or a destructive alteration appears this must
    * graduate to ordered migration files - `createMigrationRunner` in
-   * `@arcanum/shared` already models the forward-only chain to follow.
+   * `@alderfell/shared` already models the forward-only chain to follow.
    */
   async initialise(): Promise<Result<true, Failure>> {
     try {

@@ -8,7 +8,7 @@ import {
   type Migration,
   type Result,
   type VersionedDocument,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 /**
  * Local persistence.
@@ -36,7 +36,7 @@ export interface KeyValueStore {
   close(): void;
 }
 
-const DB_NAME = 'arcanum-academy';
+const DB_NAME = 'alderfell';
 const STORE_NAME = 'documents';
 
 function toFailure(reason: string, error: unknown): Failure {

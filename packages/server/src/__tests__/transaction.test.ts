@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asId, err, failure, FailureCode, ok, type PlayerId } from '@arcanum/shared';
+import { asId, err, failure, FailureCode, ok, type PlayerId } from '@alderfell/shared';
 import { InMemoryPlayerRepository, type PlayerStore } from '../persistence/repository.js';
 
 const ALICE = asId<PlayerId>('alice');

@@ -12,7 +12,7 @@
  *   roughly four a second and only happen when a value actually changed, so a
  *   walking player does not trigger sixty re-renders a second.
  * - Nothing here contains rules. Movement, pathing and schedules all live in
- *   `@arcanum/sim` and are deterministic; this file is wiring and presentation.
+ *   `@alderfell/sim` and are deterministic; this file is wiring and presentation.
  */
 
 import {
@@ -24,7 +24,7 @@ import {
   type Zone,
   err,
   ok,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { Raycaster, Vector2, type Vector3 } from 'three';
 
 import {
@@ -34,7 +34,6 @@ import {
 } from '../a11y/preferences.js';
 import { CameraRig } from '../camera/camera-rig.js';
 import type { QualitySettings } from '../core/device.js';
-import { Joystick } from '../input/joystick.js';
 import type { InputService } from '../input/input-service.js';
 import { NpcDirector } from '../npc/npc-director.js';
 import { PlayerController } from '../player/player-controller.js';
@@ -61,17 +60,22 @@ export interface HubControllerOptions {
   readonly onEngageGatheringNode?: (interactableId: string) => void;
   /** Called when the player engages a crafting station. */
   readonly onEngageCraftingStation?: (interactableId: string) => void;
-  /** Called when the player engages the scribing table. */
-  readonly onEngageScribingTable?: () => void;
-  /** Called when the player engages a duel circle. */
-  readonly onEngageDuelCircle?: () => void;
   /** Called when the player engages a zone portal, with the target zone id. */
   readonly onEngageZonePortal?: (targetZoneId: string) => void;
+  /**
+   * Called on a long press, with whatever was under or near the press.
+   *
+   * The controller reports; it does not decide what the menu contains. Verbs
+   * belong to content, and building them here would put content knowledge in
+   * the world layer.
+   */
+  readonly onContextMenu?: (target: {
+    readonly worldPoint: { readonly x: number; readonly z: number } | null;
+    readonly interactableId: string | null;
+  }) => void;
 }
 
 export class HubController {
-  readonly joystick = new Joystick();
-
   private world: WorldService;
   private player: PlayerController;
   private readonly camera: CameraRig;
@@ -84,6 +88,8 @@ export class HubController {
   private accessibility: AccessibilityPreferences;
   private storeAccumulatorMs = 0;
   private lastPromptId: string | null = null;
+  /** One-tap skilling/travel request waiting for its route to complete. */
+  private pendingInteractionId: string | null = null;
   private disposed = false;
 
   private constructor(
@@ -104,9 +110,10 @@ export class HubController {
     });
 
     this.camera = new CameraRig(options.render.camera, {
-      followDistance: worldTunables.cameraFollowDistance,
-      minDistance: worldTunables.cameraMinDistance,
-      maxDistance: worldTunables.cameraMaxDistance,
+      viewSize: worldTunables.cameraViewSize,
+      minViewSize: worldTunables.cameraMinViewSize,
+      maxViewSize: worldTunables.cameraMaxViewSize,
+      boomLength: worldTunables.cameraBoomLength,
       height: worldTunables.cameraHeight,
       smoothing: worldTunables.cameraSmoothing,
       minPitch: worldTunables.cameraMinPitch,
@@ -115,6 +122,12 @@ export class HubController {
 
     this.playerSlot = world.actors.acquire('player');
     this.npcs = new NpcDirector(world, options.tunables, this.now());
+
+    // The renderer owns the canvas and its resize observer; the rig owns the
+    // frustum. Hooking them here keeps the renderer ignorant of the camera's
+    // projection and the rig ignorant of the DOM.
+    options.render.onViewportChange = (width, height) => this.camera.setViewport(width, height);
+    options.render.resize();
 
     world.attach(options.render.scene);
     this.camera.snapTo({
@@ -139,9 +152,8 @@ export class HubController {
   /** Called once per rendered frame by the engine. */
   update(dtSeconds: number): void {
     if (this.disposed) return;
-    const stick = this.joystick.read();
-
-    this.player.step(stick.x, stick.y, this.camera.orbitYaw, dtSeconds);
+    this.player.step(dtSeconds);
+    this.completePendingInteraction();
 
     const focus = {
       x: this.player.position.x,
@@ -164,11 +176,18 @@ export class HubController {
       this.player.position,
     );
     this.world.updateDoors(this.player.position, dtSeconds);
+    this.world.updateNavigationMarker(this.player.destination, this.now());
 
     this.publish(dtSeconds * 1000);
   }
 
   /** Walks the player to the current prompt's approach point. */
+  navigateToInteractable(id: string): void {
+    const target = this.world.zone.interactables.find((item) => item.id === id);
+    if (target) this.player.approach(target.approach);
+  }
+
+  /** Starts the available activity through its normal in-world prompt. */
   engagePrompt(): void {
     const prompt = useAppStore.getState().interactionPrompt;
     if (prompt === null) return;
@@ -180,10 +199,6 @@ export class HubController {
       this.options.onEngageGatheringNode?.(prompt.id);
     } else if (prompt.kind === InteractableKind.CraftingStation) {
       this.options.onEngageCraftingStation?.(prompt.id);
-    } else if (prompt.kind === InteractableKind.ScribingTable) {
-      this.options.onEngageScribingTable?.();
-    } else if (prompt.kind === InteractableKind.DuelCircle) {
-      this.options.onEngageDuelCircle?.();
     } else if (prompt.kind === InteractableKind.ZonePortal && prompt.targetZone) {
       this.options.onEngageZonePortal?.(prompt.targetZone);
     }
@@ -255,11 +270,19 @@ export class HubController {
   private bindInput(): void {
     const { input } = this.options;
 
-    // A tap on the world is a destination; the joystick owns its own zone and
-    // never reaches the canvas, so these cannot conflict.
+    // A tap on the world is a destination. It is the only movement control, so
+    // there is nothing for it to arbitrate against.
     input.events.on('tap', ({ x, y }) => {
+      const interactable = this.pickInteractable(x, y);
+      if (interactable) {
+        this.routeToInteractable(interactable.id);
+        return;
+      }
       const point = this.pickGround(x, y);
-      if (point) this.player.moveTo({ x: point.x, z: point.z });
+      if (point) {
+        this.pendingInteractionId = null;
+        this.player.moveTo({ x: point.x, z: point.z });
+      }
     });
 
     input.events.on('dragmove', ({ dx, dy }) => {
@@ -270,7 +293,22 @@ export class HubController {
 
     input.events.on('pinch', ({ scale }) => this.camera.zoomBy(scale));
 
-    input.events.on('longpress', () => this.player.cancelTravel());
+    // Long press is the context menu - OSRS's right-click. Many things carry
+    // more than one verb (Chop / Examine, Attack / Examine), and a game with a
+    // single tap gesture has nowhere else to put the second one. The controller
+    // reports what was pressed and lets the UI present the choice, so the menu
+    // is never built down here in the world layer.
+    input.events.on('longpress', ({ x, y }) => {
+      const nearest = this.world.nearestInteractable(
+        this.player.position,
+        this.options.tunables.world.interactionRadius,
+      );
+      const point = this.pickGround(x, y);
+      this.options.onContextMenu?.({
+        worldPoint: point ? { x: point.x, z: point.z } : null,
+        interactableId: nearest?.interactable.id ?? null,
+      });
+    });
   }
 
   /** Screen point to a world position on the courtyard floor. */
@@ -283,8 +321,51 @@ export class HubController {
     );
     this.raycaster.setFromCamera(this.pointer, this.options.render.camera);
     const hits = this.raycaster.intersectObject(this.world.root, true);
-    const hit = hits.find((candidate) => candidate.point.y <= 2.5);
+    const hit = hits.find((candidate) => candidate.object.userData['ground'] === true);
     return hit ? hit.point : null;
+  }
+
+  /** Resolves a direct tap on an interactable's visible world marker. */
+  private pickInteractable(clientX: number, clientY: number): { readonly id: string } | null {
+    const rect = this.options.canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+    this.pointer.set(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    this.raycaster.setFromCamera(this.pointer, this.options.render.camera);
+    for (const hit of this.raycaster.intersectObject(this.world.root, true)) {
+      const interactable = this.world.interactableFromObject(hit.object);
+      if (interactable) return { id: interactable.id };
+    }
+    return null;
+  }
+
+  /** Routes to a specific world object and queues its one-tap action if any. */
+  private routeToInteractable(id: string): void {
+    const target = this.world.zone.interactables.find((interactable) => interactable.id === id);
+    if (!target) return;
+    this.player.approach(target.approach);
+    this.pendingInteractionId =
+      target.kind === InteractableKind.MerchantStall || target.kind === InteractableKind.QuestBoard
+        ? null
+        : target.id;
+  }
+
+  /** Starts a queued skilling or travel action once the avatar reaches it. */
+  private completePendingInteraction(): void {
+    const id = this.pendingInteractionId;
+    if (id === null || this.player.isTravelling) return;
+    this.pendingInteractionId = null;
+    const target = this.world.zone.interactables.find((interactable) => interactable.id === id);
+    if (!target) return;
+    if (target.kind === InteractableKind.GatheringNode) {
+      this.options.onEngageGatheringNode?.(target.id);
+    } else if (target.kind === InteractableKind.CraftingStation) {
+      this.options.onEngageCraftingStation?.(target.id);
+    } else if (target.kind === InteractableKind.ZonePortal && target.targetZone) {
+      this.options.onEngageZonePortal?.(target.targetZone);
+    }
   }
 
   /** Throttled projection of world state into the UI store. */

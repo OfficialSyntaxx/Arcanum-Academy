@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asId, type PlayerId, type SessionId } from '@arcanum/shared';
+import { asId, type PlayerId, type SessionId } from '@alderfell/shared';
 import { PresenceService } from '../domain/presence.js';
 
 function harness(overrides: { radius?: number; maxNeighbours?: number } = {}) {

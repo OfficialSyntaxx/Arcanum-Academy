@@ -11,7 +11,18 @@
  * problems and are diagnosed for hours.
  */
 
-import { DirectionalLight, Group, HemisphereLight, Fog, type Scene } from 'three';
+import {
+  Color,
+  DirectionalLight,
+  Group,
+  HemisphereLight,
+  Fog,
+  Mesh,
+  MeshBasicMaterial,
+  RingGeometry,
+  type Object3D,
+  type Scene,
+} from 'three';
 import {
   buildNavGraph,
   distanceSquared,
@@ -24,12 +35,12 @@ import {
   err,
   ok,
   type Result,
-} from '@arcanum/shared';
-import { Pathfinder } from '@arcanum/sim';
+} from '@alderfell/shared';
+import { Pathfinder } from '@alderfell/sim';
 
 import type { QualitySettings } from '../core/device.js';
 import { ActorPool } from './actor-pool.js';
-import { atmosphereFor, daylight, sunElevation, type Atmosphere } from './palette.js';
+import { Palette, atmosphereFor, daylight, sunElevation, type Atmosphere } from './palette.js';
 import { buildZoneGeometry, type ZoneGeometry } from './scene-builder.js';
 
 export interface NearestInteractable {
@@ -47,6 +58,7 @@ export class WorldService {
   private readonly atmosphere: Atmosphere;
   private readonly sun: DirectionalLight;
   private readonly sky: HemisphereLight;
+  private readonly navigationMarker: Mesh<RingGeometry, MeshBasicMaterial>;
 
   private constructor(
     readonly zone: Zone,
@@ -66,7 +78,10 @@ export class WorldService {
     this.sun = new DirectionalLight(this.atmosphere.sunColour, this.atmosphere.sunIntensity);
     this.sun.castShadow = quality.shadowsEnabled;
     if (quality.shadowsEnabled) {
-      this.sun.shadow.mapSize.set(1024, 1024);
+      this.sun.shadow.mapSize.set(
+        quality.tier === 'high' ? 1024 : 512,
+        quality.tier === 'high' ? 1024 : 512,
+      );
       this.sun.shadow.camera.near = 1;
       this.sun.shadow.camera.far = 90;
       this.sun.shadow.camera.left = -30;
@@ -80,7 +95,27 @@ export class WorldService {
       this.atmosphere.ambientIntensity,
     );
 
-    this.root.add(this.geometry.group, this.actors.group, this.sun, this.sun.target, this.sky);
+    // A world-space travel cue reads instantly on a phone and, unlike a HUD
+    // arrow, stays honest when the player rotates or zooms the camera.
+    const markerGeometry = new RingGeometry(0.38, 0.56, 20);
+    const markerMaterial = new MeshBasicMaterial({
+      color: Palette.gilt,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+    });
+    this.navigationMarker = new Mesh(markerGeometry, markerMaterial);
+    this.navigationMarker.rotation.x = -Math.PI / 2;
+    this.navigationMarker.visible = false;
+
+    this.root.add(
+      this.geometry.group,
+      this.navigationMarker,
+      this.actors.group,
+      this.sun,
+      this.sun.target,
+      this.sky,
+    );
   }
 
   /** Validates and loads a zone. */
@@ -92,6 +127,7 @@ export class WorldService {
 
   attach(scene: Scene): void {
     scene.add(this.root);
+    scene.background = new Color(this.atmosphere.sky);
     scene.fog = new Fog(this.atmosphere.fog, this.atmosphere.fogNear, this.atmosphere.fogFar);
   }
 
@@ -122,6 +158,19 @@ export class WorldService {
     return best;
   }
 
+  /** Resolves an object hit by a raycast to its authored world interaction. */
+  interactableFromObject(object: Object3D): Interactable | null {
+    let current: Object3D | null = object;
+    while (current !== null && current !== this.root) {
+      const id = current.userData['interactableId'];
+      if (typeof id === 'string') {
+        return this.zone.interactables.find((interactable) => interactable.id === id) ?? null;
+      }
+      current = current.parent;
+    }
+    return null;
+  }
+
   /**
    * Swings every building door toward open or shut based on the player's
    * distance from its trigger waypoint. Purely visual — there is no collision
@@ -141,6 +190,22 @@ export class WorldService {
       const target = shouldOpen ? door.openAngle : door.closedAngle;
       door.pivot.rotation.y += (target - door.pivot.rotation.y) * t;
     }
+  }
+
+  /** Shows a small pulsing ring at the reachable end of the active route. */
+  updateNavigationMarker(destination: Vec2 | null, nowMs: number): void {
+    if (destination === null) {
+      this.navigationMarker.visible = false;
+      return;
+    }
+    const pulse = 1 + Math.sin(nowMs * 0.008) * 0.12;
+    this.navigationMarker.visible = true;
+    this.navigationMarker.position.set(
+      destination.x,
+      this.heightAt(destination) + 0.075,
+      destination.z,
+    );
+    this.navigationMarker.scale.setScalar(pulse);
   }
 
   /**
@@ -169,6 +234,8 @@ export class WorldService {
   dispose(): void {
     this.geometry.dispose();
     this.actors.dispose();
+    this.navigationMarker.geometry.dispose();
+    this.navigationMarker.material.dispose();
     this.sun.dispose();
     this.sky.dispose();
     this.root.clear();

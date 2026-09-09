@@ -85,7 +85,10 @@ export function resolveQuality(signals: DeviceSignals): QualitySettings {
   return {
     tier,
     pixelRatio: Math.min(signals.devicePixelRatio, pixelRatioCap),
-    shadowsEnabled: tier === QualityTier.High,
+    // The open-zone lighting relies on shadows to separate a roof from its
+    // terrace. A 512px map on the medium iPhone tier is a better trade than a
+    // flat world; low-tier devices still avoid shadow work entirely.
+    shadowsEnabled: tier !== QualityTier.Low,
     antialias: tier !== QualityTier.Low,
     maxAmbientActors: tier === QualityTier.High ? 24 : tier === QualityTier.Medium ? 14 : 6,
     particleBudget: tier === QualityTier.High ? 512 : tier === QualityTier.Medium ? 256 : 96,

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GamePhase } from '@arcanum/sim';
+import type { GamePhase } from '@alderfell/sim';
 import type { QualityTier } from '../core/device.js';
 import type { TransportStatus } from '../net/transport.js';
 import { DEFAULT_ACCESSIBILITY, type AccessibilityPreferences } from '../a11y/preferences.js';
@@ -57,7 +57,6 @@ export interface EconomyState {
     foil: boolean;
     serial: string | null;
   }[];
-  readonly decks: Readonly<Record<string, { name: string; cardDefinitionIds: readonly string[] }>>;
 }
 
 export const EMPTY_ECONOMY: EconomyState = {
@@ -69,63 +68,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   lastXpGained: 0,
   overflowed: false,
   cards: [],
-  decks: {},
 };
-
-/**
- * The duel as the server last reported it.
- *
- * The opponent's hand is a count, never a list. That is enforced server-side
- * too, but the client type says so as well so nobody adds a renderer for cards
- * that were deliberately never sent.
- */
-export interface DuelView {
-  readonly turn: number;
-  readonly active: number;
-  readonly outcome: { readonly winner: number | null; readonly reason: string } | null;
-  readonly log: readonly string[];
-  readonly you: {
-    readonly life: number;
-    readonly ward: number;
-    readonly resonance: number;
-    readonly hand: readonly string[];
-    readonly board: readonly { readonly definitionId: string }[];
-    readonly deck: number;
-  };
-  readonly opponent: {
-    readonly life: number;
-    readonly ward: number;
-    readonly resonance: number;
-    readonly board: readonly { readonly definitionId: string }[];
-    readonly handCount: number;
-    readonly deck: number;
-  };
-}
-
-/** A trade as the server last reported it. */
-export interface TradeView {
-  readonly id: string;
-  readonly participants: readonly string[];
-  readonly offers: Readonly<
-    Record<
-      string,
-      {
-        readonly stacks: readonly { definitionId: string; quantity: number }[];
-        readonly cardInstanceIds: readonly string[];
-        readonly confirmed: boolean;
-      }
-    >
-  >;
-  readonly state: string;
-  readonly ledger: readonly string[];
-}
-
-/** A ladder duel. Distinct from `DuelView`: it carries the seat and match id. */
-export interface PvpView extends DuelView {
-  readonly matchId: string;
-  readonly seat: number;
-  readonly yourTurn: boolean;
-}
 
 export interface AppState {
   readonly phase: GamePhase;
@@ -150,13 +93,8 @@ export interface AppState {
   readonly lastCommandError: string | null;
   /** The crafting station whose recipes are open, or null. */
   readonly openStationId: string | null;
-  readonly collectionOpen: boolean;
-  readonly ladderOpen: boolean;
   /** This player's id, as the server reported it at handshake. */
   readonly playerId: string;
-  readonly duel: DuelView | null;
-  readonly trade: TradeView | null;
-  readonly pvp: PvpView | null;
   /** Non-null while waiting for the ladder to pair you. */
   readonly queued: { readonly queueSize: number } | null;
 
@@ -177,12 +115,7 @@ export interface AppState {
   setEconomy(patch: Partial<EconomyState>): void;
   setLastCommandError(reason: string | null): void;
   setOpenStation(interactableId: string | null): void;
-  setCollectionOpen(open: boolean): void;
-  setLadderOpen(open: boolean): void;
   setPlayerId(playerId: string): void;
-  setDuel(duel: DuelView | null): void;
-  setTrade(trade: TradeView | null): void;
-  setPvp(pvp: PvpView | null): void;
   setQueued(queued: { queueSize: number } | null): void;
 }
 
@@ -205,12 +138,7 @@ export const useAppStore = create<AppState>((set) => ({
   economy: EMPTY_ECONOMY,
   lastCommandError: null,
   openStationId: null,
-  collectionOpen: false,
-  ladderOpen: false,
   playerId: '',
-  duel: null,
-  trade: null,
-  pvp: null,
   queued: null,
 
   setPhase: (phase) => set({ phase }),
@@ -234,11 +162,6 @@ export const useAppStore = create<AppState>((set) => ({
   setEconomy: (patch) => set((state) => ({ economy: { ...state.economy, ...patch } })),
   setLastCommandError: (lastCommandError) => set({ lastCommandError }),
   setOpenStation: (openStationId) => set({ openStationId }),
-  setCollectionOpen: (collectionOpen) => set({ collectionOpen }),
-  setLadderOpen: (ladderOpen) => set({ ladderOpen }),
   setPlayerId: (playerId) => set({ playerId }),
-  setDuel: (duel) => set({ duel }),
-  setTrade: (trade) => set({ trade }),
-  setPvp: (pvp) => set({ pvp }),
   setQueued: (queued) => set({ queued }),
 }));

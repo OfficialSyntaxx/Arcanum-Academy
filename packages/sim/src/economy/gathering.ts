@@ -7,9 +7,9 @@
  * which is what lets the client show a harvest immediately without the server
  * having to trust it.
  *
- * Time is a parameter, never read from a clock. The offline claim resolves the
- * same code over a window that has already passed, so "now" has to be supplied
- * rather than observed.
+ * Time is a parameter, never read from a clock. A resolve may cover a window
+ * that has already passed - a hitch in the connection, a resumed session - so
+ * "now" has to be supplied rather than observed.
  */
 
 import {
@@ -27,19 +27,11 @@ import {
   type NodeId,
   type Result,
   type RngState,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { addItems, spaceFor, type Inventory } from './inventory.js';
 
 /** Basis points are integers out of 10000; 2500 is a quarter. */
 const BASIS_POINTS = 10_000;
-
-export const HarvestMode = {
-  /** The player is connected and watching. */
-  Online: 'ONLINE',
-  /** Accrued while away, at a reduced share of the online rate. */
-  Offline: 'OFFLINE',
-} as const;
-export type HarvestMode = (typeof HarvestMode)[keyof typeof HarvestMode];
 
 export interface GatheringSession {
   readonly nodeId: NodeId;
@@ -117,22 +109,15 @@ export function startSession(nodeId: NodeId, seed: string, startedAtMs: number):
 }
 
 /**
- * Milliseconds between harvests in a given mode.
+ * Milliseconds between harvests.
  *
- * The offline share is applied by stretching the interval rather than by
- * shrinking each yield. Both would produce "25% of the online rate", but only
- * this one leaves a rare drop exactly as rare offline as online - there are
- * simply fewer chances at it. Scaling yields would have made rarity itself
- * depend on whether the app was open.
+ * There is no offline mode. Gathering only advances while the player is
+ * present - progress comes from going somewhere and doing something, and a
+ * second rate would be a second balance surface for a mode the game does not
+ * have.
  */
-export function harvestIntervalMs(
-  node: NodeDefinition,
-  mode: HarvestMode,
-  tunables: GatheringTunables,
-): number {
-  const base = Math.max(node.harvestIntervalMs, tunables.minHarvestIntervalMs);
-  if (mode === HarvestMode.Online) return base;
-  return Math.ceil((base * BASIS_POINTS) / tunables.offlineAccrualRateBasisPoints);
+export function harvestIntervalMs(node: NodeDefinition, tunables: GatheringTunables): number {
+  return Math.max(node.harvestIntervalMs, tunables.minHarvestIntervalMs);
 }
 
 /**
@@ -158,7 +143,6 @@ export interface ResolveHarvestOptions {
   readonly inventory: Inventory;
   readonly catalog: ItemCatalog;
   readonly tunables: GatheringTunables;
-  readonly mode: HarvestMode;
   /** Wall clock to resolve up to. Ticks after this are left for next time. */
   readonly nowMs: number;
   /** Absent when nothing is equipped, which is allowed but slower. */
@@ -169,17 +153,15 @@ export interface ResolveHarvestOptions {
  * Advances a session to `nowMs`, applying every whole tick that has come due.
  *
  * Node depletion and regeneration are evaluated against each tick's own
- * timestamp rather than the end of the window. Over a long offline claim a node
- * can deplete, sit dormant, come back and be worked again - resolving against
- * the final moment would either grant all of it or none.
+ * timestamp rather than the end of the window. Across a long session a node can
+ * deplete, sit dormant, come back and be worked again - resolving against the
+ * final moment would either grant all of it or none.
  */
 export function resolveHarvest(options: ResolveHarvestOptions): HarvestOutcome {
-  const { session, node, inventory, catalog, tunables, mode, nowMs, tool } = options;
+  const { session, node, inventory, catalog, tunables, nowMs, tool } = options;
 
-  const interval = harvestIntervalMs(node, mode, tunables);
-  const elapsed = Math.max(0, nowMs - session.resolvedThroughMs);
-  const window =
-    mode === HarvestMode.Offline ? Math.min(elapsed, tunables.offlineAccrualCapMs) : elapsed;
+  const interval = harvestIntervalMs(node, tunables);
+  const window = Math.max(0, nowMs - session.resolvedThroughMs);
   const dueTicks = Math.floor(window / interval);
 
   if (dueTicks === 0) {

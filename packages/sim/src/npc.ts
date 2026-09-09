@@ -12,7 +12,13 @@
  * hooks attached elsewhere, an ambient actor does not.
  */
 
-import { Rng, seedFromString, type NavGraph, type NpcDefinition, type Vec2 } from '@arcanum/shared';
+import {
+  Rng,
+  seedFromString,
+  type NavGraph,
+  type NpcDefinition,
+  type Vec2,
+} from '@alderfell/shared';
 
 import {
   createMover,
