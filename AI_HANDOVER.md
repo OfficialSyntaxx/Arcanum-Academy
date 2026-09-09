@@ -1,8 +1,13 @@
-# AI HANDOVER — the full vision, the full feature set, and how to build it
+# ALDERFELL — AI HANDOVER
+
+### The full vision, the full feature set, and how to build it
 
 **Written:** 2026-09-09 · **Author:** Claude Code, from a full read of all four repositories
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
+
+> **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
+> being folded into this one. Package scope: `@alderfell/*`.
 
 ---
 
@@ -31,12 +36,30 @@ bug.** Fix it in the same commit.
 
 ### 1.1 One paragraph
 
-A **mobile-first, browser-based, isometric fantasy RPG built on OSRS's design philosophy**:
-you wash up with nothing, and everything you own you gathered, made, or killed something for.
-Deep skill progression, tick-based combat you read rather than react to, a hand-built world
-you walk through, and a grind that is the point rather than an obstacle. It installs to an
-iPhone home screen as a PWA — **no App Store, ever**. Single-player at launch, architected so
-multiplayer is a milestone rather than a rewrite.
+**Alderfell** is a **mobile-first, browser-based fantasy RPG built on OSRS's design
+philosophy**: you wash up with nothing on the coast of a fallen realm, and everything you own
+you gathered, made, or killed something for. Deep skill progression, tick-based combat you
+read rather than react to, a hand-built world you walk through, and a grind that is the point
+rather than an obstacle. It installs to an iPhone home screen as a PWA — **no App Store,
+ever**. Single-player at launch, architected so multiplayer is a milestone rather than a
+rewrite.
+
+### 1.1.1 The premise
+
+> *You wash up on the coast of a fallen realm with nothing, and you climb — through its
+> forests, its ruins and its guilds — until the realm knows your name.*
+
+A kingdom that has already collapsed. Its roads are overgrown, its mines abandoned, its
+guilds reduced to a handful of survivors who still remember the craft. You arrive with
+nothing and no claim on anyone.
+
+**This premise is load-bearing, not flavour.** It is the diegetic reason for Ironman (§7):
+there is no functioning economy to buy from, no one to trade with, and nothing left to
+inherit. Every design question of the form *"why can't the player just buy this?"* is
+answered by the setting rather than by a rule.
+
+Tone: **dark medieval**, per Oakenfall's art direction (§6.1) — weathered, earth-toned,
+overgrown. Not grimdark, not whimsical. A world that used to work.
 
 ### 1.2 The core fantasy
 
@@ -72,7 +95,8 @@ reversal is deliberate:
 - **Not a Wizard101 pastiche.** The magic-academy framing goes with the cards.
 - **Not a colony/settlement sim.** Oakenfall's villager-labour simulation is not the core
   loop. It may return, much later and much smaller, as a personal player-owned hold (§3.5).
-- **Not an idle game.** Offline accrual exists as a courtesy, not as a progression path.
+- **Not an idle game.** There is no offline progression at all (D5). Nothing advances while
+  you are closed except world timers that are not progression — crops, regrowth, repairs.
 - **Not free-to-play-shaped.** No ads, no IAP-for-power, no loot boxes, no live-service
   treadmill. Cosmetics only, if anything, and only much later.
 - **Not a Unity game.** See §4.2 for the full reasoning. This is settled; do not reopen it
@@ -102,7 +126,7 @@ The game must be good at all three:
 
 | Session | Length | What it looks like |
 |---|---|---|
-| **A check-in** | 2–5 min | Claim offline accrual, bank a load, start a new gathering run, log off. |
+| **A check-in** | 2–5 min | Bank a load, check crops, run one gathering trip, log off. Short sessions must still bank real progress — with no offline accrual this is the session most at risk of feeling pointless, so protect it. |
 | **A real session** | 20–45 min | A skilling goal (a level, a full inventory of a new material) or a combat goal (a boss, a dungeon floor, a drop). |
 | **A long haul** | 1 hr+ | A quest chain, a clue trail, a full gear upgrade path from ore to equipped. |
 
@@ -148,7 +172,7 @@ Each entry names where an implementation or design already exists (§11 is the f
 
 ### 3.2 Skills & gathering — Tier 1
 
-**The skill list (12 to start, extensible):**
+**The skill list (14 to start, extensible):**
 
 | Skill | Kind | Drives |
 |---|---|---|
@@ -160,12 +184,14 @@ Each entry names where an implementation or design already exists (§11 is the f
 | Carpentry | artisan | Logs → planks → furniture/tools |
 | Construction | artisan | Building (the hold, §3.5) |
 | Farming | artisan | Crop plots, growth timers |
-| Attack | combat | Accuracy |
-| Strength | combat | Max hit |
+| Runecrafting | artisan | Essence → runes (feeds Magic) |
+| Attack | combat | Melee accuracy |
+| Strength | combat | Melee max hit |
 | Defence | combat | Damage avoidance |
 | Hitpoints | combat | Health pool |
+| Magic | combat | The third leg of the triangle — see §3.4.1 |
 
-Extensible later: Herblore/Alchemy, Fletching, Runecrafting-equivalent, Hunter, Thieving,
+Extensible later: Herblore/Alchemy, Fletching, Ranged as its own skill, Hunter, Thieving,
 Slayer. **Do not add a skill until there is a full content chain for it** — a skill with
 three levels of content is worse than no skill.
 
@@ -178,7 +204,13 @@ three levels of content is worse than no skill.
 | Tools & durability | Better tools = faster/better yield. Durability is a **currency sink**: a broken tool never interrupts a session, it reduces the *next* one until repaired. | Arcanum (modelled, not yet granted — see §11.1) |
 | Inventory / bag | Stack + slot arithmetic. Top up partial stacks first; drain smallest-first; ties break on slot index. | Arcanum `sim/economy/inventory.ts` |
 | Bank | Deposit/withdraw, tabs, search. **Not yet built anywhere.** | — |
-| Offline accrual | 25% of online rate, 8 hr cap, **claimed explicitly** on open, never silently applied. | Arcanum (`offlineAccrualCapMs`) |
+
+> **No offline progression.** Owner decision, 2026-09-09. Pillar 1 wins: progress comes from
+> going somewhere and doing something. `Arcanum-Academy`'s offline-accrual code
+> (`offlineAccrualCapMs`, `gathering.claimOffline`, the interval-stretching logic) is
+> **deleted, not disabled** — a dormant progression path invites re-enabling it by accident.
+> Timers that advance in real time and are *not* progression — farming crop growth, tool
+> repair, node regrowth — are fine and stay.
 
 ### 3.3 Crafting & the production chain — Tier 1
 
@@ -201,7 +233,7 @@ three levels of content is worse than no skill.
 | Tick loop | 600 ms tick. Everything resolves on it. | isorpg `TickRunner` |
 | Accuracy & max-hit rolls | The OSRS formula shape: attack roll vs defence roll, then a damage roll. | isorpg `CombatSystem.ts` (TS) / `Combat.cs` (C#) — **fully ported and parity-tested both ways** |
 | Three attack styles | Accurate (+accuracy, trains Attack) / Aggressive (+max hit, trains Strength) / Defensive (+defence, trains Defence). Constant Hitpoints trickle. | isorpg `data/Combat.ts` `ATTACK_STYLES` |
-| Combat triangle | Melee / Ranged / Magic-equivalent. **Magic must be re-themed** now that schools are cut — see §14 Q3. | — |
+| Combat triangle | Melee / Ranged / Magic. See §3.4.1. | — |
 | Resolve (special resource) | A limited buff resource spent for a short combat edge, restored by resting at a campfire. Gives food a rival for bag space. | isorpg `data/Combat.ts` `BuffId` |
 | Weapon specials | Six defined. A guaranteed special **skips the accuracy draw** — draw order is part of the contract (§12). | isorpg |
 | Monster affixes | Three defined; an affix roll takes one value on failure and two on success. | isorpg |
@@ -210,6 +242,28 @@ three levels of content is worse than no skill.
 | Death & penalty | Tiered by zone: no penalty in town → drop unequipped inventory in dangerous zones. | isorpg GDD |
 | Boss encounters | Enrage phases, slam attacks, multi-phase behaviour. | isorpg; ALA `archetypes.js` (design) |
 | Aggression / safe zones | Which monsters attack on sight, and where they can't. | — |
+
+#### 3.4.1 Magic — staves and runes
+
+Owner decision, 2026-09-09. Magic survives the removal of the schools, re-themed along OSRS
+lines. **There are no schools of magic, no spell cards, and no deck.**
+
+- **One `Magic` skill**, trained by casting, exactly like Attack/Strength/Defence.
+- **Staves and wands are weapons** with their own tier progression, made via Carpentry and
+  Smithing from gathered materials.
+- **Runes are ammunition.** They are *gathered and crafted*, not bought: mine or collect
+  **essence**, then bind it into runes at altars placed in the world via the **Runecrafting**
+  skill. Casting consumes them.
+- **Spells are unlocked by Magic level**, not collected. A spellbook UI lists what you can
+  cast; there is nothing to acquire, grade or build a loadout from.
+
+**Why this shape is the right one here:** it makes magic a *consumable-driven* combat style,
+which gives the Ironman loop another full gather → refine → use chain (essence → runes →
+casts) and a real reason to keep a resource stocked. Melee costs nothing per swing; magic
+costs runes you made. That asymmetry is the balance lever.
+
+**Guard against drift:** the moment "spells" acquire rarity, collectability, or a loadout you
+build before a fight, the card game is being rebuilt under a new name. See §3.7.
 
 ### 3.5 Content systems — Tier 2
 
@@ -298,7 +352,7 @@ forge a weapon → kill your first monster → bank your loot.*
 | Language | TypeScript 5, strict, with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax` |
 | Runtime | Node 22 |
 | Client bundler | Vite 6 + `vite-plugin-pwa` |
-| Rendering | **three.js, orthographic camera, fixed isometric pitch** (§5) |
+| Rendering | **three.js, orthographic camera, free yaw + constrained pitch** (§5) |
 | UI | React 18 + Zustand 5 for overlays; the world is canvas |
 | Server | Fastify 5 + `ws` 8 |
 | Validation | zod |
@@ -346,8 +400,11 @@ Oakenfall proves Canvas 2D isometric works and is astonishingly cheap (15.3 MB �
 It is rejected for this game for one specific reason: **depth sorting**. In Canvas 2D
 isometric you hand-write painter's-algorithm sorting, and it breaks on tall objects,
 overlapping footprints, diagonal movement and anything that flies. With an orthographic
-WebGL camera the z-buffer handles it for free. Given the owner wants a **rotating** camera
-(§5), hand-written sort order becomes materially harder still.
+WebGL camera the z-buffer handles it for free.
+
+The free-rotating camera (§5) settles this beyond argument: hand-written sort order under
+arbitrary yaw is a losing fight, and rigged meshes seen from any angle are not something
+Canvas 2D can do at all.
 
 ### 4.4 Architecture — non-negotiable
 
@@ -372,7 +429,7 @@ client → shared, sim
 Four rules that carry over from `Arcanum-Academy` and must survive:
 
 - **ADR-0001 — server-authoritative deterministic simulation.** The server owns all outcomes.
-  Client and server share `@arcanum/sim` — identical logic, no duplication. The client
+  Client and server share `@alderfell/sim` — identical logic, no duplication. The client
   predicts; the server verifies by state-hash comparison; a mismatch triggers a resync, not
   a disconnect. *Keep this even while single-player.* Gutting it to save hosting cost is the
   one change that would be expensive to reverse.
@@ -415,26 +472,30 @@ joystick.**
 `ui/JoystickPad.tsx`) is deleted, along with the stick-vs-tap arbitration in
 `player-controller.step()`.**
 
-### 5.2 The camera, and an honest tradeoff
+### 5.2 The camera
 
-The owner wants a rotating camera. That is the right call for an OSRS-style game — but note
-the cost, because it changes the art budget:
+**Decision, 2026-09-09: a free camera. The locked isometric look is abandoned.**
 
-> A **locked** isometric camera is a budget decision: models only ever look right from one
-> angle, so backfaces never show and buildings need no backs. A **rotating** camera gives
-> that saving up.
+An earlier draft of this plan argued for a camera locked at a fixed isometric angle, on the
+grounds that it is a *budget* decision — models only ever look right from one angle, so
+backfaces never show and buildings need no backs. The owner chose free rotation instead, and
+that is the right call for an OSRS-style game: you rotate constantly to see round terrain and
+line up a click. Record the cost honestly, because it is real:
 
-**The resolution: free yaw, constrained pitch.** Assets must look correct through 360° of
-horizontal rotation, but only within a narrow vertical band (roughly 30–60° above the
-horizon). You never see the top of a roof or the underside of anything. That keeps most of
-the saving — no detailed roofs, no interiors visible from outside, aggressive LOD on
-anything above eye level.
+> Every asset must now read correctly from **360° of yaw**. Nothing gets a missing back.
 
-**This decision has one important consequence for art:** it pushes strongly toward **low-poly
-3D meshes over pre-rendered sprites** for anything animated. A sprite sheet under free yaw
-needs 8–16 directions × every animation frame × every gear variant, which multiplies out of
-control. A rigged low-poly mesh animates once and works from every angle, at any zoom, with
-equipment attached to bones. See §6.
+**What limits the damage: pitch stays constrained** (roughly 30–60° above the horizon). You
+never see the top of a roof or the underside of anything, so roofs stay simple, interiors are
+never visible from outside, and anything above eye level can be aggressively LOD'd.
+
+**The consequence for art — this is the important one.** A free camera pushes decisively
+toward **low-poly rigged 3D meshes over pre-rendered sprite sheets** for anything animated. A
+sprite sheet under free yaw needs 8–16 directions × every animation frame × every gear
+variant, which multiplies out of control on the first piece of equipment. A rigged low-poly
+mesh animates once and works from every angle, at any zoom, with gear attached to bones.
+
+**Pre-rendered sprites are not gone — they are demoted to where yaw doesn't matter:** item
+and skill icons, UI, distant billboarded foliage, and flat ground decals. See §6.
 
 **Camera spec:**
 
@@ -738,8 +799,9 @@ verb, four zones, inventory, skills.
 
 ### 10.3 The plan
 
-1. **Rename the project** in `Arcanum-Academy` (see §14 Q1 — the name is not yet chosen).
-   Keep the repository, keep the git history, keep the deployment.
+1. **Rename the project to Alderfell** in `Arcanum-Academy`: package scope `@arcanum/*` →
+   `@alderfell/*`, the PWA manifest, the README, the Netlify site name. Keep the repository,
+   keep the git history, keep the deployment.
 2. **Delete the cut features** (§3.7): `sim/combat/` (card duel), `cards/`, deck builder,
    scribing, grading, serial minter, `content/data/cards.json`, `schools.json`,
    `DuelScreen.tsx`, `CollectionPanel.tsx`. This is a large, satisfying deletion and it
@@ -957,7 +1019,7 @@ to the repo.
 
 | Gate | What | Passes when |
 |---|---|---|
-| **G0 — Foundation reset** | Rename. Delete the cut features. Flag off multiplayer. Camera → orthographic, joystick deleted, tap-to-walk + rotate + pinch. | `npm run verify` green; the game boots and you can walk around by tapping. |
+| **G0 — Foundation reset** | Rename to Alderfell. Delete the cut features and the offline-accrual code. Flag off multiplayer. Camera → orthographic free-yaw, joystick deleted, tap-to-walk + rotate + pinch + long-press. | `npm run verify` green; the game boots and you can walk around by tapping. |
 | **G1 — The look** ⚠️ | Port Oakenfall's palette, asset pipeline and PWA shell. Re-skin **one** zone with real assets and fallbacks. | **A screenshot from the owner's actual iPhone, launched from the home screen, that looks good.** Nothing else proceeds until this passes. This is the gate isorpg identified as the most important in its plan, and the one previous projects failed. |
 | **G2 — The loop** | Port isorpg's skills, XP, nodes, recipes. Grant tools. Bank. Walk → gather → craft → equip, all in the world. | A stranger plays 10 minutes and levels a skill without guidance. |
 | **G3 — Combat** | Port the OSRS combat maths, attack styles, drop tables, food, death. | Killing one monster is satisfying twenty times in a row. |
@@ -970,36 +1032,36 @@ to the repo.
 
 ---
 
-## 14. Open questions — decisions not yet made
+## 14. Decisions log, and what is still open
 
-**Q1 — The game's name.** Not chosen. "Arcanum Academy", "Alderfell", "Isoperia" and
-"Oakenfall" all belong to superseded or frozen projects. The repo, the PWA manifest, the
-package scope (`@arcanum/*`) and the deployment all need it. **This blocks G0.**
+### 14.1 Resolved
 
-**Q2 — The setting.** With the magic academy cut, what is the world? "Washed up on the coast
-of a fallen realm" (Alderfell's premise) is strong and fits self-reliance. Oakenfall's
-dark-medieval tone is the art direction. Reconciling them is a one-paragraph decision that
-shapes every zone, NPC and item name — worth making deliberately.
+| # | Decision | Date |
+|---|---|---|
+| D1 | **The game is Alderfell.** Package scope `@alderfell/*`. | 2026-09-09 |
+| D2 | **Premise: washed up on the coast of a fallen realm** (§1.1.1). Dark-medieval tone per Oakenfall. The premise is the diegetic justification for Ironman. | 2026-09-09 |
+| D3 | **Cards, schools, grading, slabs, decks and card-duels are cut** (§3.7). | 2026-09-09 |
+| D4 | **Magic stays, re-themed: one Magic skill, staves as weapons, runes as crafted ammunition, Runecrafting as the supporting skill** (§3.4.1). | 2026-09-09 |
+| D5 | **No offline progression.** The accrual code is deleted, not disabled (§3.2). | 2026-09-09 |
+| D6 | **Free camera** — orthographic, free yaw, constrained pitch. The locked isometric look is abandoned, and with it the single-angle art budget (§5.2). | 2026-09-09 |
+| D7 | **Tap-to-walk, drag to rotate, pinch to zoom, long-press for a context menu. No virtual joystick** (§5.1). | 2026-09-09 |
+| D8 | **Ironman is the default and only mode at launch.** No player trading (§7). | 2026-09-09 |
+| D9 | **Unity is rejected** (§4.2). Web + three.js + PWA. Blender is a build-time tool in CI. | 2026-09-09 |
+| D10 | **`Arcanum-Academy` is the spine**; the other three repositories are frozen quarries (§10). | 2026-09-09 |
 
-**Q3 — Magic, post-schools.** The combat triangle wants a third style. Does magic survive in
-a non-school form (staves, runes, a single Magic skill), or is the triangle
-Melee/Ranged/something else? OSRS's answer is Magic; the question is only how it is themed.
+### 14.2 Still open
 
-**Q4 — Grading/serials.** §3.7 flags serialised provenance as salvageable. Does a rare drop
-knowing it is the 47th ever made add anything to an Ironman game where nobody trades? Lean
-no for now; revisit if standard mode ever ships.
+**Q1 — Grading/serials.** §3.7 flags serialised provenance as salvageable. Does a rare drop
+knowing it is the 47th ever made add anything in an Ironman game where nobody trades? Lean
+no; revisit only if a standard trading mode ever ships.
 
-**Q5 — The differentiator.** The most important open question, and the one four repositories
+**Q2 — The differentiator.** The most important open question, and the one four repositories
 have not answered. From ALA's own migration doc: *"the game is a broad, well-tested systems
 sandbox without a sharp identity. Breadth is not the problem. The missing piece is a reason
 to play this one."* Candidate answers: the player-owned hold as a real production base
-(§3.5); Ironman-by-default as an identity rather than a mode; or something not yet named.
-**Do not let this block G0–G3** — the answer usually arrives from playing, not planning — but
-do not lose the question either.
-
-**Q6 — Offline accrual vs "earned, not idled".** Pillar 1 says everything is earned; §3.2
-carries 25%/8 hr offline accrual over from Arcanum. isorpg's pillars explicitly rejected
-offline progression. These conflict. Decide before G2.
+(§3.5); Ironman-by-default as an identity rather than a mode; the fallen-realm premise
+carried harder than most OSRS-alikes bother to. **Do not let this block G0–G3** — the answer
+usually arrives from playing, not planning — but do not lose the question either.
 
 ---
 
