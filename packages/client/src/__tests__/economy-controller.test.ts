@@ -1,11 +1,14 @@
-import { ClientOpcode, EventBus } from '@alderfell/shared';
+import { ClientOpcode, EventBus, ServerOpcode } from '@alderfell/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EconomyController } from '../app/economy-controller.js';
-import type { Transport, TransportEvents } from '../net/transport.js';
 import { EMPTY_ECONOMY, useAppStore } from '../state/app-store.js';
+import type { Transport, TransportEvents } from '../net/transport.js';
 
-function transportHarness(): { readonly transport: Transport; readonly send: ReturnType<typeof vi.fn> } {
+function transportHarness(): {
+  readonly transport: Transport;
+  readonly send: ReturnType<typeof vi.fn>;
+} {
   const send = vi.fn();
   return {
     transport: {
@@ -46,5 +49,29 @@ describe('EconomyController activity cleanup', () => {
     const { transport, send } = transportHarness();
     new EconomyController(transport).stopGathering();
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it('projects equipped tools from the authoritative sync', () => {
+    const { transport } = transportHarness();
+    new EconomyController(transport);
+
+    transport.events.emit('frame', {
+      v: 1,
+      op: ServerOpcode.Patch,
+      seq: 1,
+      t: 0,
+      p: {
+        kind: 'player.sync',
+        state: {
+          tools: {
+            'skill.foraging': { definitionId: 'item.tool.sickle', durability: 487 },
+          },
+        },
+      },
+    });
+
+    expect(useAppStore.getState().economy.tools).toEqual({
+      'skill.foraging': { definitionId: 'item.tool.sickle', durability: 487 },
+    });
   });
 });
