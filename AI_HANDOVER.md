@@ -418,6 +418,51 @@ build before a fight, the card game is being rebuilt under a new name. See §3.7
 | Feature | Notes | Source |
 |---|---|---|
 | Quests | **One authored main quest line**, plus **diaries** as the long tail. See §3.5.1. Chains carry prerequisites, objectives and rewards, and **pay once**, guaranteed by test. | isorpg `QuestSystem.ts`; ALA `zonequests.js` (content) |
+#### 3.5.2 The hold — Construction, teleports and farms
+
+Owner decision, 2026-09-09. **Modelled on OSRS's player-owned house.** This is promoted from
+a nice-to-have to a headline system, because it turns out to sit at the centre of three other
+decisions.
+
+**Construction is a coin and resource sink that pays you back in convenience.** You spend
+gathered materials and coins to build rooms; the rooms give you capability you would otherwise
+spend real time walking for. As the skill levels, the hold gets materially better — that is
+the whole reward curve.
+
+**Rooms, in rough unlock order:**
+
+| Room | What it gives you |
+|---|---|
+| **Hall / entry** | The plot itself, and the first storage |
+| **Workshop** | Carpentry and general crafting without walking to town |
+| **Forge** | Smelting and smithing at home |
+| **Kitchen** | A range for Cooking, plus a larder |
+| **Garden / farm** | Your own crop plots and a tree patch — Farming without a field trip |
+| **Storage / vault** | Bank access at home, gated high because it is powerful |
+| **Teleport room** | **The big one.** Portals to zones you have unlocked |
+| **Altar / study** | Runecrafting support, prayer-equivalent, respecs |
+| **Trophy room** | Boss drops, rare finds, collection display — the cosmetic payoff |
+
+**Why the teleport room matters more here than in OSRS.** Alderfell has **no run energy**
+(§3.1.1) — travel is paid for in *time and distance* instead. That makes teleports the single
+most valuable convenience in the game, and putting them behind Construction gives the skill a
+genuinely earned, genuinely felt payoff. A player who invests in Construction feels the whole
+world get smaller. **The two decisions reinforce each other; do not change one without
+revisiting the other.**
+
+**It also answers the coin-sink problem** (§7.3). Construction is bottomless by design: there
+is always another room, another tier of furniture, another portal. That is what stops coins
+accumulating into meaninglessness in a game with no trading.
+
+**And it is a leading candidate for the differentiator** (§14.2 Q2). Everything you gather can
+feed a place that visibly grows, and *this* is where Oakenfall's building and village logic
+eventually returns — scoped to one player's plot rather than a whole settlement. Nothing else
+in this genre does the "your stuff becomes a place" loop especially well.
+
+**Build order caution:** the hold is Tier 2, after the core loop and combat exist (G5+). It is
+tempting to build early because it is fun to design; resist that. A house full of shortcuts to
+systems that are not finished is worse than no house.
+
 #### 3.5.1 Quest structure — one spine, many diaries
 
 Owner decision, 2026-09-09.
@@ -447,8 +492,9 @@ of order cannot desync them.
 | Dungeons | Fixed hand-placed layouts (deliberately not procedural), per-floor monster pools and chests, locked doors keyed to quest progress, persistent room/kill progress. | isorpg `DungeonSystem.cs` |
 | Achievements / diaries | Derived from the save on read, never tracked separately, so they cannot drift. | ALA `codex.js`, `achievements.js` |
 | Collection log | Every item and where it comes from. | isorpg "compendium" (Phase 19) |
+| The wiki | A public game wiki **generated from the same content data the game loads**, so it can never drift. See §3.10. | isorpg `gen-wiki.cjs` + `WIKI.md` |
 | Titles | Unlocked by achievements, equippable. | ALA |
-| The player's hold | A personal, instanced home you build and upgrade with Construction. Rooms with function: workshop, forge, kitchen, garden, storage. **This is where Oakenfall's village logic eventually returns**, scoped to one player's plot. | Oakenfall `BUILD_DEFS`; isorpg GDD housing; ALA `dorm.js` |
+| The player's hold | A personal instanced home built with Construction — **OSRS's player-owned house**, with teleports, farms and functional rooms. Promoted to a headline system: see §3.5.2. | Oakenfall `BUILD_DEFS`; isorpg GDD housing; ALA `dorm.js` |
 | Pets | Rare drops from skilling/bosses; follow the player. | ALA `pets.js` |
 | World events | Timed/random world occurrences. | ALA `worldevents.js` |
 | Reputation | Per-NPC standing tiers with real bonuses. | ALA `reputation.js` |
@@ -502,6 +548,44 @@ game:
 | Error ring buffer + diagnostics | `errorLog` + `buildDiagnostics()` attached to every report. | Oakenfall |
 | Audio | Music, ambience, SFX. First-tap unlock on iOS. Fully playable muted. See §6.6. | isorpg (8 tracks + SFX); ALA `audio.js` |
 | Versioned saves + migrations | Forward-only migration runner; a save from any older version must load. | Arcanum `persistence/local-store.ts`, shared migration runner |
+
+### 3.10 The wiki — Tier 2
+
+Owner request, 2026-09-09. Alderfell gets a public wiki, and there is exactly one right way to
+build it.
+
+> **The wiki is generated from the same JSON the game loads.** Never hand-authored, never a
+> separate database, never a wiki engine someone has to log into.
+
+Items, recipes, nodes, monsters, drop tables, skills, XP curves, quests and zones are already
+content data validated at load (ADR-0005). The wiki is a build step that reads those catalogues
+and emits a static site. **This means it cannot go out of date**: change a drop rate and the
+wiki page changes in the same commit, because they read the same file.
+
+isorpg already built exactly this (`gen-wiki.cjs`, output committed as `WIKI.md`), and its
+reasoning is worth carrying over verbatim: content is JSON rather than engine-native assets
+*specifically* so the wiki stays alive.
+
+**What it covers:** every item and where it drops or is made from; every recipe and its inputs;
+every gathering node, its level requirement and yields; every monster with stats and drop
+table; every skill with its XP curve and unlocks; every quest with prerequisites and rewards;
+zone maps and what is in them.
+
+**How it ships:** a static site built in CI and deployed to Netlify alongside the client. Free.
+No server, no database, no CMS.
+
+**Two rules:**
+
+- **Never put a timestamp in generated output.** It makes CI red by construction — the
+  committed file can never match a regenerated one. isorpg paid for this twice; deriving the
+  date from `git log` also fails, because CI does a shallow clone. The date was removed
+  entirely.
+- **Mobile-first, like everything else** (§6.8). The wiki will mostly be read on a phone, very
+  often *while playing*, so it needs to be fast, searchable and readable one-handed.
+
+**Nice consequence:** because the wiki is generated, it is also a content proofreader. A recipe
+with a missing input or an item nothing drops shows up as a hole in a wiki page long before a
+player finds it.
 
 ### 3.9 Onboarding — Tier 1
 
@@ -867,6 +951,98 @@ Sources: CC0 libraries (freesound, OpenGameArt, Kenney's audio packs) with a lic
 
 ---
 
+### 6.8 Mobile optimisation — the standing requirement
+
+Owner direction, 2026-09-09: **heavy focus on mobile optimisation in every aspect of the
+game.** Pillar 3 already says mobile is the design constraint rather than a port target; this
+section makes it checkable instead of aspirational.
+
+**The rule: mobile optimisation is not a phase.** There is no "optimisation pass" at the end.
+Every gate is judged on a real phone, and a feature that only performs on a desktop browser is
+not finished.
+
+### 6.8.1 The budgets
+
+Numbers, so "is this fast enough" has an answer rather than an opinion.
+
+| Budget | Target | Hard ceiling |
+|---|---|---|
+| Initial download (compressed) | < 2 MB | 5 MB |
+| Time to interactive, mid-range phone, warm cache | < 2 s | 4 s |
+| Frame rate, normal play | 60 fps | **30 fps sustained** — below this it reads as broken |
+| Frame time budget at 30 fps | 33 ms | — |
+| Draw calls per frame | < 100 | 200 |
+| Total loaded assets at any moment | < 100 MB | 150 MB (iOS kills tabs past ~256–384 MB) |
+| Per-model, compressed | < 300 KB | 500 KB |
+| Textures | ≤ 512 px, atlased | 1024 px, with a written reason |
+| Main-thread block, any single task | < 16 ms | 50 ms |
+
+### 6.8.2 The techniques that actually pay
+
+In rough order of return on effort:
+
+- **Instancing.** The `ActorPool` already renders the entire crowd in 2 draw calls. Every
+  repeated thing — trees, rocks, fences, buildings — goes through the same treatment.
+- **Device quality tiering.** `core/device.ts` classifies Low / Medium / High and budgets pool
+  capacity, shadow resolution, effect density and draw distance from it. **Every new visual
+  system registers a budget with the tier system rather than picking its own constants.**
+- **Don't render what isn't visible.** Frustum culling, distance culling, and visibility gating
+  when the tab is hidden (already implemented — keep it).
+- **Fixed-timestep simulation, decoupled rendering.** The 600 ms tick (§3.4.1) is unaffected by
+  frame rate, so a dropped frame never changes the game.
+- **Object pooling everywhere in hot paths.** Allocation is the main cause of GC hitches on
+  mobile, and a GC pause during combat is a lost fight. The A* is already allocation-free —
+  hold that standard.
+- **Texture atlases over individual textures.** Fewer binds, and it is also what keeps the free
+  asset packs visually coherent (§3.4.0).
+- **Compress everything.** Draco/meshopt on geometry, Brotli on the wire, ASTC where available
+  with an uncompressed fallback.
+- **Lazy-load by zone.** Only the current region's assets are resident. This is what keeps the
+  loaded-asset budget survivable as regions are added.
+- **Never allocate a gradient per frame** — cache it or use a flat fill.
+
+### 6.8.3 Touch and interface rules
+
+- **44 px minimum touch targets.** No exceptions, including icon buttons and list rows.
+- **Safe-area insets on every fixed-position element** (`env(safe-area-inset-*)`). The notch
+  and the home indicator eat real UI. Oakenfall's `index.html` is the reference.
+- **Portrait primary, landscape re-docks** — bottom sheets become side sheets.
+- **Nothing important within a thumb's reach of a screen edge gesture** (iOS back-swipe, the
+  home bar).
+- **The HUD must never collide with itself at any width.** The current build already fails this
+  — see §6.8.5.
+- **Every tap gives feedback within one frame**, even when the result resolves on a tick
+  (§3.4.1).
+- **One primary action per screen.** If a panel needs two equally-weighted buttons, the panel is
+  doing two jobs.
+
+### 6.8.4 Battery, heat and the things that get you rejected
+
+A phone game that drains a battery or warms the handset gets closed and not reopened.
+
+- **Cap the frame rate when nothing is moving.** An idle inventory screen does not need 60 fps.
+- **Throttle the render loop hard when backgrounded**, and stop it entirely when hidden.
+- **Never poll.** Event-driven everywhere; a `setInterval` at 60 Hz is a battery bug.
+- **Watch overdraw** — transparent overlays stacked full-screen are the usual culprit on mobile
+  GPUs.
+
+### 6.8.5 How it is verified
+
+**On a real iPhone, launched from the home screen, every gate.** Not in a desktop browser at a
+narrow width, and not in a simulator. isorpg's standing rule applies here verbatim: *a thing
+that only works in the Editor does not work.*
+
+Automate what can be automated — Oakenfall's `npm run smoke` boots the real game in Chromium at
+phone, landscape and desktop sizes and asserts the world renders, assets load, the canvas is
+sized, **the HUD does not collide**, and no console or request errors occur. Port that harness
+early; it is the cheapest quality gate in any of the four repositories.
+
+**Known failures in the current build**, captured in `docs/baseline/2026-09-09-pre-G1-phone.png`:
+
+- The HUD collides at 390 px — the population readout is hidden behind the satchel button.
+- The camera sits too close for a phone; the framing shows very little world.
+- The world is untextured primitives (this is the G1 problem, not a performance one).
+
 ## 7. Ironman — the economy design
 
 Owner decision: **Ironman is the default and only mode at launch.** Everything is
@@ -1117,9 +1293,19 @@ verb, four zones, inventory, skills.
 
 ### 10.3 The plan
 
-1. **Rename the project to Alderfell** in `Arcanum-Academy`: package scope `@arcanum/*` →
-   `@alderfell/*`, the PWA manifest, the README, the Netlify site name. Keep the repository,
-   keep the git history, keep the deployment.
+1. **Rename everything to Alderfell, including the GitHub repository.** Decided 2026-09-09:
+   `OfficialSyntaxx/Arcanum-Academy` → `OfficialSyntaxx/alderfell`, package scope
+   `@arcanum/*` → `@alderfell/*`, plus the PWA manifest, README and Netlify site name.
+
+   **Why rename the repo rather than live with it:** the cost is near zero right now and only
+   grows. GitHub permanently redirects the old URL, so existing clones and remotes keep
+   working; there are no players, no external links and no third-party integrations to break.
+   Against that, a repository called `Arcanum-Academy` containing a game called Alderfell is
+   permanent low-grade confusion for every future session — human or agent — and it is exactly
+   the kind of ambiguity this document exists to remove. Do it once, now, while it is free.
+
+   Git history is preserved either way. The Netlify and Render services need their build hooks
+   re-pointed after the rename; that is a settings change, not a redeploy.
 2. **Replace the stale docs.** `CLAUDE.md` still describes the card game in full detail and
    would actively mislead any agent that opens the repository — Codex included. It becomes a
    short pointer to this document. The same goes for `docs/adr/ADR-0004` (grade vs duel
@@ -1388,6 +1574,10 @@ to the repo.
 | D24 | **Offline-first.** The client runs the kernel and plays with no network; the server stores the save and validates by replaying the command log. ADR-0001 amended accordingly; the trust boundary moves back to the server only for live multiplayer (§4.4). | 2026-09-09 |
 | D25 | **A wide bestiary — animals, mythical beasts, imps, bandits, constructs, custom Blender creatures — held to one visual world.** Coherence is enforced by a shared material scheme, palette, silhouette language and an admission review beside existing assets (§3.4.0). | 2026-09-09 |
 | D26 | **`AI_HANDOVER.md` is the single source of truth.** `CLAUDE.md` and the existing `docs/` are replaced by short pointers to it (§10.3). | 2026-09-09 |
+| D27 | **The hold is OSRS's player-owned house** — Construction as a coin and resource sink paying out in teleports, farms and functional rooms. Reinforces the no-run-energy decision and is the main long-term coin sink (§3.5.2). | 2026-09-09 |
+| D28 | **A wiki generated from the game's own content JSON**, so it cannot drift. Static, free, mobile-first (§3.10). | 2026-09-09 |
+| D29 | **Mobile optimisation is a standing requirement with published budgets**, verified on a real iPhone at every gate — not an end-of-project pass (§6.8). | 2026-09-09 |
+| D30 | **Rename the GitHub repository too** — `Arcanum-Academy` → `alderfell`. Free now, and a repo whose name contradicts its game is permanent confusion (§10.3). | 2026-09-09 |
 
 ### 14.2 Still open
 

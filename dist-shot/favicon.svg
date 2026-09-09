@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Arcanum Academy">
+  <rect width="64" height="64" rx="10" fill="#11161d" />
+  <rect x="14" y="10" width="36" height="44" rx="4" fill="none" stroke="#8ea3b8" stroke-width="2" />
+  <rect x="19" y="15" width="26" height="26" rx="2" fill="#1b2531" stroke="#3fa88e" stroke-width="1.5" />
+  <path d="M32 20l3.4 7.2 7.6 1-5.6 5.6 1.4 7.9L32 38l-6.8 3.7 1.4-7.9L21 28.2l7.6-1z" fill="#c9a227" />
+  <rect x="19" y="45" width="26" height="5" rx="1.5" fill="#3fa88e" />
+</svg>
