@@ -58,8 +58,24 @@ there is no functioning economy to buy from, no one to trade with, and nothing l
 inherit. Every design question of the form *"why can't the player just buy this?"* is
 answered by the setting rather than by a rule.
 
-Tone: **dark medieval**, per Oakenfall's art direction (§6.1) — weathered, earth-toned,
-overgrown. Not grimdark, not whimsical. A world that used to work.
+**Tone: warm, cosy, PG.** Owner decision, 2026-09-09, and it is a deliberate departure from
+Oakenfall's dark palette — do not inherit that.
+
+The realm fell, but this is **not a grim game**. It is medieval and rustic and a little
+overgrown, and it is *inviting*: golden light, warm stone, moss and wildflowers over the
+ruins, smoke from a chimney that means someone is home. The survivors you meet are decent to
+you. Nobody is tortured, nothing is gory, and the darkness is "this place is quiet now", never
+"this place is horrifying".
+
+**Reconciling cosy with a fallen realm** — they fit better than they sound, and the reconciliation
+is the emotional core of the game: **the fall already happened, and you are the beginning of
+what comes next.** The mood is not mourning, it is *reclaiming*. Every ruin you clear, tool you
+forge and field you replant is the world getting warmer, not colder. That is also why the
+player's hold (§3.5) matters — it is the most literal expression of it.
+
+**Content rating: PG.** No gore, no on-screen cruelty, no horror, no adult themes. Combat is
+bloodless — a hitsplat, a stagger, a defeated creature that fades. Write dialogue a child
+could read and an adult would not find twee.
 
 ### 1.2 The core fantasy
 
@@ -442,7 +458,7 @@ game:
 |---|---|---|
 | PWA install | Manifest, `display: standalone`, apple-touch-icon, `apple-mobile-web-app-*` meta. **Functional requirement, not polish** — iOS Safari has no Fullscreen API, so a home-screen launch is the only way to get a chrome-less game. | Oakenfall (complete and correct) |
 | Service worker | Network-first with cache fallback, root-relative paths so it survives a host move. | Oakenfall `sw.js` |
-| Offline play | The client must open and be usable with no network. | Oakenfall |
+| Offline play | ⚠️ **UNRESOLVED — see §14.2 Q3.** This requirement contradicts ADR-0001 (server-authoritative, §4.4). Both are currently written as true. Resolve before G2. | Oakenfall |
 | Safe-area insets | `env(safe-area-inset-*)` on every fixed-position element. Notch and home indicator. | Oakenfall (`index.html` — the reference implementation) |
 | Orientation support | Portrait primary; landscape re-docks panels to the side. | Oakenfall |
 | 44px minimum touch targets | Non-negotiable. | Oakenfall |
@@ -452,6 +468,7 @@ game:
 | Accessibility | Reduced motion, text scaling, colour-blind-safe (**never colour as the only carrier of meaning**), seeded from OS preferences. | Arcanum `a11y/preferences.ts` |
 | In-game bug report | Posts to a serverless function that files a GitHub issue with diagnostics attached, so players never need a GitHub account. | Oakenfall `netlify/functions/submit-feedback.js` |
 | Error ring buffer + diagnostics | `errorLog` + `buildDiagnostics()` attached to every report. | Oakenfall |
+| Audio | Music, ambience, SFX. First-tap unlock on iOS. Fully playable muted. See §6.6. | isorpg (8 tracks + SFX); ALA `audio.js` |
 | Versioned saves + migrations | Forward-only migration runner; a save from any older version must load. | Arcanum `persistence/local-store.ts`, shared migration runner |
 
 ### 3.9 Onboarding — Tier 1
@@ -639,10 +656,31 @@ orthographic and re-tuning the band is a contained change to one file.
 
 ### 6.1 Direction
 
-**Dark old-school-MMORPG.** Oakenfall's palette is the reference and it is already good:
-earth-tinted, desaturated, readable in sunlight on a phone. Every new asset is
-**colour-graded** (darkened, earth-tinted) before it ships, matching the existing GRADE
-conventions.
+**Warm, cosy, low-poly medieval.** Storybook rather than gritty. Think a bright autumn
+afternoon in a place people used to live.
+
+> ⚠️ **Do not inherit Oakenfall's palette or its GRADE convention.** Oakenfall is deliberately
+> dark, desaturated and earth-tinted, and every asset in it is colour-graded *darker* before it
+> ships. Alderfell is the opposite direction (§1.1.1). The **pipeline** is worth taking; the
+> **grading step is inverted** — new assets are warmed and slightly brightened, not darkened.
+> This is the one place where copying Oakenfall would actively hurt.
+
+The palette:
+
+- **Warm neutrals** for stone and timber — honey, oatmeal, weathered terracotta, not grey.
+- **Rich but not neon greens** for foliage, with yellow in the mix rather than blue.
+- **Golden key light.** Sun low enough to be warm, high enough to read the ground.
+- **Soft, coloured shadows** — never black. Shadow is where a scene reads as cheap.
+- **Glowing windows, lanterns and fires** as the signature — the single strongest cue that a
+  place is safe and inhabited, and worth spending real effort on.
+- Contrast stays gentle. Readability on a phone in daylight comes from **value separation and
+  silhouette**, not from cranking saturation or darkness.
+
+Silhouettes are **rounded and chunky** rather than jagged. Nothing spiky, nothing skeletal.
+
+**This makes the free-asset story easier, not harder.** KayKit, Kenney and Quaternius are all
+naturally warm and stylised — Oakenfall had to fight them darker. Alderfell mostly gets to use
+them as authored, which removes a whole processing step and a whole class of coherence bug.
 
 Style rules (inherited from ALA's `BLENDERTODO.md` §0, which are correct and should be
 carried over verbatim into the new repo):
@@ -735,7 +773,35 @@ exactly what G1 is judged on. And a world that looks good makes placeholder char
 Until step 2 lands, characters stay as the existing procedural shapes — with their fallbacks
 intact, which is what makes this staging safe at all (§6.3).
 
-### 6.6 Asset budget
+### 6.6 Audio — music, ambience and SFX
+
+Owner decision, 2026-09-09: **full audio.** Music, ambience and sound effects all matter.
+
+This is consistent with the cosy direction — **ambience is what makes a place feel inhabited**,
+and music is what people remember about a world years later. It is also the cheapest
+atmosphere available: a good wind loop and a distant birdsong do more for "this is a real
+place" than another thousand triangles.
+
+| Layer | What | Notes |
+|---|---|---|
+| **Music** | One theme per region, plus a title theme and a combat cue. | isorpg already has **8 music tracks** — take them. Stream rather than bundle; music is the largest single download risk. |
+| **Ambience** | Per-zone loops: wind, water, woodland, rain, a settlement's background hum. Cross-fade on zone change and with weather. | Cheapest atmosphere per kilobyte in the whole project. |
+| **SFX** | Tool impacts, footsteps by surface, hitsplats, level-up, item pickup, UI taps, doors, fires. | Feedback first: every action the player takes should make a sound, and the level-up cue should be *good*. |
+
+**Three mobile rules that are not optional:**
+
+1. **iOS requires a user gesture to start audio.** A first-tap unlock is mandatory. It is
+   already implemented in isorpg's PWA template — port it.
+2. **Music streams, SFX bundle.** SFX must be instant and are tiny; music is large and can
+   load late. Never block the first frame on audio.
+3. **The game must be completely playable muted**, and it must look like it knows it — every
+   audio cue needs a visual counterpart. Most phone players play with sound off, and the
+   level-up you only hear is a level-up half your players never notice.
+
+Sources: CC0 libraries (freesound, OpenGameArt, Kenney's audio packs) with a licence entry in
+`CREDITS.md` per asset, same rule as art (§6.2).
+
+### 6.7 Asset budget
 
 | Budget | Value |
 |---|---|
@@ -1086,9 +1152,10 @@ excellent **specification** of correct behaviour. Read the C# tests when porting
   implementation for a game that behaves correctly on an iPhone home screen.
 - The **landscape re-dock** pattern (bottom sheets become side sheets).
 - The **asset pipeline**: `tools/extract-assets.mjs`, `tools/rewrite-assets.mjs`, and the
-  GRADE colour-grading convention.
+  colour-grading tooling — **but invert the grade**: warm and lift, never darken (§6.1).
 - The **sprite-with-procedural-fallback pattern**. Protect this above all else.
-- The **palette** and dark-medieval art direction.
+- ~~The palette and dark-medieval art direction.~~ **Do not take this.** Alderfell is warm and
+  cosy (§1.1.1, §6.1). Take the *tooling*, not the colours.
 - The **feedback loop**: `netlify/functions/submit-feedback.js`, `errorLog` ring buffer,
   `buildDiagnostics()`, GAME_VERSION + CHANGELOG discipline (the site build fails if they
   disagree — keep that gate).
@@ -1256,12 +1323,29 @@ to the repo.
 | D19 | **Coins exist** — dropped by monsters, earned from shops and rewards. Sinks are repair, consumables and services; **no shop may sell gear or materials** (§7.3). This unblocks tools. | 2026-09-09 |
 | D20 | **No run energy — you always run.** Distance is the cost of travel; shortcuts, boats and teleports are the rewards (§3.1.1). | 2026-09-09 |
 | D21 | **One authored main quest line plus diaries** as the long tail. A quest changes the world; a diary task recognises what you did (§3.5.1). | 2026-09-09 |
+| D22 | **Tone is warm, cosy and PG** — a fallen realm being reclaimed, not mourned. **Oakenfall's dark palette and darkening GRADE step are explicitly not inherited** (§1.1.1, §6.1). | 2026-09-09 |
+| D23 | **Full audio** — music, ambience and SFX. Music streams, SFX bundle, first-tap unlock on iOS, and the game stays fully playable muted (§6.6). | 2026-09-09 |
 
 ### 14.2 Still open
 
 **Q1 — Grading/serials.** §3.7 flags serialised provenance as salvageable. Does a rare drop
 knowing it is the 47th ever made add anything in an Ironman game where nobody trades? Lean
 no; revisit only if a standard trading mode ever ships.
+
+**Q3 — Offline play vs. server authority. 🔴 Resolve before G2.**
+
+These two commitments contradict each other and both are currently written into this document:
+
+- §3.8 / Oakenfall's hard constraint: *the client must open and be usable with no network.*
+- §4.4 / ADR-0001: *the server owns all outcomes; the client predicts and the server verifies.*
+
+As written, no server means no play — on a plane, on the underground, in a lift, and during
+the free Render instance's 30–60 second cold start at the beginning of every session.
+
+The owner has asked for the trade-off to be written up properly before choosing. Until it is
+decided, **do not build anything that hard-codes either assumption.** Both paths are served by
+the same `packages/sim` kernel — that is precisely what the shared-kernel design buys — so the
+decision is about where the kernel is *trusted*, not about which code exists.
 
 **Q2 — The differentiator.** The most important open question, and the one four repositories
 have not answered. From ALA's own migration doc: *"the game is a broad, well-tested systems
