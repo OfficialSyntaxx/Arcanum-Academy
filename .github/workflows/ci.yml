@@ -44,7 +44,9 @@ jobs:
         run: npm run build
 
       - name: Install visual-check browser
-        run: npx playwright install --with-deps chromium
+        # ubuntu-24.04 already carries Chromium's shared libraries. Avoid
+        # refreshing unrelated third-party apt indexes, which can race mirrors.
+        run: npx playwright install chromium
 
       - name: Render phone, landscape and desktop; prove blank-world detector
         run: npx playwright test
