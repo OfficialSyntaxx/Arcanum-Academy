@@ -19,7 +19,9 @@ import {
   type Inventory,
 } from '@alderfell/sim';
 import {
+  asId,
   ok,
+  type ItemInstanceId,
   type ItemDefinitionId,
   type ItemInstance,
   type ItemStack,
@@ -32,6 +34,42 @@ import {
   type SkillProgress,
 } from '@alderfell/shared';
 import type { PlayerRecord } from '../persistence/repository.js';
+
+/**
+ * The Academy issues one basic tool for each gathering discipline.  Tools are
+ * equipped rather than stored in the satchel, so a first gathering session is
+ * always useful without consuming one of the player's material slots.
+ *
+ * These instance ids are deliberately stable: a save written before tools
+ * shipped is backfilled on read, and that migration must not mint a different
+ * copy every time the player reconnects.
+ */
+const STARTER_TOOLS: Readonly<Record<string, ItemInstance>> = {
+  'skill.mining': {
+    instanceId: asId<ItemInstanceId>('academy-starter-pick'),
+    definitionId: 'item.tool.pick' as ItemDefinitionId,
+    durability: 500,
+    acquiredAtMs: 0,
+  },
+  'skill.foraging': {
+    instanceId: asId<ItemInstanceId>('academy-starter-sickle'),
+    definitionId: 'item.tool.sickle' as ItemDefinitionId,
+    durability: 500,
+    acquiredAtMs: 0,
+  },
+  'skill.forestry': {
+    instanceId: asId<ItemInstanceId>('academy-starter-axe'),
+    definitionId: 'item.tool.axe' as ItemDefinitionId,
+    durability: 500,
+    acquiredAtMs: 0,
+  },
+};
+
+function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
+  return Object.fromEntries(
+    Object.entries(STARTER_TOOLS).map(([skillId, tool]) => [skillId, { ...tool, acquiredAtMs }]),
+  );
+}
 
 export const PLAYER_SCHEMA_VERSION = 1;
 export interface PlayerState {
@@ -56,7 +94,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
   return {
     inventory: createInventory(slotCapacity),
     skills: {},
-    tools: {},
+    tools: starterTools(nowMs),
     nodes: {},
     gathering: null,
     lastSeenAtMs: nowMs,
@@ -167,7 +205,9 @@ export function parsePlayerState(
   return ok({
     inventory: readInventory(data.inventory, slotCapacity),
     skills: readSkills(data.skills),
-    tools: readTools(data.tools),
+    // Merge rather than replace so every pre-tool save receives the Academy
+    // kit while preserving any future upgraded equipment it already owns.
+    tools: { ...starterTools(record.updatedAtMs), ...readTools(data.tools) },
     nodes: readNodes(data.nodes),
     gathering: readGathering(data.gathering),
     lastSeenAtMs: readNumber(data.lastSeenAtMs, record.updatedAtMs),
