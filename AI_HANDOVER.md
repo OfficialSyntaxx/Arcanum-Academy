@@ -607,7 +607,7 @@ forge a weapon → kill your first monster → bank your loot.*
 | Language | TypeScript 5, strict, with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax` |
 | Runtime | Node 22 |
 | Client bundler | Vite 6 + `vite-plugin-pwa` |
-| Rendering | **three.js, orthographic camera, free yaw + constrained pitch** (§5) |
+| Rendering | **Low-poly 3D, three.js, orthographic camera, free yaw + constrained pitch** (§5.2.1 — not 2.5D isometric; read that before assuming otherwise) |
 | UI | React 18 + Zustand 5 for overlays; the world is canvas |
 | Server | Fastify 5 + `ws` 8 |
 | Validation | zod |
@@ -774,6 +774,41 @@ mesh animates once and works from every angle, at any zoom, with gear attached t
 
 **Pre-rendered sprites are not gone — they are demoted to where yaw doesn't matter:** item
 and skill icons, UI, distant billboarded foliage, and flat ground decals. See §6.
+
+#### 5.2.1 What to call this style — read this before saying "2.5D"
+
+This caused real confusion once already, so it is written down plainly.
+
+**Alderfell is low-poly 3D rendered under an orthographic camera with free yaw and a
+constrained pitch.** It is *not* 2.5D isometric, and it is not 2D.
+
+Earlier planning did recommend 2.5D isometric, and that recommendation was sound **on the
+assumption of a locked camera** — locking the angle is precisely what makes a 3D scene "2.5D",
+because models then only ever need one face. Approving the free camera (D6) removed the lock,
+and the label went with it. The label changing is not a change of ambition or a scope
+increase — it is a consequence that should have been stated at the time.
+
+**What holds, unchanged, from the original 2.5D direction:**
+
+- Low-poly, flat-shaded, chunky, stylised. Not photoreal, not a AAA pipeline.
+- **Orthographic** projection, so the world still reads flat and diorama-like rather than
+  cinematic — this is most of what makes it *look* isometric.
+- CC0 asset packs, Blender in CI, no paid tools.
+- No Unity, no App Store, still a PWA on the home screen.
+- The pitch band still means no roof tops and no undersides, so those stay cheap.
+
+**What genuinely changed:** models must read correctly through 360° of yaw.
+
+**Why that cost is modest rather than severe:** we render **3D meshes, not pre-rendered
+sprites** (§5.2). A low-poly hut modelled all the way round is barely more work than one
+modelled front-only — a mesh has a back whether the camera sees it or not. The same change
+would have been punishing with sprite sheets, which is exactly why the free camera pushed the
+art direction to meshes in the first place.
+
+**Two alternatives were considered and rejected by the owner**, recorded so they are not
+re-proposed as new ideas: *snapped rotation* to 4 or 8 fixed compass angles (cheaper art, more
+diorama-like) and *true locked isometric* (cheapest art, but you can never look behind
+anything, and it contradicts the tap-to-rotate control in D7).
 
 **Camera spec:**
 
@@ -1553,7 +1588,7 @@ to the repo.
 | D3 | **Cards, schools, grading, slabs, decks and card-duels are cut** (§3.7). | 2026-09-09 |
 | D4 | **Magic stays, re-themed: one Magic skill, staves as weapons, runes as crafted ammunition, Runecrafting as the supporting skill** (§3.4.1). | 2026-09-09 |
 | D5 | **No offline progression.** The accrual code is deleted, not disabled (§3.2). | 2026-09-09 |
-| D6 | **Free camera** — orthographic, free yaw, constrained pitch. The locked isometric look is abandoned, and with it the single-angle art budget (§5.2). | 2026-09-09 |
+| D6 | **Free camera** — orthographic, free yaw, constrained pitch. The locked isometric look is abandoned, and with it the single-angle art budget. **Consequence: the project is low-poly 3D, not 2.5D isometric** (§5.2.1). Reaffirmed by the owner after the label was queried. | 2026-09-09 |
 | D7 | **Tap-to-walk, drag to rotate, pinch to zoom, long-press for a context menu. No virtual joystick** (§5.1). | 2026-09-09 |
 | D8 | **Ironman is the default and only mode at launch.** No player trading (§7). | 2026-09-09 |
 | D9 | **Unity is rejected** (§4.2). Web + three.js + PWA. Blender is a build-time tool in CI. | 2026-09-09 |
