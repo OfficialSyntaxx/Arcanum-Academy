@@ -23,6 +23,7 @@ interface HarvestPatch {
     readonly slotCapacity?: number;
   };
   readonly skills?: Readonly<Record<string, { level: number; xp: number }>>;
+  readonly tools?: Readonly<Record<string, { definitionId: string; durability: number }>>;
   readonly gathering?: { readonly nodeId?: string } | null;
   readonly yields?: readonly { itemId: string; quantity: number }[];
   readonly xpGained?: number;
@@ -129,6 +130,7 @@ export class EconomyController {
         ? { slotCapacity: patch.inventory.slotCapacity }
         : {}),
       ...(patch.skills !== undefined ? { skills: patch.skills } : {}),
+      ...(patch.tools !== undefined ? { tools: patch.tools } : {}),
       gatheringNodeId: patch.gathering?.nodeId ?? null,
       // Yields are per-collection rather than cumulative, so a patch without
       // them clears the readout instead of leaving the previous haul on screen.
