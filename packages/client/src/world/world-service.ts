@@ -11,7 +11,17 @@
  * problems and are diagnosed for hours.
  */
 
-import { Color, DirectionalLight, Group, HemisphereLight, Fog, type Scene } from 'three';
+import {
+  Color,
+  DirectionalLight,
+  Group,
+  HemisphereLight,
+  Fog,
+  Mesh,
+  MeshBasicMaterial,
+  RingGeometry,
+  type Scene,
+} from 'three';
 import {
   buildNavGraph,
   distanceSquared,
@@ -29,7 +39,7 @@ import { Pathfinder } from '@alderfell/sim';
 
 import type { QualitySettings } from '../core/device.js';
 import { ActorPool } from './actor-pool.js';
-import { atmosphereFor, daylight, sunElevation, type Atmosphere } from './palette.js';
+import { Palette, atmosphereFor, daylight, sunElevation, type Atmosphere } from './palette.js';
 import { buildZoneGeometry, type ZoneGeometry } from './scene-builder.js';
 
 export interface NearestInteractable {
@@ -47,6 +57,7 @@ export class WorldService {
   private readonly atmosphere: Atmosphere;
   private readonly sun: DirectionalLight;
   private readonly sky: HemisphereLight;
+  private readonly navigationMarker: Mesh<RingGeometry, MeshBasicMaterial>;
 
   private constructor(
     readonly zone: Zone,
@@ -83,7 +94,27 @@ export class WorldService {
       this.atmosphere.ambientIntensity,
     );
 
-    this.root.add(this.geometry.group, this.actors.group, this.sun, this.sun.target, this.sky);
+    // A world-space travel cue reads instantly on a phone and, unlike a HUD
+    // arrow, stays honest when the player rotates or zooms the camera.
+    const markerGeometry = new RingGeometry(0.38, 0.56, 20);
+    const markerMaterial = new MeshBasicMaterial({
+      color: Palette.gilt,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+    });
+    this.navigationMarker = new Mesh(markerGeometry, markerMaterial);
+    this.navigationMarker.rotation.x = -Math.PI / 2;
+    this.navigationMarker.visible = false;
+
+    this.root.add(
+      this.geometry.group,
+      this.navigationMarker,
+      this.actors.group,
+      this.sun,
+      this.sun.target,
+      this.sky,
+    );
   }
 
   /** Validates and loads a zone. */
@@ -147,6 +178,22 @@ export class WorldService {
     }
   }
 
+  /** Shows a small pulsing ring at the reachable end of the active route. */
+  updateNavigationMarker(destination: Vec2 | null, nowMs: number): void {
+    if (destination === null) {
+      this.navigationMarker.visible = false;
+      return;
+    }
+    const pulse = 1 + Math.sin(nowMs * 0.008) * 0.12;
+    this.navigationMarker.visible = true;
+    this.navigationMarker.position.set(
+      destination.x,
+      this.heightAt(destination) + 0.075,
+      destination.z,
+    );
+    this.navigationMarker.scale.setScalar(pulse);
+  }
+
   /**
    * Moves the key light for the time of day and keeps it centred on the player,
    * which lets a small shadow map cover the whole visible area.
@@ -173,6 +220,8 @@ export class WorldService {
   dispose(): void {
     this.geometry.dispose();
     this.actors.dispose();
+    this.navigationMarker.geometry.dispose();
+    this.navigationMarker.material.dispose();
     this.sun.dispose();
     this.sky.dispose();
     this.root.clear();
