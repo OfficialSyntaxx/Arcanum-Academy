@@ -173,6 +173,7 @@ export class HubController {
       this.player.position,
     );
     this.world.updateDoors(this.player.position, dtSeconds);
+    this.world.updateNavigationMarker(this.player.destination, this.now());
 
     this.publish(dtSeconds * 1000);
   }
