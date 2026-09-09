@@ -155,6 +155,19 @@ Each entry names where an implementation or design already exists (§11 is the f
 
 ### 3.1 World & movement — Tier 1
 
+> **Scope: build one zone properly, with the graph designed for five.** Owner decision,
+> 2026-09-09. The launch region is **the Shorelands** — where you wash up. It must contain
+> something for all 14 skills, one dungeon and one boss, so the full loop is exercised in one
+> place. But the zone graph, the exit stubs and the content schema are authored for the whole
+> five-region arc from day one (Shorelands, Hearth's Landing, Thornwood, Kingsmoor Ruins,
+> Coldreach Pass), so adding a region is content work rather than an architectural change.
+>
+> This is the shape that fits a long-running project: one region good enough to ship, then
+> expand forever. It also means **G1 — the art gate — only has to be passed once** before
+> there is a real game, instead of five times before there is anything.
+
+
+
 | Feature | Notes | Source |
 |---|---|---|
 | Hand-authored zones | Not procedural. Composed landmarks, real elevation, sightlines. | Arcanum `world/courtyard.ts` pattern; isorpg `docs/WORLD_LAYOUT.md` |
@@ -656,7 +669,27 @@ Mac, no GPU needed for the operations that matter (import, decimate, re-origin, 
 export, batch-render sprite sheets for props). This is how the owner gets Blender's value
 from a phone. Write these as committed Python scripts, never as manual Editor steps.
 
-### 6.5 Asset budget
+### 6.5 Art order — environment first
+
+Owner decision, 2026-09-09. **Make the world look good before the characters do.**
+
+Order of work:
+
+1. **Environment** — terrain, foliage, rocks, water, buildings, roads, lighting, sky, fog.
+2. **The player** — the one rig (§6.1.1), real animation, gear on bones.
+3. **Named NPCs and monsters** — retargeted onto the same rig where they are humanoid.
+4. **Everything else** — props, ambient crowd, VFX.
+
+**Why this order is right:** environments are far more forgiving than characters. A slightly
+wrong tree reads as a tree; a slightly wrong character reads as broken, because everyone is an
+expert on how people and animals move. Environments also carry a screenshot better, which is
+exactly what G1 is judged on. And a world that looks good makes placeholder characters read as
+*unfinished*, whereas good characters in a bad world read as *misplaced*.
+
+Until step 2 lands, characters stay as the existing procedural shapes — with their fallbacks
+intact, which is what makes this staging safe at all (§6.3).
+
+### 6.6 Asset budget
 
 | Budget | Value |
 |---|---|
@@ -1105,10 +1138,10 @@ to the repo.
 | Gate | What | Passes when |
 |---|---|---|
 | **G0 — Foundation reset** | Rename to Alderfell. Delete the cut features and the offline-accrual code. Flag off multiplayer. Camera → orthographic free-yaw, joystick deleted, tap-to-walk + rotate + pinch + long-press. | `npm run verify` green; the game boots and you can walk around by tapping. |
-| **G1 — The look** ⚠️ | Port Oakenfall's palette, asset pipeline and PWA shell. Re-skin **one** zone with real assets and fallbacks. | **A screenshot from the owner's actual iPhone, launched from the home screen, that looks good.** Nothing else proceeds until this passes. This is the gate isorpg identified as the most important in its plan, and the one previous projects failed. |
+| **G1 — The look** ⚠️ | Port Oakenfall's palette, asset pipeline and PWA shell. Dress **the Shorelands** with real environment art — terrain, foliage, water, lighting — characters still placeholder (§6.5). | **A screenshot from the owner's actual iPhone, launched from the home screen, that looks good.** Nothing else proceeds until this passes. This is the gate isorpg identified as the most important in its plan, and the one previous projects failed. |
 | **G2 — The loop** | Port isorpg's skills, XP, nodes, recipes. Grant tools. Bank. Walk → gather → craft → equip, all in the world. | A stranger plays 10 minutes and levels a skill without guidance. |
 | **G3 — Combat** | Port the OSRS combat maths, attack styles, drop tables, food, death. | Killing one monster is satisfying twenty times in a row. |
-| **G4 — A world** | 3–4 zones, hand-composed, with travel, landmarks, day/night and weather. | You can walk for five minutes and every stop is worth a screenshot. |
+| **G4 — A world** | The Shorelands finished end to end: character art (§6.1.1), named NPCs, day/night, weather, and the exits stubbed for the remaining four regions. | You can walk for five minutes and every stop is worth a screenshot. |
 | **G5 — Content** | Quests, dungeons, clues, achievements, collection log, onboarding chain. | A stranger plays 45 minutes without guidance. |
 | **G6 — Operations** | Save snapshots, then the admin panel, then analytics and the in-game report button. | You can find, inspect and safely repair any account, and undo it. |
 | **G7 — Account recovery** | Supabase Auth (or chosen provider). Email-bound accounts, token rotation. | An account survives clearing site data. |
@@ -1137,6 +1170,10 @@ to the repo.
 | D12 | **600 ms tick, with presentation decoupled from it.** The tick is a simulation property; input is acknowledged on the frame and only *resolved* on the tick (§3.4.1). | 2026-09-09 |
 | D13 | **30 bag slots, plus a separate equipment screen** — worn gear never occupies bag slots (§3.2). | 2026-09-09 |
 | D14 | **One player rig with light customisation** at creation; all other visual identity comes from gear on bones (§6.1.1). | 2026-09-09 |
+| D15 | **One zone at launch, graph designed for five.** The Shorelands must exercise all 14 skills, a dungeon and a boss; the other four regions are stubbed exits (§3.1). | 2026-09-09 |
+| D16 | **Environment art before character art.** Characters stay placeholder through G1 (§6.5). | 2026-09-09 |
+| D17 | **Agents build whole gates autonomously and stop on any design decision** (§15.1). | 2026-09-09 |
+| D18 | **Claude owns `sim`/`shared`/`server` and architecture; Codex owns content JSON, `tools/`, UI polish and pattern-following ports** (§15.2). | 2026-09-09 |
 
 ### 14.2 Still open
 
@@ -1155,6 +1192,56 @@ usually arrives from playing, not planning — but do not lose the question eith
 ---
 
 ## 15. Working agreements
+
+### 15.1 Autonomy — build whole gates, stop on design
+
+Owner decision, 2026-09-09. **Take a whole gate (§13), build it, verify it, push it, and
+report back short.** The owner reviews the result, not the plan. He works from a phone; a
+plan-approval round trip per step is the wrong shape.
+
+**Stop and ask the moment something would change gameplay, balance or feel.** That includes:
+a tunable that changes difficulty or pacing, a drop rate, an XP curve, anything touching the
+death penalty or Ironman's promise, a control or camera change, and any new player-facing
+system not already in §3. Engineering-quality decisions — refactors, test structure, file
+layout, naming — are yours to make; just record them.
+
+**When you stop, stop usefully.** Do every part of the gate that does not depend on the
+answer, then ask a single specific question with options, and say what you have already
+finished. Never sit idle on a whole gate waiting for a reply about one number.
+
+**Report format:** what changed, what it looks like, what is verified, what is still open.
+Short. The diff is the detail.
+
+### 15.2 Two AIs — who does what
+
+The owner directs **Claude Code** and **ChatGPT Codex**. Both are capable; the failure mode
+is not capability, it is two agents editing the same files with different assumptions. The
+division below is drawn along the lines the architecture already enforces.
+
+| Lane | Owner | Why |
+|---|---|---|
+| `packages/sim`, `packages/shared` | **Claude** | Determinism lives here. Draw order, seeded RNG, tick logic and the hash contract are invisible when wrong (§12) and cannot be caught by review of a diff alone. One agent holds this. |
+| `packages/server`, persistence, identity, admin | **Claude** | Optimistic concurrency, transactions, auth and audit. Same reasoning: correctness that a passing test does not prove. |
+| Architecture, boundaries, ADRs, tunables schema | **Claude** | Structural decisions need one consistent mind. |
+| `content/data/*.json` — items, recipes, nodes, monsters, drop tables, quests | **Codex** | Bounded, repetitive, pattern-following, high-volume — and **validated at load** (ADR-0005), so a mistake fails loudly at module load rather than lurking. This is the safest possible lane for a second agent, and the highest-volume work in the project. |
+| `tools/` — asset scripts, Blender Python, importers | **Codex** | Self-contained, testable by running them, no shared state. |
+| UI polish, CSS, layout, copy | **Codex** | Visually verifiable, low blast radius. |
+| Repetitive porting once a pattern exists | **Codex** | Once Claude has ported one system from isorpg and established the shape, the next eight are mechanical. |
+
+**The four rules that stop them colliding:**
+
+1. **Never run both on the same branch at the same time.** One branch per gate, per agent.
+2. **Both read `AI_HANDOVER.md` first, every session.** It is the shared assumption set. An
+   agent that has not read §12 will reintroduce a trap that has already been paid for.
+3. **`packages/sim` is Claude-only.** If Codex needs a change there, it says what it needs
+   rather than making it. This is the one hard boundary.
+4. **Whoever finishes updates this document in the same commit.**
+
+If a review pass is wanted, Codex reviewing Claude's systems work is genuinely useful — a
+second reader catches assumption errors that tests do not. Reviewing is not the same as
+editing; keep the edit in the owning lane.
+
+### 15.3 General
 
 - **No TODOs, placeholder logic, fake implementations, stub methods, or pseudocode.** If one
   system depends on another, build both or stop and explain the missing dependency.
