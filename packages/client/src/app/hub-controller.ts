@@ -178,6 +178,12 @@ export class HubController {
   }
 
   /** Walks the player to the current prompt's approach point. */
+  navigateToInteractable(id: string): void {
+    const target = this.world.zone.interactables.find((item) => item.id === id);
+    if (target) this.player.approach(target.approach);
+  }
+
+  /** Starts the available activity through its normal in-world prompt. */
   engagePrompt(): void {
     const prompt = useAppStore.getState().interactionPrompt;
     if (prompt === null) return;

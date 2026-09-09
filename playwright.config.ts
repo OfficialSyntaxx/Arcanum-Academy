@@ -9,7 +9,18 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4173',
     screenshot: 'only-on-failure',
-    launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
+    // Headless Chrome otherwise selects a display-backed GL implementation on
+    // Linux runners and happily creates a canvas whose framebuffer stays black.
+    // Explicit ANGLE + SwiftShader makes the smoke test exercise real WebGL in CI.
+    launchOptions: {
+      args: [
+        '--use-gl=angle',
+        '--use-angle=swiftshader',
+        '--enable-webgl',
+        '--enable-unsafe-swiftshader',
+        '--ignore-gpu-blocklist',
+      ],
+    },
   },
   webServer: [
     {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { WorldMap } from '../ui/WorldMap.js';
 import { HubHud, InteractionPrompt } from '../ui/HubOverlay.js';
 import { CommandError, CraftingPanel, GatheringHud, InventoryPanel } from '../ui/EconomyPanels.js';
 import { useAppStore } from '../state/app-store.js';
@@ -21,6 +22,7 @@ import { useAppStore } from '../state/app-store.js';
  */
 export interface HubScreenProps {
   readonly onEngage: () => void;
+  readonly onNavigate: (id: string) => void;
   readonly onCollect: () => void;
   readonly onStopGathering: () => void;
   readonly onCraft: (recipeId: string) => void;
@@ -36,7 +38,13 @@ export interface HubScreenProps {
  */
 const COLLECTION_POLL_MS = 10_000;
 
-export function HubScreen({ onEngage, onCollect, onStopGathering, onCraft }: HubScreenProps) {
+export function HubScreen({
+  onEngage,
+  onCollect,
+  onStopGathering,
+  onCraft,
+  onNavigate,
+}: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
   const setOpenStation = useAppStore((state) => state.setOpenStation);
@@ -50,10 +58,15 @@ export function HubScreen({ onEngage, onCollect, onStopGathering, onCraft }: Hub
   // The satchel is a panel rather than a permanent strip: it is consulted
   // occasionally and would otherwise cost screen the world should be using.
   const [satchelOpen, setSatchelOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
 
   return (
     <div className="hub">
       <HubHud />
+      <button type="button" className="map-toggle" onClick={() => setMapOpen(true)}>
+        Map
+      </button>
+      {mapOpen && <WorldMap onNavigate={onNavigate} onClose={() => setMapOpen(false)} />}
       <div className="hub-help">Tap to walk · Drag to look · Pinch to zoom</div>
       <InteractionPrompt onEngage={onEngage} />
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />

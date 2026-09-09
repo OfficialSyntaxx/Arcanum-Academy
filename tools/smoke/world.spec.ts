@@ -70,3 +70,43 @@ for (const [name, width, height] of [
     expect(worldColours(await page.screenshot())).toBeLessThanOrEqual(12);
   });
 }
+
+test('phone: walk to a resource, earn XP, inspect skills, and reach a crafting station', async ({
+  page,
+}, info) => {
+  test.setTimeout(100_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.clock.setFixedTime(new Date('2026-09-09T12:30:00Z'));
+  await page.goto('/');
+  await expect(page.locator('.status-bar')).toContainText('Connected');
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
+  await page.getByRole('button', { name: 'Resonance Seam' }).click();
+  await expect(page.locator('.prompt__label')).toHaveText('Resonance Seam', { timeout: 30_000 });
+  await page.getByRole('button', { name: 'Mine', exact: true }).click();
+  await expect(page.locator('.gathering-hud')).toBeVisible();
+  // The normal ten-second collection loop must produce authoritative rewards.
+  await expect(page.locator('.gathering-hud__xp')).toHaveText(/\+[1-9][0-9]* xp/, {
+    timeout: 20_000,
+  });
+  await page.getByRole('button', { name: 'Stop', exact: true }).click();
+  await expect(page.locator('.gathering-hud')).not.toBeVisible();
+  await page.getByRole('button', { name: 'Satchel', exact: true }).click();
+  await expect(page.locator('.inventory-panel__list li').first()).toBeVisible();
+  await expect(page.locator('.skill-list__row').filter({ hasText: 'Mining' })).toContainText(
+    /[1-9][0-9]* XP/,
+  );
+  await info.attach('phone-earned-resources', {
+    body: await page.screenshot(),
+    contentType: 'image/png',
+  });
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
+  await page.getByRole('button', { name: 'Crystal Grinder' }).click();
+  await expect(page.locator('.prompt__label')).toHaveText('Crystal Grinder', { timeout: 20_000 });
+  await page.getByRole('button', { name: 'Refine', exact: true }).click();
+  await expect(page.locator('.crafting-panel')).toContainText('Grind Resonant Dust');
+  await info.attach('phone-crafting-station', {
+    body: await page.screenshot(),
+    contentType: 'image/png',
+  });
+});

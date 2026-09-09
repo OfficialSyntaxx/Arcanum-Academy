@@ -120,16 +120,9 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
 
   // --- Floors -----------------------------------------------------------
   const { bounds, terrain } = zone;
-  const baseGeometry = track(
-    new BoxGeometry(bounds.maxX - bounds.minX, 0.4, bounds.maxZ - bounds.minZ),
-  );
+  const baseGeometry = track(buildBaseGround(zone));
   const baseFloor = new Mesh(baseGeometry, stone);
   baseFloor.userData['ground'] = true;
-  baseFloor.position.set(
-    (bounds.minX + bounds.maxX) / 2,
-    terrain.baseHeight - 0.2,
-    (bounds.minZ + bounds.maxZ) / 2,
-  );
   baseFloor.receiveShadow = quality.shadowsEnabled;
   group.add(baseFloor);
 
@@ -699,6 +692,38 @@ const scratchMatrix = new Matrix4();
 const scratchQuaternion = new Quaternion();
 const unitScale = new Vector3(1, 1, 1);
 const UP_AXIS = new Vector3(0, 1, 0);
+
+/** Cut terraces out of the base surface. A full rectangle at y=0 used to
+ * bury the negative-height mine even though actors correctly stood at -0.8.
+ * One geometry retains the one-draw-call floor and matches heightAt's regions. */
+export function buildBaseGround(zone: Zone): BufferGeometry {
+  const { bounds, terrain } = zone;
+  const xs = [
+    ...new Set([bounds.minX, bounds.maxX, ...terrain.terraces.flatMap((t) => [t.minX, t.maxX])]),
+  ].sort((a, b) => a - b);
+  const zs = [
+    ...new Set([bounds.minZ, bounds.maxZ, ...terrain.terraces.flatMap((t) => [t.minZ, t.maxZ])]),
+  ].sort((a, b) => a - b);
+  const vertices: number[] = [];
+  for (let i = 0; i < xs.length - 1; i++)
+    for (let j = 0; j < zs.length - 1; j++) {
+      const x0 = xs[i]!,
+        x1 = xs[i + 1]!,
+        z0 = zs[j]!,
+        z1 = zs[j + 1]!;
+      const x = (x0 + x1) / 2,
+        z = (z0 + z1) / 2;
+      if (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ) continue;
+      if (terrain.terraces.some((t) => x > t.minX && x < t.maxX && z > t.minZ && z < t.maxZ))
+        continue;
+      const y = terrain.baseHeight;
+      vertices.push(x0, y, z0, x0, y, z1, x1, y, z1, x0, y, z0, x1, y, z1, x1, y, z0);
+    }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
 function writeInstances(mesh: InstancedMesh, positions: Vector3[], yOffset: number): void {
   positions.forEach((position, index) => {

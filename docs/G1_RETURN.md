@@ -15,7 +15,13 @@ Base: `1be587ca441563f74ad1a965f7f1a06b047e65c6`, the G0 branch
   cottage pockets and wildflowers. Scenery follows the existing courtyard graph.
 - Oakenfall-inspired timber/amber HUD; clearer two-line location strip, safe-area-aware
   panels and a separate connection strip. Existing tap/drag/pinch controls remain.
+- A phone-friendly local map lists resources and crafting stations and walks the player
+  to the selected landmark through the authored waypoint graph.
+- The satchel now shows all gathering and crafting skill levels, XP totals and progress
+  to the next level alongside the 28-slot inventory.
 - Ground picking excludes decorative props and supports elevated authored terrain.
+- Sunken terraces are no longer covered by the zone's base floor. The base ground mesh
+  is cut around every raised or lowered authored terrace and remains one draw call.
 - PWA copy no longer describes a card academy; removed external font requests;
   locally cached GLBs/Draco; added Apple touch-icon link.
 - `npm run smoke`: production client plus real in-memory gateway, pinned wall time,
@@ -27,7 +33,8 @@ Base: `1be587ca441563f74ad1a965f7f1a06b047e65c6`, the G0 branch
 ## Verification
 
 - Baseline `npm run verify`: 362/362 tests, all checks passed.
-- Post-change `npm run verify`: 362/362 tests, all checks passed.
+- Post-change `npm run verify`: 363/363 tests, all checks passed, including a raycast
+  regression test for the sunken mine floor.
 - Production build: passed.
 - All imported model textures: 512 × 512. Individual GLBs: 23–30 KB.
 - Runtime payload before source maps: approximately 1.25 MB raw / 411 KB individually
@@ -35,15 +42,19 @@ Base: `1be587ca441563f74ad1a965f7f1a06b047e65c6`, the G0 branch
 - Interactive cloud-browser verification: **blocked**. Chrome reports WebGL disabled
   (`GL_RENDERER = Disabled`), and the renderer cannot obtain a context. This is not
   evidence that the scene looks correct or performs well.
-- Smoke suite runtime result: **NOT RUN**. Public GitHub upload was rejected by automatic
-  approval review because the user had not explicitly authorized public source disclosure.
-  No branch was published, no PR was opened and no CI run was started. The complete change
-  is saved locally and packaged for review. Do not mark smoke green from unit checks.
+- The branch is published as `codex/g1-shorelands` with draft PR #1. The first CI run
+  passed formatting, lint, boundaries, typecheck, 362 tests and the production build.
+  Its browser step exposed a real runner issue: the HUD and gateway loaded, but headless
+  Chromium produced a blank WebGL framebuffer. The launch configuration now explicitly
+  selects ANGLE/SwiftShader; this remains unverified until the follow-up run passes.
+- The production Render gateway answered `/healthz`, reported protocol version 1, and
+  completed an authenticated-origin WebSocket handshake with a `player.sync` response.
 - Actual iPhone, home-screen PWA, genuine pinch and sustained 30fps: **NOT RUN**.
 
 ## Remaining G1 work / decisions
 
-1. Review the CI visual evidence and repair any rendering, loading or HUD defects it finds.
+1. Get a green follow-up CI browser run, then inspect its phone, landscape and desktop
+   screenshots rather than inferring visual quality from unit tests.
 2. Tune framing/pitch against the rendered zone with the owner; current camera tunables
    are preserved, as the handover reserves feel changes for the owner.
 3. Have the owner judge a real iPhone home-screen screenshot and measure performance.

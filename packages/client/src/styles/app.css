@@ -651,3 +651,77 @@
     overflow-y: auto;
   }
 }
+
+.map-toggle {
+  position: absolute;
+  pointer-events: auto;
+  left: calc(var(--inset-left) + 0.75rem);
+  bottom: calc(var(--inset-bottom) + 6rem);
+  min-width: 5.5rem;
+  min-height: 48px;
+  border-color: #9c6f2c;
+}
+.world-map {
+  pointer-events: auto;
+  color: var(--haze);
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - var(--inset-top) - var(--inset-bottom) - 2rem);
+  overflow: auto;
+}
+.world-map::backdrop {
+  background: rgba(12, 10, 8, 0.55);
+}
+.world-map__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.world-map h2,
+.world-map p {
+  margin: 0 0 0.65rem;
+}
+.world-map svg {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  background: #394b31;
+  border-radius: 4px;
+}
+.world-map__places {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.world-map__places button {
+  min-height: 48px;
+  padding: 0.5rem;
+  text-align: left;
+  font: 0.875rem var(--font-label);
+}
+.world-map__places span {
+  color: var(--verdigris);
+}
+.skill-list h3 {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+.skill-list__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.75rem;
+  font: 0.875rem var(--font-label);
+}
+.skill-list progress {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 0.5rem;
+  accent-color: var(--verdigris);
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .world-map svg {
+    max-height: 120px;
+  }
+}

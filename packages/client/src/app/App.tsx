@@ -102,6 +102,7 @@ export function App() {
         <ErrorBoundary onError={(error) => setFault(error.message)}>
           {hub !== null && isHubPhase(phase) ? (
             <HubScreen
+              onNavigate={(id) => hub.navigateToInteractable(id)}
               onEngage={() => {
                 hub.engagePrompt();
               }}
