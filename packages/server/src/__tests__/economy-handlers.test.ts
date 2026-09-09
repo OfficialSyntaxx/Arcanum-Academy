@@ -85,14 +85,22 @@ interface HarvestPatch {
 }
 
 describe('player.sync', () => {
-  it('creates a player on first sight and returns an empty bag', async () => {
+  it('creates a player on first sight with an empty bag and Academy starter tools', async () => {
     const h = harness();
     const result = await h.dispatch('player.sync');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const patch = result.value as { inventory: { stacks: unknown[]; slotCapacity: number } };
+    const patch = result.value as {
+      inventory: { stacks: unknown[]; slotCapacity: number };
+      tools: Record<string, { definitionId: string; durability: number }>;
+    };
     expect(patch.inventory.stacks).toEqual([]);
     expect(patch.inventory.slotCapacity).toBe(SLOTS);
+    expect(patch.tools).toMatchObject({
+      'skill.foraging': { definitionId: 'item.tool.sickle', durability: 500 },
+      'skill.mining': { definitionId: 'item.tool.pick', durability: 500 },
+      'skill.forestry': { definitionId: 'item.tool.axe', durability: 500 },
+    });
   });
 
   it('persists that player, so a second sync reads rather than recreates', async () => {
