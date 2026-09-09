@@ -50,6 +50,8 @@ export interface HubControllerOptions {
   readonly tunables: Tunables;
   readonly canvas: HTMLCanvasElement;
   readonly now?: () => number;
+  /** Called before the player begins a new route, to end station-bound activity. */
+  readonly onBeginTravel?: () => void;
   /**
    * Called when the player engages a gathering node.
    *
@@ -184,7 +186,10 @@ export class HubController {
   /** Walks the player to the current prompt's approach point. */
   navigateToInteractable(id: string): void {
     const target = this.world.zone.interactables.find((item) => item.id === id);
-    if (target) this.player.approach(target.approach);
+    if (target) {
+      this.options.onBeginTravel?.();
+      this.player.approach(target.approach);
+    }
   }
 
   /** Starts the available activity through its normal in-world prompt. */
@@ -281,6 +286,7 @@ export class HubController {
       const point = this.pickGround(x, y);
       if (point) {
         this.pendingInteractionId = null;
+        this.options.onBeginTravel?.();
         this.player.moveTo({ x: point.x, z: point.z });
       }
     });
@@ -345,6 +351,7 @@ export class HubController {
   private routeToInteractable(id: string): void {
     const target = this.world.zone.interactables.find((interactable) => interactable.id === id);
     if (!target) return;
+    this.options.onBeginTravel?.();
     this.player.approach(target.approach);
     this.pendingInteractionId =
       target.kind === InteractableKind.MerchantStall || target.kind === InteractableKind.QuestBoard
