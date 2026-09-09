@@ -7,7 +7,7 @@ import {
   type Failure,
   type Result,
   type RngState,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { hashState } from './hash.js';
 
 /**

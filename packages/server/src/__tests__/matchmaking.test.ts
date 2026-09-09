@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asId, type PlayerId } from '@arcanum/shared';
+import { asId, type PlayerId } from '@alderfell/shared';
 import { Matchmaker, applyRating, expectedScore, STARTING_RATING } from '../domain/matchmaking.js';
 
 function harness(

@@ -176,15 +176,6 @@ export const FOREST: Zone = {
       targetZone: COURTYARD_ZONE_ID,
     },
     {
-      id: ix('int.grove.shrine'),
-      kind: InteractableKind.DisplayPedestal,
-      position: { x: 0, z: -2.4 },
-      approach: wp('wp.grove.center'),
-      facing: Math.PI,
-      label: 'The Grove Shrine',
-      verb: 'Commune',
-    },
-    {
       id: ix('int.grove.hollow'),
       kind: InteractableKind.GatheringNode,
       position: { x: 0, z: 32.4 },

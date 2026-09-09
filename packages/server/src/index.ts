@@ -12,12 +12,7 @@ import {
   NODE_CATALOG,
   RECIPE_BOOK,
   SKILL_TABLE,
-  CARD_CATALOG,
-  SCHOOL_TABLE,
-  asId,
-  generateId,
-  type CardInstanceId,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { loadConfig } from './config.js';
 import { Gateway, RegistryCommandRouter, type GatewaySocket } from './net/gateway.js';
 import { SessionStore } from './session/session-store.js';
@@ -26,22 +21,14 @@ import { PostgresPlayerRepository } from './persistence/postgres-repository.js';
 import { PlayerService } from './domain/player-service.js';
 import { PresenceService } from './domain/presence.js';
 import { InMemoryTradeStore, TradingService } from './domain/trading.js';
-import { Matchmaker } from './domain/matchmaking.js';
-import { InMemoryLiveDuelStore, PvpService } from './domain/pvp.js';
 import { registerSocialHandlers } from './net/handlers/social.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
-import { registerDuelHandlers } from './net/handlers/duel.js';
 import {
   IdentityService,
   InMemoryIdentityStore,
   PostgresIdentityStore,
   type IdentityStore,
 } from './domain/identity.js';
-import {
-  InMemorySerialMinter,
-  PostgresSerialMinter,
-  type SerialMinter,
-} from './domain/serial-minter.js';
 
 /**
  * Server entry point.
@@ -100,19 +87,6 @@ async function main(): Promise<void> {
     );
   }
 
-  // Serials are global to a card rather than owned by a player, so they get
-  // their own writer. Backed by the same database when there is one, because a
-  // serial register that resets on restart would certify nothing.
-  let serials: SerialMinter = new InMemorySerialMinter();
-  if (postgres !== null) {
-    const postgresSerials = new PostgresSerialMinter(postgres.client);
-    const prepared = await postgresSerials.initialise();
-    if (!prepared.ok) {
-      throw new Error(`Serial register unavailable: ${describeFailure(prepared.error)}`);
-    }
-    serials = postgresSerials;
-  }
-
   // Identity is proved, never asserted. Backed by the database when there is
   // one: an identity register that reset on restart would lock every player
   // out of the account they had a moment ago.
@@ -139,48 +113,34 @@ async function main(): Promise<void> {
       nodes: NODE_CATALOG,
       recipes: RECIPE_BOOK,
       skills: SKILL_TABLE,
-      cards: CARD_CATALOG,
-      schools: SCHOOL_TABLE,
     },
-    serials,
-    newInstanceId: () => asId<CardInstanceId>(generateId()),
     tunables: DEFAULT_TUNABLES,
     now: () => Date.now(),
   });
 
-  registerDuelHandlers(router, {
-    players,
-    cards: CARD_CATALOG,
-    tunables: DEFAULT_TUNABLES,
-    now: () => Date.now(),
-  });
-
-  // Trades and live duels are held in process for now. Both are short-lived and
-  // recoverable - an interrupted trade returns its escrow, an interrupted duel
-  // is a forfeit - so durability here buys less than it does for player state.
-  // Both stores are behind interfaces, so backing them with Postgres later is a
-  // constructor change and nothing else.
-  const trading = new TradingService({
-    repository,
-    trades: new InMemoryTradeStore(),
-    catalog: ITEM_CATALOG,
-    slotCapacity: DEFAULT_TUNABLES.gathering.baseInventorySlots,
-    now: () => Date.now(),
-  });
-  const matchmaker = new Matchmaker({
-    baseSpread: 100,
-    spreadPerSecond: 25,
-    maxSpread: 600,
-    now: () => Date.now(),
-  });
-  const pvp = new PvpService({
-    repository,
-    duels: new InMemoryLiveDuelStore(),
-    cards: CARD_CATALOG,
-    tunables: DEFAULT_TUNABLES.combat,
-    slotCapacity: DEFAULT_TUNABLES.gathering.baseInventorySlots,
-  });
-  registerSocialHandlers(router, { players, trading, matchmaker, pvp, cards: CARD_CATALOG });
+  // The multiplayer layer is built, tested and switched off.
+  //
+  // Alderfell is single-player Ironman: there is no trading, so none of this is
+  // reachable in normal play. It is registered only when MULTIPLAYER_ENABLED is
+  // set, because the code is correct and expensive to rewrite, and deleting it
+  // would mean rebuilding escrow, an append-only ledger and interest-managed
+  // presence from scratch when multiplayer does arrive.
+  //
+  // Never enable trading while Ironman is the only mode: an account that can
+  // receive an item it did not make invalidates every other account.
+  if (config.MULTIPLAYER_ENABLED) {
+    const trading = new TradingService({
+      repository,
+      trades: new InMemoryTradeStore(),
+      catalog: ITEM_CATALOG,
+      slotCapacity: DEFAULT_TUNABLES.gathering.baseInventorySlots,
+      now: () => Date.now(),
+    });
+    registerSocialHandlers(router, { trading });
+    logger.warn('multiplayer handlers registered', {
+      detail: 'trading is enabled; this is not an Ironman-safe configuration',
+    });
+  }
 
   const presence = new PresenceService({
     radius: DEFAULT_TUNABLES.world.presenceRadius,

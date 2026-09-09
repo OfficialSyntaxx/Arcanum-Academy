@@ -24,8 +24,8 @@ import {
   err,
   ok,
   type Result,
-} from '@arcanum/shared';
-import { Pathfinder } from '@arcanum/sim';
+} from '@alderfell/shared';
+import { Pathfinder } from '@alderfell/sim';
 
 import type { QualitySettings } from '../core/device.js';
 import { ActorPool } from './actor-pool.js';

@@ -1,63 +1,64 @@
-# The Arcanum Academy
+# Alderfell
 
-A mobile-first web game: gather resources in a magical academy, refine them, scribe
-spell cards, grade the results, build decks and duel.
+> _You wash up on the coast of a fallen realm with nothing, and you climb — through its
+> forests, its ruins and its guilds — until the realm knows your name._
 
-This repository is at **Phase 2 complete**. The engine, architecture and tooling are
-in place (Phase 1), and so is a living hub world: the Courtyard of the Arcanum, with
-navigation, an orbiting camera, touch input, scheduled NPCs and accessibility
-preferences (Phase 2).
+A **mobile-first, browser-based fantasy RPG** built on OSRS's design philosophy: everything you
+own, you gathered, made, or killed something for. Deep skill progression, tick-based combat you
+read rather than react to, a hand-built world you walk through, and a grind that is the point
+rather than an obstacle.
 
-No economic or combat systems exist yet - that is deliberate, and the order is set
-out in [`docs/IMPLEMENTATION_ROADMAP.md`](docs/IMPLEMENTATION_ROADMAP.md). Phase 3
-is next: inventory, gathering, crafting and skills, server-authoritative.
+It installs to an iPhone home screen as a PWA. **There is no App Store submission, ever.**
 
-## Play it
+## What it is
 
-- **Client** - https://arcanum-academy.netlify.app
-- **Server health** - https://arcanum-server-be28.onrender.com/healthz
+|                 |                                                                                                 |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| **Look**        | Low-poly 3D under an orthographic camera — free yaw, constrained pitch. Warm, cosy, PG.         |
+| **Controls**    | Tap to walk, drag to rotate, pinch to zoom, long press for a context menu. No virtual joystick. |
+| **Mode**        | Ironman. No trading, no purchased power, no offline progression.                                |
+| **Combat**      | Melee / Ranged / Magic over a 600 ms tick. Magic is staves and crafted runes.                   |
+| **Skills**      | 14 at launch — gathering, artisan and combat.                                                   |
+| **Multiplayer** | Built, tested and switched off. Single-player first; see the handover.                          |
+| **Cost to run** | £0. Netlify, Render free tier, Blender headless in CI.                                          |
 
-Both redeploy on every push to `main`. The server runs on a free instance that sleeps
-after inactivity, so the first connection after a quiet period takes 30-60 seconds.
+## Start here
 
-## Getting started
+**[`AI_HANDOVER.md`](AI_HANDOVER.md)** is the single source of truth: the full vision, every
+feature, the 30 settled decisions and why each was made, the roadmap gates, and a list of traps
+that have already cost real time. Read it before writing code. `CLAUDE.md` is a short operating
+summary that points at it.
+
+## Develop
 
 ```bash
-nvm use          # Node 22
 npm install
-npm run dev      # client on http://localhost:5173
-npm run dev:server   # server on http://localhost:8787
+npm run verify      # format + lint + boundaries + typecheck + test
+npm run dev         # Vite dev server (client)
+npm run dev:server  # the gateway
 ```
 
-Copy `.env.example` to `.env` before running the server.
+`npm run verify` is the gate. Run it before every commit.
 
-## Verifying a change
+**362 tests across 30 files.** The architecture linter (`npm run boundaries`) fails CI when a
+package imports across a layer it shouldn't — including type-only imports, because
+`import type` compiles away and would otherwise let a rule leak with no runtime trace.
 
-```bash
-npm run verify   # format + lint + boundaries + typecheck + test
+## Layout
+
+```
+packages/shared/   ids, Result, RNG, tunables, protocol, content catalogs, world data
+packages/sim/      the deterministic kernel — nav, locomotion, economy, NPCs
+packages/server/   gateway, sessions, identity, persistence
+packages/client/   three.js renderer, React overlays, input, PWA shell
 ```
 
-`npm run boundaries` is not a formality: it fails the build when a module imports
-across an architectural layer it is not allowed to reach. The rules live in
-`tools/scripts/check-boundaries.mjs` and are explained in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Dependency direction: `shared` → nothing, `sim` → shared, `server`/`client` → shared + sim.
 
-## Packages
+## History
 
-| Package           | Role                                                                       | May depend on   |
-| ----------------- | -------------------------------------------------------------------------- | --------------- |
-| `@arcanum/shared` | Ids, results, failures, deterministic RNG, wire protocol, balance tunables | nothing         |
-| `@arcanum/sim`    | Deterministic simulation kernel, fixed clock, phase machine, state hashing | `shared`        |
-| `@arcanum/server` | Authoritative server: gateway, sessions, persistence                       | `shared`, `sim` |
-| `@arcanum/client` | PWA: renderer, input, transport, local storage, UI                         | `shared`, `sim` |
-
-The simulation is headless on purpose. The same kernel runs in the browser for
-prediction and on the server for authority, which is what makes duels verifiable
-and desyncs detectable rather than mysterious.
-
-## Documents
-
-- [`docs/PROJECT_INITIALIZATION_REPORT.md`](docs/PROJECT_INITIALIZATION_REPORT.md) - architectural review of the GDD: gaps, risks, and the changes recommended before code was written
-- [`docs/IMPLEMENTATION_ROADMAP.md`](docs/IMPLEMENTATION_ROADMAP.md) - the eight phases, with exit criteria
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) - module boundaries and the rules the linter enforces
-- [`docs/adr/`](docs/adr) - decision records
+This repository was **The Arcanum Academy**, a card game. That game was cut on 2026-09-09; its
+architecture, server and world systems became Alderfell. Three sibling repositories —
+`isorpg`, `oakenfall` and `arcane-legends-academy` — are frozen and serve as quarries for
+systems, art pipeline and content data respectively. `AI_HANDOVER.md` §11 says what to take
+from each, and what to leave.

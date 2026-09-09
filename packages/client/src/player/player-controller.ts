@@ -1,16 +1,19 @@
 /**
  * Player controller.
  *
- * Translates intent — a stick vector, a tap on the ground — into locomotion, and
- * owns the player's mover. Two control schemes coexist rather than one being
- * chosen at build time, because they suit different moments: the stick for
- * moving around a crowd, tap-to-move for crossing the courtyard to a stall
- * without holding a thumb down for ten seconds.
+ * Translates intent — a tap on the ground, an approach to an interactable —
+ * into locomotion, and owns the player's mover.
  *
- * They are mutually exclusive in the obvious way: touching the stick abandons a
- * tapped destination, since a player reaching for the stick has changed their
- * mind. Getting this wrong produces the single most complained-about bug in
- * mobile hub games, where the avatar fights the player for control.
+ * **Tap-to-walk is the only control.** There is no virtual joystick. A stick
+ * asks a player to hold a thumb on the glass for the whole journey, which
+ * covers a quarter of a phone screen with a hand and makes long travel tiring;
+ * it also fights tap-to-move for ownership of the avatar, which is the
+ * single most complained-about bug in mobile hub games. One scheme cannot
+ * fight itself.
+ *
+ * The camera's yaw is therefore not an input to movement at all: a tap is a
+ * world position, and where the camera happens to be pointing does not change
+ * where the player asked to go.
  */
 
 import {
@@ -18,11 +21,10 @@ import {
   followPath,
   isMoving,
   setPath,
-  steer,
   type LocomotionParams,
   type Mover,
-} from '@arcanum/sim';
-import type { Vec2, WaypointId } from '@arcanum/shared';
+} from '@alderfell/sim';
+import type { Vec2, WaypointId } from '@alderfell/shared';
 
 import type { WorldService } from '../world/world-service.js';
 
@@ -98,37 +100,13 @@ export class PlayerController {
   }
 
   /**
-   * Applies one step of stick input.
+   * Advances one frame along the current path.
    *
-   * `stickX`/`stickY` are screen-space: +Y is up on the screen, which is away
-   * from the camera. They are rotated into world space by the camera's yaw so
-   * that "up" always means "away", regardless of which way the camera faces.
+   * The player always runs. There is no stamina and no walk/run distinction to
+   * arbitrate: the cost of travel is the distance, which is a decision the zone
+   * layout makes, not one the player manages with a bar.
    */
-  step(stickX: number, stickY: number, cameraYaw: number, dtSeconds: number): void {
-    const magnitude = Math.hypot(stickX, stickY);
-    if (magnitude >= 0.05) {
-      const sin = Math.sin(cameraYaw);
-      const cos = Math.cos(cameraYaw);
-      // Forward on screen is the camera's forward projected onto the ground.
-      const worldX = -(stickY * sin) + stickX * cos;
-      const worldZ = -(stickY * cos) - stickX * sin;
-      // A light touch walks, a firm one runs; the stick is analogue, not a
-      // digital pad, which is what makes crowded spaces navigable.
-      const speed =
-        magnitude < 0.65
-          ? this.options.walkSpeed
-          : this.options.walkSpeed + (this.options.runSpeed - this.options.walkSpeed);
-      this.mover = steer(
-        this.mover,
-        worldX,
-        worldZ,
-        { ...this.params, speed },
-        dtSeconds,
-        this.options.world.zone.bounds,
-      );
-      return;
-    }
-
+  step(dtSeconds: number): void {
     this.mover = followPath(this.mover, this.params, dtSeconds);
   }
 }

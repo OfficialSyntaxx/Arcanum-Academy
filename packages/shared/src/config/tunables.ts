@@ -10,83 +10,49 @@
  */
 
 export interface CombatTunables {
-  readonly deckSize: number;
-  readonly maxCopiesPerSpell: number;
-  readonly openingHandSize: number;
-  readonly cardsDrawnPerTurn: number;
-  readonly startingResonance: number;
-  readonly maxResonance: number;
-  readonly resonanceGainPerTurn: number;
-  readonly turnTimerMs: number;
-  /** Grace window added to the server-side timer to absorb network jitter. */
-  readonly turnTimerNetworkGraceMs: number;
-  readonly maxTurnsBeforeDraw: number;
-  readonly startingLife: number;
-  readonly maxHandSize: number;
-  readonly maxBoardSlots: number;
   /**
-   * Saved decks a player may keep.
+   * Length of one simulation tick.
    *
-   * Capped so the stored blob stays bounded - decks are small, but unbounded
-   * anything in a document that is read and rewritten on every command is how
-   * a save file quietly becomes slow.
+   * 600 ms, matching OSRS. The tick is a *simulation* property: it decides when
+   * outcomes resolve, never how responsive the game looks. Input is
+   * acknowledged on the frame it arrives and only resolved on the tick, so the
+   * fix for "combat feels sluggish" is presentation work, not a shorter tick -
+   * shortening it silently changes every ported combat formula.
    */
-  readonly maxSavedDecks: number;
-}
-
-export interface GradingTunables {
-  /** Inclusive upper bound of each grade band, indexed by grade 1..10. */
-  readonly minGrade: number;
-  readonly maxGrade: number;
-  readonly slabThreshold: number;
-  /** Appraisal roll is `skillFloor + rng(0, variance)`; both scale with skill. */
-  readonly baseVariance: number;
-  readonly varianceReductionPerSkillLevel: number;
+  readonly tickMs: number;
+  /** Attack-roll and max-hit bonuses granted by the chosen attack style. */
+  readonly accurateAccuracyBonus: number;
+  readonly aggressiveMaxHitBonus: number;
+  readonly defensiveDefenceBonus: number;
+  /** Hitpoints XP earned per point of damage dealt, on top of the style skill. */
+  readonly hitpointsXpPerDamage: number;
+  /** Items kept on death; everything else goes to the gravestone. */
+  readonly itemsKeptOnDeath: number;
   /**
-   * Narrowest the appraisal window may ever become.
+   * How long a gravestone persists, in milliseconds.
    *
-   * Without a meaningful floor the window collapses to a point and a master is
-   * *guaranteed* the top grade, which would make every expert card a 10 and
-   * leave serials certifying nothing. Skill past this point buys a higher
-   * centre rather than more certainty - consistency is earned early, quality
-   * for the rest of the curve.
+   * `null` means it never expires, which is the launch setting. A timer can be
+   * turned on later without a code change. While it is null a player may die
+   * again before recovering one, so there is exactly one gravestone per player
+   * and a second death merges into it - nothing is ever destroyed by dying
+   * twice.
    */
-  readonly minVariance: number;
-  readonly regradeMaxAttempts: number;
-  /**
-   * Grade never touches duel resolution (ADR 0004). It scales post-match
-   * rewards instead, interpolated linearly from grade 1 to grade 10 between
-   * `rewardMultiplierMinBasisPoints` and `rewardMultiplierMaxBasisPoints`.
-   */
-  readonly rewardMultiplierMinBasisPoints: number;
-  readonly rewardMultiplierMaxBasisPoints: number;
-  /**
-   * Appraisal score a novice and a master are centred on, out of 100.
-   *
-   * The roll is `centre - variance/2 + rng(0, variance)`, clamped. Centring
-   * rather than flooring is what lets a master reach grade 10 without being
-   * guaranteed it, and keeps a novice's spread inside the low grades instead
-   * of pinning them all at grade 1.
-   */
-  readonly noviceCentreScore: number;
-  readonly masterCentreScore: number;
-  /**
-   * Chance a scribed card comes out foil, in basis points.
-   *
-   * Purely presentational and independent of grade, so it never becomes a
-   * second axis of power. It is rolled from the same seeded generator as the
-   * grade so an audit reproduces both.
-   */
-  readonly foilChanceBasisPoints: number;
+  readonly graveExpiryMs: number | null;
+  /** Ticks a monster stays aggressive after losing sight of the player. */
+  readonly aggressionMemoryTicks: number;
 }
 
 export interface EconomyTunables {
-  readonly marketListingTaxBasisPoints: number;
-  readonly marketMaxActiveListings: number;
-  readonly marketListingDurationMs: number;
-  readonly gradingFeeBase: number;
-  readonly slabCertificationFee: number;
-  readonly deckRegistrationFee: number;
+  /**
+   * Coins charged to repair one point of tool durability.
+   *
+   * The primary coin sink, and the reason durability exists at all. Shops sell
+   * utilities and services; they never sell gear or materials, because a player
+   * who can buy past a production chain makes the chain decoration.
+   */
+  readonly toolRepairCostPerDurability: number;
+  /** Fraction of an item's value a shop pays when buying it, in basis points. */
+  readonly shopSellRateBasisPoints: number;
   /** Hard cap on soft currency to bound integer arithmetic and exploit blast radius. */
   readonly currencyCap: number;
 }
@@ -102,17 +68,6 @@ export interface ProgressionTunables {
 export interface GatheringTunables {
   readonly baseHarvestIntervalMs: number;
   readonly minHarvestIntervalMs: number;
-  /** Offline accrual is capped so idle progression cannot replace play sessions. */
-  readonly offlineAccrualCapMs: number;
-  /**
-   * Share of the online rate earned while away, in basis points.
-   *
-   * Applied to the number of harvest ticks, not to the yield of each tick, so
-   * a rare drop is exactly as rare offline as it is online - there are simply
-   * fewer chances at it. Scaling the yield instead would quietly make rarity
-   * itself depend on whether the app was open.
-   */
-  readonly offlineAccrualRateBasisPoints: number;
   readonly baseInventorySlots: number;
   readonly maxInventorySlots: number;
   /** Durability consumed per harvest tick by the equipped tool. */
@@ -128,13 +83,13 @@ export interface GatheringTunables {
   /**
    * How long after the last contact a player still counts as present.
    *
-   * Online collection may only reach this far past the last command. Beyond it
-   * the time is an absence, earnable at the offline rate through an explicit
-   * claim and not before - otherwise a client could close for the night, send
-   * one collect, and be paid the attended rate for all of it.
+   * Collection may only reach this far past the last command. Beyond it the
+   * time is simply not earned: there is no offline accrual, so a client that
+   * closes for the night and sends one collect on waking is paid for the grace
+   * window and nothing more.
    *
    * Generous relative to the client's collection poll, so an ordinary hitch in
-   * a mobile connection never costs a player the online rate.
+   * a mobile connection never costs a player anything.
    */
   readonly presenceGraceMs: number;
 }
@@ -159,9 +114,22 @@ export interface WorldTunables {
   readonly waypointArrivalRadius: number;
   /** Distance within which an interactable shows its prompt. */
   readonly interactionRadius: number;
-  readonly cameraFollowDistance: number;
-  readonly cameraMinDistance: number;
-  readonly cameraMaxDistance: number;
+  /**
+   * Half-extent of the visible world in metres along the shorter screen axis,
+   * at the default zoom.
+   *
+   * The camera is orthographic, so this - not a distance - is what decides how
+   * much of the world is on screen. Measured on the short axis so portrait and
+   * landscape render at the same scale.
+   */
+  readonly cameraViewSize: number;
+  readonly cameraMinViewSize: number;
+  readonly cameraMaxViewSize: number;
+  /**
+   * How far back the camera sits. Purely a clipping concern under orthographic
+   * projection: far enough that terrain never comes through the near plane.
+   */
+  readonly cameraBoomLength: number;
   readonly cameraHeight: number;
   /** Fraction of the gap closed per second by the camera's smoothing. */
   readonly cameraSmoothing: number;
@@ -198,7 +166,6 @@ export interface NetworkTunables {
 export interface Tunables {
   readonly version: number;
   readonly combat: CombatTunables;
-  readonly grading: GradingTunables;
   readonly economy: EconomyTunables;
   readonly progression: ProgressionTunables;
   readonly gathering: GatheringTunables;
@@ -208,55 +175,27 @@ export interface Tunables {
 }
 
 export const DEFAULT_TUNABLES: Tunables = Object.freeze({
-  // Bumped to 4 when grading gained its appraisal centres, variance floor and
-  // foil chance. Per ADR-0002 the version travels with replays and with every
-  // graded card, so a grade rolled under one version is never silently
-  // compared against another version's odds.
-  version: 4,
+  // Bumped to 5 when the card game was cut: the card, grading and deck tunables
+  // were removed and combat became tick-based. Per ADR-0002 the version travels
+  // with every replay, so a result produced under one version is never silently
+  // compared against another version's numbers.
+  version: 5,
   combat: Object.freeze({
-    deckSize: 20,
-    maxCopiesPerSpell: 3,
-    openingHandSize: 5,
-    cardsDrawnPerTurn: 1,
-    startingResonance: 1,
-    maxResonance: 10,
-    resonanceGainPerTurn: 1,
-    turnTimerMs: 30_000,
-    turnTimerNetworkGraceMs: 3_000,
-    maxTurnsBeforeDraw: 60,
-    startingLife: 30,
-    maxHandSize: 10,
-    maxBoardSlots: 5,
-    maxSavedDecks: 8,
-  }),
-  grading: Object.freeze({
-    minGrade: 1,
-    maxGrade: 10,
-    slabThreshold: 9,
-    // 60 narrowing by 1 a level to a floor of 24 reaches its narrowest around
-    // level 37, so consistency is earned across a third of the curve rather
-    // than in the first few levels.
-    baseVariance: 60,
-    varianceReductionPerSkillLevel: 1,
-    minVariance: 24,
-    regradeMaxAttempts: 2,
-    rewardMultiplierMinBasisPoints: 10_000,
-    rewardMultiplierMaxBasisPoints: 12_500,
-    noviceCentreScore: 18,
-    // 80 rather than the top of the scale: it places a master's window across
-    // grades 8 to 10, so roughly half their work slabs and about one in eight
-    // reaches a 10. A higher centre would make grade 10 routine and the slab
-    // an expectation rather than an event.
-    masterCentreScore: 80,
-    foilChanceBasisPoints: 200,
+    tickMs: 600,
+    accurateAccuracyBonus: 3,
+    aggressiveMaxHitBonus: 3,
+    defensiveDefenceBonus: 3,
+    hitpointsXpPerDamage: 1,
+    itemsKeptOnDeath: 3,
+    // Never expires at launch. See CombatTunables.graveExpiryMs.
+    graveExpiryMs: null,
+    aggressionMemoryTicks: 16,
   }),
   economy: Object.freeze({
-    marketListingTaxBasisPoints: 500,
-    marketMaxActiveListings: 20,
-    marketListingDurationMs: 172_800_000,
-    gradingFeeBase: 250,
-    slabCertificationFee: 2_000,
-    deckRegistrationFee: 100,
+    toolRepairCostPerDurability: 2,
+    // A shop pays a quarter of value: selling junk is a convenience that keeps
+    // the bag clear, never a strategy that outpaces gathering.
+    shopSellRateBasisPoints: 2_500,
     currencyCap: 2_000_000_000,
   }),
   progression: Object.freeze({
@@ -268,11 +207,6 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
   gathering: Object.freeze({
     baseHarvestIntervalMs: 3_000,
     minHarvestIntervalMs: 900,
-    offlineAccrualCapMs: 28_800_000,
-    // 25%: deliberately below the 50-60% an idle game would usually pay, at
-    // the owner's direction, so that being present is meaningfully better than
-    // being away without making absence feel punitive.
-    offlineAccrualRateBasisPoints: 2_500,
     baseInventorySlots: 60,
     maxInventorySlots: 240,
     toolDurabilityLossPerHarvest: 1,
@@ -292,13 +226,18 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     playerTurnRate: 9,
     waypointArrivalRadius: 0.35,
     interactionRadius: 2.2,
-    cameraFollowDistance: 9,
-    cameraMinDistance: 5,
-    cameraMaxDistance: 15,
+    cameraViewSize: 9,
+    cameraMinViewSize: 5,
+    cameraMaxViewSize: 20,
+    cameraBoomLength: 120,
     cameraHeight: 5.5,
     cameraSmoothing: 8,
-    cameraMinPitch: 0.18,
-    cameraMaxPitch: 1.15,
+    // Roughly 30 to 60 degrees above the horizon. Deliberately shallow: the
+    // player never sees the top of a roof or the underside of anything, so
+    // neither has to be modelled. Widening this band is an art-budget decision,
+    // not a camera tweak.
+    cameraMinPitch: 0.52,
+    cameraMaxPitch: 1.05,
     npcDwellMinMs: 4_000,
     npcDwellMaxMs: 20_000,
     npcWalkSpeed: 1.5,

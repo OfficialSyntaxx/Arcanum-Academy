@@ -2,3 +2,6 @@ dist
 coverage
 *.tsbuildinfo
 package-lock.json
+
+# The handover is hand-formatted prose; Prettier reflows its tables and rules.
+AI_HANDOVER.md

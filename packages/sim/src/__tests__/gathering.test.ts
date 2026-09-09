@@ -13,10 +13,9 @@ import {
   type NodeId,
   type NodeState,
   type SkillId,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { createInventory, quantityOf, type Inventory } from '../economy/inventory.js';
 import {
-  HarvestMode,
   harvestIntervalMs,
   resolveHarvest,
   startSession,
@@ -88,11 +87,9 @@ function run(options: {
   inventory?: Inventory;
   catalog?: ItemCatalog;
   tool?: EquippedTool | null;
-  mode?: HarvestMode;
 }) {
   const definition = options.node ?? node();
-  const mode = options.mode ?? HarvestMode.Online;
-  const interval = harvestIntervalMs(definition, mode, gathering);
+  const interval = harvestIntervalMs(definition, gathering);
   const session = startSession(NODE_ID, options.seed ?? 'seed-a', 0);
   return resolveHarvest({
     session,
@@ -101,7 +98,6 @@ function run(options: {
     inventory: options.inventory ?? createInventory(40),
     catalog: options.catalog ?? catalog(),
     tunables: gathering,
-    mode,
     nowMs: options.ticks * interval,
     tool: options.tool ?? null,
   });
@@ -126,7 +122,7 @@ describe('determinism', () => {
     const whole = run({ ticks: 20 });
 
     const definition = node();
-    const interval = harvestIntervalMs(definition, HarvestMode.Online, gathering);
+    const interval = harvestIntervalMs(definition, gathering);
     let session = startSession(NODE_ID, 'seed-a', 0);
     let inventory = createInventory(40);
     let nodeState = FRESH;
@@ -139,7 +135,6 @@ describe('determinism', () => {
         inventory,
         catalog: catalog(),
         tunables: gathering,
-        mode: HarvestMode.Online,
         nowMs: session.resolvedThroughMs + step * interval,
         tool: null,
       });
@@ -173,7 +168,6 @@ describe('ticking', () => {
       inventory: createInventory(40),
       catalog: catalog(),
       tunables: gathering,
-      mode: HarvestMode.Online,
       nowMs: 2_500,
       tool: null,
     });
@@ -188,62 +182,34 @@ describe('ticking', () => {
   });
 });
 
-describe('offline accrual', () => {
-  it('stretches the interval instead of shrinking the yield', () => {
+describe('no offline accrual', () => {
+  it('has exactly one harvest rate, whatever the wall clock says', () => {
     const definition = node();
-    const online = harvestIntervalMs(definition, HarvestMode.Online, gathering);
-    const offline = harvestIntervalMs(definition, HarvestMode.Offline, gathering);
-    // 25% of the rate means four times as long between harvests.
-    expect(offline).toBe(online * 4);
-    expect(gathering.offlineAccrualRateBasisPoints).toBe(2_500);
+    // A second rate is the whole surface an offline mode would need. Asserting
+    // the interval depends only on the node and the tunables is what keeps a
+    // reduced away-rate from creeping back in as a parameter.
+    expect(harvestIntervalMs(definition, gathering)).toBe(
+      Math.max(definition.harvestIntervalMs, gathering.minHarvestIntervalMs),
+    );
   });
 
-  it('yields a quarter as many ticks over the same wall-clock window', () => {
+  it('resolves a long absence at the same rate as presence, not a reduced one', () => {
     const definition = node();
-    const session = startSession(NODE_ID, 'seed-a', 0);
-    const shared = {
-      session,
-      node: definition,
-      nodeState: FRESH,
-      inventory: createInventory(400),
-      catalog: catalog(),
-      tunables: gathering,
-      nowMs: 40_000,
-      tool: null,
-    } as const;
-
-    const online = resolveHarvest({ ...shared, mode: HarvestMode.Online });
-    const offline = resolveHarvest({ ...shared, mode: HarvestMode.Offline });
-    expect(online.ticksResolved).toBe(40);
-    expect(offline.ticksResolved).toBe(10);
-  });
-
-  it('stops accruing at the cap however long the player was away', () => {
-    const definition = node();
-    const session = startSession(NODE_ID, 'seed-a', 0);
-    const atCap = resolveHarvest({
-      session,
+    const interval = harvestIntervalMs(definition, gathering);
+    const outcome = resolveHarvest({
+      session: startSession(NODE_ID, 'seed-a', 0),
       node: definition,
       nodeState: FRESH,
       inventory: createInventory(4_000),
       catalog: catalog(),
       tunables: gathering,
-      mode: HarvestMode.Offline,
-      nowMs: gathering.offlineAccrualCapMs,
+      nowMs: interval * 40,
       tool: null,
     });
-    const wellPast = resolveHarvest({
-      session,
-      node: definition,
-      nodeState: FRESH,
-      inventory: createInventory(4_000),
-      catalog: catalog(),
-      tunables: gathering,
-      mode: HarvestMode.Offline,
-      nowMs: gathering.offlineAccrualCapMs * 5,
-      tool: null,
-    });
-    expect(wellPast.ticksResolved).toBe(atCap.ticksResolved);
+    // Unbounded and unreduced: the server decides how far a claim may reach
+    // (presenceGraceMs), not the sim. The sim resolves exactly what it is asked
+    // for, which is what keeps it a pure function of its arguments.
+    expect(outcome.ticksResolved).toBe(40);
   });
 });
 

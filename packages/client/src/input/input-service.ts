@@ -1,4 +1,4 @@
-import { EventBus } from '@arcanum/shared';
+import { EventBus } from '@alderfell/shared';
 
 /**
  * Pointer abstraction.

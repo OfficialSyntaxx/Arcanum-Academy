@@ -2,7 +2,7 @@
  * Gathering and crafting commands.
  *
  * Every handler is the same shape: validate the payload, load the player, run
- * a rule from `@arcanum/sim`, and return either the authoritative state to
+ * a rule from `@alderfell/sim`, and return either the authoritative state to
  * patch or a `Failure` the client can explain. The rules themselves live in
  * `sim` so the client runs identical logic when predicting - these handlers
  * add only the things a prediction cannot have: the real clock, the stored
@@ -13,19 +13,15 @@
  * than one it cannot, and correctness here is worth more than the bytes.
  */
 
-import { assertLegalDeck } from '@arcanum/shared';
 import {
   assertCanCraft,
-  assertCanScribe,
   assertCanWork,
   awardXp,
-  HarvestMode,
   resolveCraft,
   resolveHarvest,
-  resolveScribe,
   startSession,
   type HarvestOutcome,
-} from '@arcanum/sim';
+} from '@alderfell/sim';
 import {
   err,
   failure,
@@ -33,27 +29,21 @@ import {
   ok,
   Rng,
   type Failure,
-  type CardCatalog,
-  type CardDefinitionId,
-  type CardInstance,
-  type CardInstanceId,
   type InteractableId,
   type ItemCatalog,
   type NodeCatalog,
   type NodeDefinition,
   type RecipeBook,
   type RecipeId,
-  type SchoolTable,
   type Result,
   type SkillId,
   type SkillTable,
   type Tunables,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import type { Session } from '../../session/session-store.js';
 import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import { nodeState, skillProgress, type PlayerState } from '../../domain/player-state.js';
 import type { Mutation, PlayerService } from '../../domain/player-service.js';
-import type { SerialMinter } from '../../domain/serial-minter.js';
 
 /**
  * The content these handlers rule against.
@@ -69,20 +59,14 @@ export interface EconomyCatalogs {
   readonly nodes: NodeCatalog;
   readonly recipes: RecipeBook;
   readonly skills: SkillTable;
-  readonly cards: CardCatalog;
-  readonly schools: SchoolTable;
 }
 
 export interface EconomyHandlerOptions {
   readonly players: PlayerService;
-  readonly serials: SerialMinter;
-  readonly newInstanceId: () => CardInstanceId;
   readonly catalogs: EconomyCatalogs;
   readonly tunables: Tunables;
   readonly now: () => number;
 }
-
-const SCRIBING_SKILL = 'skill.scribing' as SkillId;
 
 function invalid(reason: string, detail: string): Failure {
   return failure(FailureCode.Validation, reason, { detail });
@@ -100,8 +84,6 @@ function project(state: PlayerState) {
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     skills: state.skills,
     gathering: state.gathering,
-    cards: state.cards,
-    decks: state.decks,
   };
 }
 
@@ -171,7 +153,6 @@ function equippedTool(state: PlayerState, skillId: SkillId, catalogs: EconomyCat
 
 function resolveActive(
   state: PlayerState,
-  mode: HarvestMode,
   catalogs: EconomyCatalogs,
   tunables: Tunables,
   nowMs: number,
@@ -200,7 +181,6 @@ function resolveActive(
       inventory: state.inventory,
       catalog: catalogs.items,
       tunables: tunables.gathering,
-      mode,
       nowMs,
       tool: equippedTool(state, node.requiredSkillId, catalogs),
     }),
@@ -266,7 +246,7 @@ export function registerEconomyHandlers(
         nowMs,
         state.lastSeenAtMs + tunables.gathering.presenceGraceMs,
       );
-      const resolved = resolveActive(state, HarvestMode.Online, catalogs, tunables, presentUntilMs);
+      const resolved = resolveActive(state, catalogs, tunables, presentUntilMs);
       if (!resolved.ok) return err(resolved.error);
       const next = applyHarvest(
         state,
@@ -279,31 +259,6 @@ export function registerEconomyHandlers(
       return ok({ state: next, value: harvestPatch(next, resolved.value.outcome) });
     });
   };
-
-  const claimOffline: CommandHandler = async (session: Session) => {
-    const nowMs = now();
-    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      const resolved = resolveActive(state, HarvestMode.Offline, catalogs, tunables, nowMs);
-      if (!resolved.ok) return err(resolved.error);
-      if (resolved.value.outcome.ticksResolved === 0) {
-        return err(
-          failure(FailureCode.Conflict, 'gathering.nothing_to_claim', {
-            detail: 'no whole offline harvest has accrued yet',
-          }),
-        );
-      }
-      const next = applyHarvest(
-        state,
-        resolved.value.node,
-        resolved.value.outcome,
-        catalogs,
-        tunables,
-        nowMs,
-      );
-      return ok({ state: next, value: harvestPatch(next, resolved.value.outcome) });
-    });
-  };
-
   const stop: CommandHandler = async (session: Session) => {
     const nowMs = now();
     return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
@@ -314,7 +269,7 @@ export function registerEconomyHandlers(
         nowMs,
         state.lastSeenAtMs + tunables.gathering.presenceGraceMs,
       );
-      const resolved = resolveActive(state, HarvestMode.Online, catalogs, tunables, presentUntilMs);
+      const resolved = resolveActive(state, catalogs, tunables, presentUntilMs);
       if (!resolved.ok) return err(resolved.error);
       const settled = applyHarvest(
         state,
@@ -383,196 +338,6 @@ export function registerEconomyHandlers(
       });
     });
   };
-
-  /**
-   * Scribes a card.
-   *
-   * The serial is minted before the state is written, and only for a slab. It
-   * has to happen outside the mutation because minting is a global side effect
-   * that a retried mutation must not repeat - a second attempt would burn a
-   * serial nobody holds and make the register lie about how many exist.
-   *
-   * The cost of that ordering is a serial burned when the write then fails,
-   * which leaves a gap in the sequence. A gap is survivable; a duplicate or an
-   * overstated count is not.
-   */
-  const scribe: CommandHandler = async (session: Session, payload: unknown) => {
-    const cardId = readString(payload, 'cardId');
-    if (cardId === null) {
-      return err(invalid('scribing.card_missing', 'cardId is required'));
-    }
-    const card = catalogs.cards.get(cardId as CardDefinitionId);
-    if (card === undefined) {
-      return err(failure(FailureCode.NotFound, 'scribing.unknown_card', { context: { cardId } }));
-    }
-
-    const nowMs = now();
-    const loaded = await players.load(session.playerId);
-    if (!loaded.ok) return err(loaded.error);
-
-    const level = skillProgress(loaded.value, SCRIBING_SKILL).level;
-    // Checked before minting so an obviously refused scribe never burns one.
-    const allowed = assertCanScribe(card, level, loaded.value.inventory);
-    if (!allowed.ok) return err(allowed.error);
-
-    const preview = resolveScribe({
-      card,
-      skillLevel: level,
-      inventory: loaded.value.inventory,
-      catalog: catalogs.items,
-      grading: tunables.grading,
-      progression: tunables.progression,
-      rng: Rng.fromSeed(`${session.playerId}:${card.id}:${nowMs}`),
-    });
-    if (!preview.ok) return err(preview.error);
-
-    let serial = null as CardInstance['serial'];
-    if (preview.value.slabbed) {
-      const minted = await options.serials.mint(card.id);
-      if (!minted.ok) return err(minted.error);
-      serial = minted.value;
-    }
-
-    const instanceId = options.newInstanceId();
-    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      // Re-resolved against whatever state the write actually sees, from an
-      // identically seeded generator, so a retry produces the same grade.
-      const outcome = resolveScribe({
-        card,
-        skillLevel: skillProgress(state, SCRIBING_SKILL).level,
-        inventory: state.inventory,
-        catalog: catalogs.items,
-        grading: tunables.grading,
-        progression: tunables.progression,
-        rng: Rng.fromSeed(`${session.playerId}:${card.id}:${nowMs}`),
-      });
-      if (!outcome.ok) return err(outcome.error);
-
-      const instance: CardInstance = {
-        instanceId,
-        definitionId: card.id,
-        grade: outcome.value.grade,
-        foil: outcome.value.foil,
-        serial: outcome.value.slabbed ? serial : null,
-        scribedBy: session.playerId,
-        scribedAtMs: nowMs,
-        gradedUnderTunablesVersion: tunables.version,
-      };
-
-      const award = awardXp(
-        skillProgress(state, SCRIBING_SKILL),
-        card.scribeSkillLevel + card.cost,
-        tunables.progression,
-        catalogs.skills.get(SCRIBING_SKILL),
-      );
-
-      const next: PlayerState = {
-        ...state,
-        inventory: outcome.value.inventory,
-        skills: { ...state.skills, [SCRIBING_SKILL]: award.progress },
-        cards: [...state.cards, instance],
-        lastSeenAtMs: nowMs,
-      };
-      return ok({
-        state: next,
-        value: {
-          ...project(next),
-          scribed: instance,
-          score: outcome.value.score,
-          slabbed: outcome.value.slabbed,
-        },
-      });
-    });
-  };
-
-  /**
-   * Saves a deck.
-   *
-   * Legality is re-asserted here even though the builder checks as you edit.
-   * The client's check is an affordance; this is the rule. A deck arriving by
-   * any other route - an old build, a replayed frame, a crafted payload - meets
-   * the same twenty-card, three-copy limit as one built in the interface.
-   *
-   * Ownership is checked too: a deck may only name cards the player has
-   * actually scribed, counted by distinct copies owned rather than by how many
-   * times the list mentions them.
-   */
-  const saveDeck: CommandHandler = async (session: Session, payload: unknown) => {
-    const deckId = readString(payload, 'deckId');
-    const name = readString(payload, 'name');
-    if (deckId === null || name === null) {
-      return err(invalid('deck.identity_missing', 'deckId and name are required'));
-    }
-    const raw = (payload as { cardDefinitionIds?: unknown }).cardDefinitionIds;
-    if (!Array.isArray(raw) || raw.some((entry) => typeof entry !== 'string')) {
-      return err(invalid('deck.cards_missing', 'cardDefinitionIds must be a list of ids'));
-    }
-    const cardDefinitionIds = raw as CardDefinitionId[];
-
-    const legal = assertLegalDeck(
-      cardDefinitionIds,
-      (id) => catalogs.cards.get(id),
-      tunables.combat,
-    );
-    if (!legal.ok) return err(legal.error);
-
-    const nowMs = now();
-    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      const owned = new Map<string, number>();
-      for (const card of state.cards) {
-        owned.set(card.definitionId, (owned.get(card.definitionId) ?? 0) + 1);
-      }
-      const wanted = new Map<string, number>();
-      for (const id of cardDefinitionIds) wanted.set(id, (wanted.get(id) ?? 0) + 1);
-
-      for (const [definitionId, count] of wanted) {
-        if ((owned.get(definitionId) ?? 0) < count) {
-          return err(
-            failure(FailureCode.Conflict, 'deck.cards_not_owned', {
-              detail: 'the deck names more copies than the collection holds',
-              context: { definitionId, owned: owned.get(definitionId) ?? 0, wanted: count },
-            }),
-          );
-        }
-      }
-
-      // Overwriting an existing slot is not a new deck, so the cap only
-      // applies when this would open one.
-      const isNew = state.decks[deckId] === undefined;
-      if (isNew && Object.keys(state.decks).length >= tunables.combat.maxSavedDecks) {
-        return err(
-          failure(FailureCode.Conflict, 'deck.slots_full', {
-            detail: `at most ${tunables.combat.maxSavedDecks} decks may be saved`,
-            context: { saved: Object.keys(state.decks).length },
-          }),
-        );
-      }
-
-      const next: PlayerState = {
-        ...state,
-        decks: { ...state.decks, [deckId]: { id: deckId, name, cardDefinitionIds } },
-        lastSeenAtMs: nowMs,
-      };
-      return ok({ state: next, value: { ...project(next), savedDeckId: deckId } });
-    });
-  };
-
-  const deleteDeck: CommandHandler = async (session: Session, payload: unknown) => {
-    const deckId = readString(payload, 'deckId');
-    if (deckId === null) return err(invalid('deck.identity_missing', 'deckId is required'));
-
-    const nowMs = now();
-    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      if (state.decks[deckId] === undefined) {
-        return err(failure(FailureCode.NotFound, 'deck.not_found', { context: { deckId } }));
-      }
-      const decks = { ...state.decks };
-      delete decks[deckId];
-      const next: PlayerState = { ...state, decks, lastSeenAtMs: nowMs };
-      return ok({ state: next, value: project(next) });
-    });
-  };
-
   const sync: CommandHandler = async (session: Session) => {
     const loaded = await players.load(session.playerId);
     if (!loaded.ok) return err(loaded.error);
@@ -583,10 +348,6 @@ export function registerEconomyHandlers(
     .register('player.sync', sync)
     .register('gathering.start', start)
     .register('gathering.collect', collect)
-    .register('gathering.claimOffline', claimOffline)
     .register('gathering.stop', stop)
-    .register('crafting.craft', craft)
-    .register('scribing.scribe', scribe)
-    .register('deck.save', saveDeck)
-    .register('deck.delete', deleteDeck);
+    .register('crafting.craft', craft);
 }

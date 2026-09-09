@@ -28,7 +28,7 @@ import {
   type Failure,
   type PlayerId,
   type Result,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 /** 32 bytes: far beyond guessing, and short enough to sit in local storage. */
 const TOKEN_BYTES = 32;

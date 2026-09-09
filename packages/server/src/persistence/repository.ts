@@ -6,7 +6,7 @@ import {
   type Failure,
   type PlayerId,
   type Result,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 /**
  * Persistence port.

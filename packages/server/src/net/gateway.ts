@@ -11,7 +11,7 @@ import {
   type PlayerId,
   type Result,
   type SessionId,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { type SessionStore, type Session } from '../session/session-store.js';
 import { TokenBucket } from './rate-limiter.js';
 

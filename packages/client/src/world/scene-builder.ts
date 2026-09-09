@@ -14,7 +14,6 @@
 import {
   BoxGeometry,
   BufferGeometry,
-  CircleGeometry,
   ConeGeometry,
   CylinderGeometry,
   Float32BufferAttribute,
@@ -39,7 +38,7 @@ import {
   type Interactable,
   type WaypointId,
   type Zone,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 import { Palette } from './palette.js';
 
@@ -65,11 +64,7 @@ export interface ZoneGeometry {
 const MARKER_COLOURS: Readonly<Record<string, number>> = {
   [InteractableKind.GatheringNode]: Palette.verdigris,
   [InteractableKind.CraftingStation]: Palette.hazeDim,
-  [InteractableKind.ScribingTable]: Palette.haze,
-  [InteractableKind.GradingDesk]: Palette.gilt,
-  [InteractableKind.DuelCircle]: Palette.alarm,
   [InteractableKind.MerchantStall]: Palette.hazeDim,
-  [InteractableKind.DisplayPedestal]: Palette.gilt,
   [InteractableKind.ZonePortal]: Palette.verdigris,
   [InteractableKind.QuestBoard]: Palette.haze,
 };
@@ -359,21 +354,6 @@ export function buildZoneGeometry(zone: Zone, quality: { shadowsEnabled: boolean
     marker.rotation.y = interactable.facing;
     markers.set(interactable.id, marker);
     group.add(marker);
-  }
-
-  // --- Duel circle inlays ----------------------------------------------
-  const circleGeometry = track(new CircleGeometry(2.6, 28));
-  const circleMaterial = track(
-    new MeshStandardMaterial({ color: Palette.ink, roughness: 1, metalness: 0 }),
-  );
-  for (const interactable of zone.interactables) {
-    if (interactable.kind !== InteractableKind.DuelCircle) continue;
-    const inlay = new Mesh(circleGeometry, circleMaterial);
-    const approach = zone.waypoints.find((w) => w.id === interactable.approach);
-    const at = approach?.position ?? interactable.position;
-    inlay.rotation.x = -Math.PI / 2;
-    inlay.position.set(at.x, heightAt(terrain, at) + 0.02, at.z);
-    group.add(inlay);
   }
 
   return {

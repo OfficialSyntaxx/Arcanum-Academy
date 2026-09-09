@@ -8,8 +8,8 @@ import {
   zoneById,
   type Logger,
   type ZoneId,
-} from '@arcanum/shared';
-import { GamePhase } from '@arcanum/sim';
+} from '@alderfell/shared';
+import { GamePhase } from '@alderfell/sim';
 import { Container } from '../core/container.js';
 import { Engine } from '../core/engine.js';
 import { readDeviceSignals, resolveQuality, type QualitySettings } from '../core/device.js';
@@ -206,8 +206,6 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     canvas: options.canvas,
     onEngageGatheringNode: (interactableId) => economy.startGathering(interactableId),
     onEngageCraftingStation: (interactableId) => store.setOpenStation(interactableId),
-    onEngageScribingTable: () => store.setCollectionOpen(true),
-    onEngageDuelCircle: () => store.setLadderOpen(true),
     onEngageZonePortal: (targetZoneId) => {
       const zone = zoneById(targetZoneId as ZoneId);
       if (!zone) {

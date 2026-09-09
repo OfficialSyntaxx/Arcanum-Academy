@@ -25,7 +25,7 @@ import {
   type RecipeDefinition,
   type Result,
   type Rng,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { addItems, hasAll, removeItems, spaceFor, type Inventory } from './inventory.js';
 
 const BASIS_POINTS = 10_000;

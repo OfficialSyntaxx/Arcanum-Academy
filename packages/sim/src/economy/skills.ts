@@ -14,7 +14,7 @@ import {
   type SkillProgress,
   type SkillUnlock,
   xpForLevel,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 export interface XpAward {
   readonly progress: SkillProgress;

@@ -37,6 +37,20 @@ const schema = z.object({
     .transform((value) => (value === undefined || value.trim() === '' ? undefined : value.trim())),
   /** Pool ceiling. Free Postgres tiers cap connections far below Node's appetite. */
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(5),
+  /**
+   * Registers the player-to-player handlers. Off by default, and it must stay
+   * off in any deployed environment for now.
+   *
+   * Alderfell is single-player Ironman: everything a player owns, they made.
+   * Trading is the one feature that can invalidate every account at once, so it
+   * is not merely unused, it is unsafe to enable while Ironman is the only
+   * mode. The code behind this flag is built and tested; the flag exists so it
+   * can be exercised in development without being reachable in production.
+   */
+  MULTIPLAYER_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 });
 
 export type ServerConfig = Readonly<

@@ -20,7 +20,7 @@ import {
   type Failure,
   type PlayerId,
   type Result,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 /** Everyone starts here, which is also the population's centre of mass. */
 export const STARTING_RATING = 1_200;

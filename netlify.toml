@@ -10,7 +10,7 @@
 # browser from opening an insecure WebSocket.
 
 [build]
-  command = "npm run build --workspace @arcanum/client"
+  command = "npm run build --workspace @alderfell/client"
   publish = "packages/client/dist"
 
 [build.environment]

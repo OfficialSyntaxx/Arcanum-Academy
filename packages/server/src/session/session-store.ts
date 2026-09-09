@@ -1,4 +1,4 @@
-import { generateId, type PlayerId, type SessionId } from '@arcanum/shared';
+import { generateId, type PlayerId, type SessionId } from '@alderfell/shared';
 
 /**
  * Resumable session registry.

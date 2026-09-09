@@ -1,8 +1,8 @@
 /**
  * Branded identifier types plus a monotonic, sortable id generator.
  *
- * Branding prevents whole classes of bugs (passing a CardId where a DeckId is
- * expected) at zero runtime cost. Ids are lexicographically sortable so that
+ * Branding prevents whole classes of bugs (passing an ItemDefinitionId where a
+ * RecipeId is expected) at zero runtime cost. Ids are lexicographically sortable so that
  * database indexes and client-side lists stay ordered without extra fields.
  */
 
@@ -12,9 +12,6 @@ export type Brand<T, B extends string> = T & { readonly [brand]: B };
 
 export type PlayerId = Brand<string, 'PlayerId'>;
 export type SessionId = Brand<string, 'SessionId'>;
-export type CardInstanceId = Brand<string, 'CardInstanceId'>;
-export type CardDefinitionId = Brand<string, 'CardDefinitionId'>;
-export type DeckId = Brand<string, 'DeckId'>;
 export type ItemDefinitionId = Brand<string, 'ItemDefinitionId'>;
 /**
  * One owned tool, distinct from its definition.
@@ -30,7 +27,6 @@ export type RecipeId = Brand<string, 'RecipeId'>;
 export type SkillId = Brand<string, 'SkillId'>;
 export type MatchId = Brand<string, 'MatchId'>;
 export type ListingId = Brand<string, 'ListingId'>;
-export type SlabSerial = Brand<string, 'SlabSerial'>;
 export type ZoneId = Brand<string, 'ZoneId'>;
 export type WaypointId = Brand<string, 'WaypointId'>;
 export type InteractableId = Brand<string, 'InteractableId'>;

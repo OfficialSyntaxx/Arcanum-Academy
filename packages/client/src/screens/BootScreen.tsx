@@ -11,7 +11,7 @@ export function BootScreen() {
 
   return (
     <section className="panel boot">
-      <LabelStrip title="The Arcanum Academy" serial="ARC-0001" />
+      <LabelStrip title="Alderfell" serial="ARC-0001" />
       <p className="boot__lede">Preparing the courtyard.</p>
       <ol className="boot__steps">
         {steps.map((step) => (

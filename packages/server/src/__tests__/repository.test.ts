@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asId, type PlayerId } from '@arcanum/shared';
+import { asId, type PlayerId } from '@alderfell/shared';
 import { InMemoryPlayerRepository } from '../persistence/repository.js';
 
 const playerId = asId<PlayerId>('player-1');

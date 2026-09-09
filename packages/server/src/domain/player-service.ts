@@ -20,7 +20,7 @@ import {
   type Failure,
   type PlayerId,
   type Result,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import type { PlayerRepository } from '../persistence/repository.js';
 import {
   createInitialState,

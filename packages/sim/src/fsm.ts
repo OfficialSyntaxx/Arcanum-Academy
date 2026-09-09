@@ -1,5 +1,5 @@
-import { failure, FailureCode, type Failure } from '@arcanum/shared';
-import { err, ok, type Result } from '@arcanum/shared';
+import { failure, FailureCode, type Failure } from '@alderfell/shared';
+import { err, ok, type Result } from '@alderfell/shared';
 
 /**
  * Explicit finite state machine.

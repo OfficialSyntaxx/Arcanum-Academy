@@ -13,7 +13,7 @@ import {
   type RecipeId,
   type SkillDefinition,
   type SkillId,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { addItems, createInventory, quantityOf, type Inventory } from '../economy/inventory.js';
 import { assertCanCraft, resolveCraft } from '../economy/crafting.js';
 import { awardXp, initialProgress, levelProgressFraction } from '../economy/skills.js';

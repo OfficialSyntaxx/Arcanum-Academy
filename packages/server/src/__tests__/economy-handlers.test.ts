@@ -5,26 +5,18 @@ import {
   NODE_CATALOG,
   RECIPE_BOOK,
   SKILL_TABLE,
-  CARD_CATALOG,
-  SCHOOL_TABLE,
   asId,
   type Failure,
   type ItemDefinitionId,
   type PlayerId,
   type SessionId,
   type SkillId,
-  type CardInstanceId,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { RegistryCommandRouter } from '../net/gateway.js';
 import { InMemoryPlayerRepository } from '../persistence/repository.js';
 import { PlayerService } from '../domain/player-service.js';
-import { InMemorySerialMinter } from '../domain/serial-minter.js';
 import { registerEconomyHandlers } from '../net/handlers/economy.js';
-import {
-  parsePlayerState,
-  serialisePlayerState,
-  PLAYER_SCHEMA_VERSION,
-} from '../domain/player-state.js';
+import { parsePlayerState, PLAYER_SCHEMA_VERSION } from '../domain/player-state.js';
 import type { Session } from '../session/session-store.js';
 
 const PLAYER = asId<PlayerId>('player-1');
@@ -42,8 +34,6 @@ const SHIPPED_CATALOGS = {
   nodes: NODE_CATALOG,
   recipes: RECIPE_BOOK,
   skills: SKILL_TABLE,
-  cards: CARD_CATALOG,
-  schools: SCHOOL_TABLE,
 };
 
 function session(playerId: PlayerId = PLAYER): Session {
@@ -59,15 +49,12 @@ function session(playerId: PlayerId = PLAYER): Session {
 
 function harness(catalogOverrides: Partial<typeof SHIPPED_CATALOGS> = {}, startAtMs = 1_000_000) {
   let clock = startAtMs;
-  let instances = 0;
   const repository = new InMemoryPlayerRepository(() => clock);
   const players = new PlayerService({ repository, slotCapacity: SLOTS, now: () => clock });
   const router = new RegistryCommandRouter();
   registerEconomyHandlers(router, {
     players,
     catalogs: { ...SHIPPED_CATALOGS, ...catalogOverrides },
-    serials: new InMemorySerialMinter(),
-    newInstanceId: () => asId<CardInstanceId>(`card-instance-${(instances += 1)}`),
     tunables: DEFAULT_TUNABLES,
     now: () => clock,
   });
@@ -230,56 +217,6 @@ describe('gathering.collect', () => {
   });
 });
 
-describe('gathering.claimOffline', () => {
-  it('refuses before a whole offline harvest has accrued', async () => {
-    const h = harness();
-    await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
-    h.advance(CRYSTAL.harvestIntervalMs);
-    const result = await h.dispatch('gathering.claimOffline');
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.reason).toBe('gathering.nothing_to_claim');
-  });
-
-  it('accrues at a quarter of the online rate', async () => {
-    // Measured over exactly the presence window, so the online arm is entitled
-    // to every tick in it and the comparison is of rates rather than of how
-    // far online collection is allowed to reach.
-    const window = DEFAULT_TUNABLES.gathering.presenceGraceMs;
-    const onlineTicks = Math.floor(window / CRYSTAL.harvestIntervalMs);
-
-    const online = harness();
-    await online.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
-    online.advance(window);
-    const onlineResult = await online.dispatch('gathering.collect');
-
-    const offline = harness();
-    await offline.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
-    offline.advance(window);
-    const offlineResult = await offline.dispatch('gathering.claimOffline');
-
-    expect(onlineResult.ok && offlineResult.ok).toBe(true);
-    if (!onlineResult.ok || !offlineResult.ok) return;
-    expect((onlineResult.value as HarvestPatch).ticksResolved).toBe(onlineTicks);
-    expect((offlineResult.value as HarvestPatch).ticksResolved).toBe(onlineTicks / 4);
-  });
-
-  it('stops at the cap however long the player was away', async () => {
-    const h = harness();
-    await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
-    h.advance(DEFAULT_TUNABLES.gathering.offlineAccrualCapMs * 10);
-    const result = await h.dispatch('gathering.claimOffline');
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
-    const interval = Math.ceil(
-      (CRYSTAL.harvestIntervalMs * 10_000) /
-        DEFAULT_TUNABLES.gathering.offlineAccrualRateBasisPoints,
-    );
-    const maxTicks = Math.floor(DEFAULT_TUNABLES.gathering.offlineAccrualCapMs / interval);
-    expect((result.value as HarvestPatch).ticksResolved).toBe(maxTicks);
-  });
-});
-
 describe('gathering.stop', () => {
   it('settles what was earned before clearing the session', async () => {
     const h = harness();
@@ -376,18 +313,6 @@ describe('presence', () => {
     const reachable = Math.floor(grace / CRYSTAL.harvestIntervalMs) + 1;
     expect((result.value as HarvestPatch).ticksResolved).toBeLessThanOrEqual(reachable);
   });
-
-  it('pays that same window through the offline claim instead', async () => {
-    const h = harness();
-    await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
-    h.advance(8 * 60 * 60 * 1000);
-
-    const claimed = await h.dispatch('gathering.claimOffline');
-    expect(claimed.ok).toBe(true);
-    if (!claimed.ok) return;
-    expect((claimed.value as HarvestPatch).ticksResolved).toBeGreaterThan(100);
-  });
-
   it('leaves a continuously present player collecting at the full rate', async () => {
     const h = harness();
     await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
@@ -401,344 +326,5 @@ describe('presence', () => {
       total += (result.value as HarvestPatch).ticksResolved;
     }
     expect(total).toBe(20);
-  });
-
-  it('has nothing to claim while the player never left', async () => {
-    const h = harness();
-    await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
-    h.advance(CRYSTAL.harvestIntervalMs * 5);
-    await h.dispatch('gathering.collect');
-
-    const claimed = await h.dispatch('gathering.claimOffline');
-    expect(claimed.ok).toBe(false);
-    if (!claimed.ok) expect(claimed.error.reason).toBe('gathering.nothing_to_claim');
-  });
-});
-
-describe('scribing.scribe', () => {
-  const CHEAP = CARD_CATALOG.cards.find(
-    (entry) => entry.scribeSkillLevel === 1 && entry.scribeInputs.length === 1,
-  )!;
-
-  /** Fills the satchel directly, so scribing is tested without a long harvest. */
-  async function stocked(h: ReturnType<typeof harness>) {
-    await h.dispatch('player.sync');
-    const state = await h.state();
-    const stacks = CHEAP.scribeInputs.map((input) => ({
-      definitionId: input.itemId,
-      quantity: input.quantity * 5,
-    }));
-    await h.repository.save(
-      {
-        playerId: PLAYER,
-        schemaVersion: PLAYER_SCHEMA_VERSION,
-        data: {
-          ...serialisePlayerState(state),
-          inventory: { stacks, slotCapacity: SLOTS },
-          skills: { 'skill.scribing': { level: 1, xp: 0 } },
-        },
-      },
-      1,
-    );
-  }
-
-  it('refuses a card nobody defined', async () => {
-    const h = harness();
-    const result = await h.dispatch('scribing.scribe', { cardId: 'card.imaginary' });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.reason).toBe('scribing.unknown_card');
-  });
-
-  it('refuses without the materials', async () => {
-    const h = harness();
-    const result = await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.reason).toBe('scribing.missing_materials');
-  });
-
-  it('consumes materials and adds a graded card to the collection', async () => {
-    const h = harness();
-    await stocked(h);
-
-    const result = await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
-    const patch = result.value as { scribed: { grade: number; definitionId: string } };
-    expect(patch.scribed.definitionId).toBe(CHEAP.id);
-    expect(patch.scribed.grade).toBeGreaterThanOrEqual(DEFAULT_TUNABLES.grading.minGrade);
-    expect(patch.scribed.grade).toBeLessThanOrEqual(DEFAULT_TUNABLES.grading.maxGrade);
-
-    const state = await h.state();
-    expect(state.cards).toHaveLength(1);
-    const held = state.inventory.stacks
-      .filter((stack) => stack.definitionId === CHEAP.scribeInputs[0]!.itemId)
-      .reduce((sum, stack) => sum + stack.quantity, 0);
-    expect(held).toBe(CHEAP.scribeInputs[0]!.quantity * 4);
-  });
-
-  it('records the tunables version the grade was rolled under', async () => {
-    const h = harness();
-    await stocked(h);
-    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
-    const state = await h.state();
-    expect(state.cards[0]!.gradedUnderTunablesVersion).toBe(DEFAULT_TUNABLES.version);
-  });
-
-  it('awards scribing experience', async () => {
-    const h = harness();
-    await stocked(h);
-    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
-    const state = await h.state();
-    expect(state.skills['skill.scribing']!.xp).toBeGreaterThan(0);
-  });
-
-  it('mints a serial only when the grade earns a slab', async () => {
-    const h = harness();
-    await stocked(h);
-    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
-    const card = (await h.state()).cards[0]!;
-    // A novice cannot slab, so this card must carry no serial at all - an
-    // unslabbed card with a serial would be a claim of scarcity it never earned.
-    expect(DEFAULT_TUNABLES.grading.slabThreshold).toBeGreaterThan(card.grade);
-    expect(card.serial).toBeNull();
-  });
-
-  it('gives every scribed card a distinct instance id', async () => {
-    const h = harness();
-    await stocked(h);
-    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
-    await h.dispatch('scribing.scribe', { cardId: CHEAP.id });
-    const state = await h.state();
-    expect(state.cards).toHaveLength(2);
-    expect(state.cards[0]!.instanceId).not.toBe(state.cards[1]!.instanceId);
-  });
-});
-
-describe('deck.save', () => {
-  const SPELL = CARD_CATALOG.cards[0]!;
-
-  /** Puts `copies` of each named card straight into the collection. */
-  async function withCollection(h: ReturnType<typeof harness>, entries: [string, number][]) {
-    await h.dispatch('player.sync');
-    const state = await h.state();
-    const cards = entries.flatMap(([definitionId, copies]) =>
-      Array.from({ length: copies }, (_unused, n) => ({
-        instanceId: `${definitionId}-${n}`,
-        definitionId,
-        grade: 5,
-        foil: false,
-        serial: null,
-        scribedBy: PLAYER,
-        scribedAtMs: 0,
-        gradedUnderTunablesVersion: DEFAULT_TUNABLES.version,
-      })),
-    );
-    await h.repository.save(
-      {
-        playerId: PLAYER,
-        schemaVersion: PLAYER_SCHEMA_VERSION,
-        data: { ...serialisePlayerState(state), cards },
-      },
-      1,
-    );
-  }
-
-  /** Twenty cards drawn from seven distinct spells, three copies each bar one. */
-  function legalList(): string[] {
-    const pool = CARD_CATALOG.cards.slice(0, 7).map((entry) => entry.id);
-    const ids: string[] = [];
-    for (const id of pool) {
-      while (ids.length < DEFAULT_TUNABLES.combat.deckSize) {
-        const used = ids.filter((entry) => entry === id).length;
-        if (used >= DEFAULT_TUNABLES.combat.maxCopiesPerSpell) break;
-        ids.push(id);
-      }
-    }
-    return ids;
-  }
-
-  it('refuses a deck that is not exactly the required size', async () => {
-    const h = harness();
-    const result = await h.dispatch('deck.save', {
-      deckId: 'deck.1',
-      name: 'Short',
-      cardDefinitionIds: [SPELL.id],
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.reason).toBe('deck.illegal');
-  });
-
-  it('refuses more copies of a spell than the limit permits', async () => {
-    const h = harness();
-    const result = await h.dispatch('deck.save', {
-      deckId: 'deck.1',
-      name: 'Stacked',
-      cardDefinitionIds: new Array(DEFAULT_TUNABLES.combat.deckSize).fill(SPELL.id),
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.detail).toContain('at most');
-  });
-
-  it('refuses cards the player has never scribed', async () => {
-    const h = harness();
-    await withCollection(h, []);
-    const result = await h.dispatch('deck.save', {
-      deckId: 'deck.1',
-      name: 'Borrowed',
-      cardDefinitionIds: legalList(),
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.reason).toBe('deck.cards_not_owned');
-  });
-
-  it('counts copies owned, so one card is never three', async () => {
-    const h = harness();
-    // One copy of each spell, but the deck asks for three of some.
-    await withCollection(
-      h,
-      CARD_CATALOG.cards.slice(0, 7).map((entry) => [entry.id, 1] as [string, number]),
-    );
-    const result = await h.dispatch('deck.save', {
-      deckId: 'deck.1',
-      name: 'Wishful',
-      cardDefinitionIds: legalList(),
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.reason).toBe('deck.cards_not_owned');
-  });
-
-  it('saves a legal deck the player owns', async () => {
-    const h = harness();
-    await withCollection(
-      h,
-      CARD_CATALOG.cards.slice(0, 7).map((entry) => [entry.id, 3] as [string, number]),
-    );
-    const result = await h.dispatch('deck.save', {
-      deckId: 'deck.1',
-      name: 'First Twenty',
-      cardDefinitionIds: legalList(),
-    });
-    expect(result.ok).toBe(true);
-
-    const state = await h.state();
-    expect(state.decks['deck.1']!.name).toBe('First Twenty');
-    expect(state.decks['deck.1']!.cardDefinitionIds).toHaveLength(DEFAULT_TUNABLES.combat.deckSize);
-  });
-});
-
-describe('deck slots', () => {
-  async function stockedCollection(h: ReturnType<typeof harness>) {
-    await h.dispatch('player.sync');
-    const state = await h.state();
-    const cards = CARD_CATALOG.cards.slice(0, 7).flatMap((entry) =>
-      Array.from({ length: 3 }, (_unused, n) => ({
-        instanceId: `${entry.id}-${n}`,
-        definitionId: entry.id,
-        grade: 5,
-        foil: false,
-        serial: null,
-        scribedBy: PLAYER,
-        scribedAtMs: 0,
-        gradedUnderTunablesVersion: DEFAULT_TUNABLES.version,
-      })),
-    );
-    await h.repository.save(
-      {
-        playerId: PLAYER,
-        schemaVersion: PLAYER_SCHEMA_VERSION,
-        data: { ...serialisePlayerState(state), cards },
-      },
-      1,
-    );
-  }
-
-  function legalList(): string[] {
-    const ids: string[] = [];
-    for (const entry of CARD_CATALOG.cards.slice(0, 7)) {
-      while (ids.length < DEFAULT_TUNABLES.combat.deckSize) {
-        if (ids.filter((id) => id === entry.id).length >= DEFAULT_TUNABLES.combat.maxCopiesPerSpell)
-          break;
-        ids.push(entry.id);
-      }
-    }
-    return ids;
-  }
-
-  it('keeps several decks side by side', async () => {
-    const h = harness();
-    await stockedCollection(h);
-    await h.dispatch('deck.save', {
-      deckId: 'deck.1',
-      name: 'One',
-      cardDefinitionIds: legalList(),
-    });
-    await h.dispatch('deck.save', {
-      deckId: 'deck.2',
-      name: 'Two',
-      cardDefinitionIds: legalList(),
-    });
-    const state = await h.state();
-    expect(Object.keys(state.decks)).toHaveLength(2);
-    expect(state.decks['deck.2']!.name).toBe('Two');
-  });
-
-  it('treats saving over a slot as an edit rather than a new deck', async () => {
-    const h = harness();
-    await stockedCollection(h);
-    await h.dispatch('deck.save', {
-      deckId: 'deck.1',
-      name: 'One',
-      cardDefinitionIds: legalList(),
-    });
-    await h.dispatch('deck.save', {
-      deckId: 'deck.1',
-      name: 'Renamed',
-      cardDefinitionIds: legalList(),
-    });
-    const state = await h.state();
-    expect(Object.keys(state.decks)).toHaveLength(1);
-    expect(state.decks['deck.1']!.name).toBe('Renamed');
-  });
-
-  it('refuses to open more slots than the cap allows', async () => {
-    const h = harness();
-    await stockedCollection(h);
-    for (let n = 1; n <= DEFAULT_TUNABLES.combat.maxSavedDecks; n += 1) {
-      const saved = await h.dispatch('deck.save', {
-        deckId: `deck.${n}`,
-        name: `Deck ${n}`,
-        cardDefinitionIds: legalList(),
-      });
-      expect(saved.ok).toBe(true);
-    }
-    const overflow = await h.dispatch('deck.save', {
-      deckId: 'deck.overflow',
-      name: 'One too many',
-      cardDefinitionIds: legalList(),
-    });
-    expect(overflow.ok).toBe(false);
-    if (!overflow.ok) expect(overflow.error.reason).toBe('deck.slots_full');
-  });
-
-  it('frees a slot when a deck is deleted', async () => {
-    const h = harness();
-    await stockedCollection(h);
-    await h.dispatch('deck.save', {
-      deckId: 'deck.1',
-      name: 'One',
-      cardDefinitionIds: legalList(),
-    });
-    const removed = await h.dispatch('deck.delete', { deckId: 'deck.1' });
-    expect(removed.ok).toBe(true);
-    const state = await h.state();
-    expect(Object.keys(state.decks)).toHaveLength(0);
-  });
-
-  it('refuses to delete a deck that is not there', async () => {
-    const h = harness();
-    const result = await h.dispatch('deck.delete', { deckId: 'deck.absent' });
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.reason).toBe('deck.not_found');
   });
 });

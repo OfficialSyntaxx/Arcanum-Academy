@@ -9,7 +9,7 @@
  * phone responsiveness beats physical plausibility.
  */
 
-import type { Vec2, ZoneBounds } from '@arcanum/shared';
+import type { Vec2, ZoneBounds } from '@alderfell/shared';
 
 export interface LocomotionParams {
   /** Metres per second. */

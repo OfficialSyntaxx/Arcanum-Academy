@@ -1,8 +1,7 @@
-import { PerspectiveCamera, Vector3 } from 'three';
+import { OrthographicCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { CameraRig } from '../camera/camera-rig.js';
-import { Joystick } from '../input/joystick.js';
 import {
   applyAccessibility,
   clampTextScale,
@@ -10,89 +9,55 @@ import {
   readSystemPreferences,
 } from '../a11y/preferences.js';
 
-describe('Joystick', () => {
-  it('reports neutral until pressed', () => {
-    const stick = new Joystick(50, 0.1);
-    expect(stick.read().magnitude).toBe(0);
-    expect(stick.isActive).toBe(false);
-  });
-
-  it('ignores movement inside the dead zone', () => {
-    const stick = new Joystick(100, 0.2);
-    stick.press(1, 200, 200);
-    stick.move(1, 210, 200);
-    expect(stick.read().magnitude).toBe(0);
-  });
-
-  it('reaches full deflection at the radius and no further', () => {
-    const stick = new Joystick(100, 0);
-    stick.press(1, 200, 200);
-    stick.move(1, 320, 200);
-    const reading = stick.read();
-    expect(reading.magnitude).toBeCloseTo(1);
-    expect(reading.x).toBeCloseTo(1);
-  });
-
-  it('expresses up-screen movement as positive y', () => {
-    const stick = new Joystick(100, 0);
-    stick.press(1, 200, 200);
-    stick.move(1, 200, 120);
-    expect(stick.read().y).toBeGreaterThan(0);
-  });
-
-  it('drags its base along once the thumb passes the radius', () => {
-    const stick = new Joystick(50, 0);
-    stick.press(1, 100, 100);
-    stick.move(1, 300, 100);
-    expect(stick.visual().originX).toBeCloseTo(250);
-    // Still exactly full deflection rather than pinned beyond it.
-    expect(stick.read().magnitude).toBeCloseTo(1);
-  });
-
-  it('ignores events from a second pointer', () => {
-    const stick = new Joystick(100, 0);
-    stick.press(1, 200, 200);
-    stick.move(2, 400, 200);
-    expect(stick.read().magnitude).toBe(0);
-    stick.release(2);
-    expect(stick.isActive).toBe(true);
-  });
-
-  it('returns to neutral on release', () => {
-    const stick = new Joystick(100, 0);
-    stick.press(1, 200, 200);
-    stick.move(1, 300, 200);
-    stick.release(1);
-    expect(stick.read().magnitude).toBe(0);
-    expect(stick.visual().active).toBe(false);
-  });
-});
-
 describe('CameraRig', () => {
   const options = {
-    followDistance: 9,
-    minDistance: 5,
-    maxDistance: 15,
+    viewSize: 9,
+    minViewSize: 5,
+    maxViewSize: 20,
+    boomLength: 120,
     height: 5.5,
     smoothing: 8,
-    minPitch: 0.2,
-    maxPitch: 1.1,
+    minPitch: 0.52,
+    maxPitch: 1.05,
   };
 
   it('snaps onto a target without interpolation', () => {
-    const camera = new PerspectiveCamera();
+    const camera = new OrthographicCamera();
     const rig = new CameraRig(camera, options);
     rig.snapTo({ x: 10, y: 0, z: 10 });
-    expect(camera.position.distanceTo(new Vector3(10, 0, 10))).toBeLessThan(
-      options.followDistance + 3,
-    );
+    // The boom is long by design - under orthographic projection distance is a
+    // clipping concern, not a framing one - so the camera sits far from its
+    // focus while showing exactly the same amount of world.
+    expect(camera.position.distanceTo(new Vector3(10, 0, 10))).toBeLessThan(options.boomLength + 3);
+  });
+
+  it('sizes the frustum by the shorter screen axis, in both orientations', () => {
+    const landscape = new OrthographicCamera();
+    new CameraRig(landscape, options).setViewport(800, 400);
+    // Landscape: height is the short axis, so it is held and width follows.
+    expect(landscape.top).toBeCloseTo(options.viewSize);
+    expect(landscape.right).toBeCloseTo(options.viewSize * 2);
+
+    const portrait = new OrthographicCamera();
+    new CameraRig(portrait, options).setViewport(390, 844);
+    // Portrait: width is the short axis, so it is held and height follows.
+    // Holding the *height* here instead is the bug this pins - it would leave
+    // a 390x844 phone a window about five metres wide, and a player standing
+    // in the middle of it sees nothing but the ground under their feet.
+    expect(portrait.right).toBeCloseTo(options.viewSize);
+    expect(portrait.top).toBeCloseTo(options.viewSize * (844 / 390));
+
+    // The scale is the same in both: a metre is a metre however you hold it.
+    const landscapeMetresPerShortAxis = landscape.top;
+    const portraitMetresPerShortAxis = portrait.right;
+    expect(landscapeMetresPerShortAxis).toBeCloseTo(portraitMetresPerShortAxis);
   });
 
   it('clamps pitch at both ends', () => {
-    const rig = new CameraRig(new PerspectiveCamera(), options);
+    const rig = new CameraRig(new OrthographicCamera(), options);
     rig.orbit(0, -100);
     rig.snapTo({ x: 0, y: 0, z: 0 });
-    const low = new PerspectiveCamera();
+    const low = new OrthographicCamera();
     const lowRig = new CameraRig(low, options);
     lowRig.orbit(0, -100);
     lowRig.snapTo({ x: 0, y: 0, z: 0 });
@@ -100,34 +65,70 @@ describe('CameraRig', () => {
     expect(low.position.y).toBeGreaterThan(0);
   });
 
-  it('clamps zoom between the configured distances', () => {
-    const rig = new CameraRig(new PerspectiveCamera(), options);
+  it('clamps zoom between the configured view sizes', () => {
+    const rig = new CameraRig(new OrthographicCamera(), options);
     rig.zoomBy(100);
-    expect(rig.zoom).toBe(options.minDistance);
+    expect(rig.zoom).toBe(options.minViewSize);
     rig.zoomBy(0.001);
-    expect(rig.zoom).toBe(options.maxDistance);
+    expect(rig.zoom).toBe(options.maxViewSize);
+  });
+
+  it('projects zoom onto the frustum, not onto the camera position', () => {
+    const camera = new OrthographicCamera();
+    const rig = new CameraRig(camera, options);
+    rig.snapTo({ x: 0, y: 0, z: 0 });
+    const before = camera.position.clone();
+    // A gentle zoom, chosen to stay inside the clamp so this test is about the
+    // mechanism rather than the bounds - those have their own test above.
+    rig.zoomBy(1.5);
+    rig.snapTo({ x: 0, y: 0, z: 0 });
+    // Zooming must not move the camera: under orthographic projection that
+    // would change nothing on screen while quietly breaking the near plane.
+    expect(camera.position.distanceTo(before)).toBeCloseTo(0);
+    expect(camera.top).toBeCloseTo(options.viewSize / 1.5);
   });
 
   it('treats framing as active until released', () => {
-    const rig = new CameraRig(new PerspectiveCamera(), options);
+    const rig = new CameraRig(new OrthographicCamera(), options);
     expect(rig.isFramed).toBe(false);
     rig.frame(1, 0.5, 6);
     expect(rig.isFramed).toBe(true);
     expect(rig.orbitYaw).toBe(1);
     rig.release();
     expect(rig.isFramed).toBe(false);
-    expect(rig.zoom).toBe(options.followDistance);
+    expect(rig.zoom).toBe(options.viewSize);
   });
 
   it('hands control back to the player when they orbit during a framed shot', () => {
-    const rig = new CameraRig(new PerspectiveCamera(), options);
+    const rig = new CameraRig(new OrthographicCamera(), options);
     rig.frame(1, 0.5, 6);
     rig.orbit(0.2, 0);
     expect(rig.isFramed).toBe(false);
   });
 
+  it('keeps the ground around the player inside the frustum', () => {
+    // The bug this pins: an orthographic rig can be perfectly well-formed -
+    // right position, right orientation, sensible clip planes - and still show
+    // nothing, because apparent size comes from the frustum rather than the
+    // distance. A blank screen with a correct-looking camera is the failure
+    // mode, so assert what the player actually sees rather than where the
+    // camera is.
+    const camera = new OrthographicCamera();
+    const rig = new CameraRig(camera, options);
+    rig.setViewport(390, 844);
+    rig.snapTo({ x: 0, y: 0, z: 0 });
+    camera.updateMatrixWorld(true);
+
+    for (const point of [new Vector3(0, 0, 0), new Vector3(3, 0, 3), new Vector3(-3, 0, -3)]) {
+      const ndc = point.clone().project(camera);
+      expect(Math.abs(ndc.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(ndc.y)).toBeLessThanOrEqual(1);
+      expect(Math.abs(ndc.z)).toBeLessThanOrEqual(1);
+    }
+  });
+
   it('eases toward the target rather than snapping', () => {
-    const camera = new PerspectiveCamera();
+    const camera = new OrthographicCamera();
     const rig = new CameraRig(camera, options);
     rig.snapTo({ x: 0, y: 0, z: 0 });
     const start = camera.position.clone();

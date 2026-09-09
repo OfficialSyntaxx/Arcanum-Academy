@@ -1,4 +1,4 @@
-import { buildNavGraph, COURTYARD, type NavGraph, type WaypointId } from '@arcanum/shared';
+import { buildNavGraph, COURTYARD, type NavGraph, type WaypointId } from '@alderfell/shared';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {

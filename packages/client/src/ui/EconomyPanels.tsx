@@ -5,7 +5,7 @@ import {
   RECIPE_BOOK,
   SKILL_TABLE,
   wasteRateBasisPoints,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
 import { LabelStrip } from './LabelStrip.js';
 
@@ -28,15 +28,7 @@ function itemName(definitionId: string): string {
  * server owns the outcome, and a local counter would be a prediction the rest
  * of this layer deliberately avoids making.
  */
-export function GatheringHud({
-  onCollect,
-  onStop,
-  onClaimOffline,
-}: {
-  onCollect: () => void;
-  onStop: () => void;
-  onClaimOffline: () => void;
-}) {
+export function GatheringHud({ onCollect, onStop }: { onCollect: () => void; onStop: () => void }) {
   const economy = useAppStore((state) => state.economy);
   if (economy.gatheringNodeId === null) return null;
 
@@ -69,9 +61,6 @@ export function GatheringHud({
       <div className="gathering-hud__actions">
         <button type="button" className="prompt__button" onClick={onCollect}>
           Collect
-        </button>
-        <button type="button" className="prompt__button" onClick={onClaimOffline}>
-          Claim away time
         </button>
         <button type="button" className="prompt__button" onClick={onStop}>
           Stop

@@ -34,8 +34,8 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'The Arcanum Academy',
-        short_name: 'Arcanum',
+        name: 'Alderfell',
+        short_name: 'Alderfell',
         description: 'Gather, scribe, grade and duel in a living magical academy.',
         theme_color: '#11161d',
         background_color: '#11161d',

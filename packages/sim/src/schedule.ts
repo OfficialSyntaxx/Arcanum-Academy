@@ -14,7 +14,7 @@
  * the academy change around them. One in-world day defaults to one real hour.
  */
 
-import type { NpcDefinition, ScheduleEntry } from '@arcanum/shared';
+import type { NpcDefinition, ScheduleEntry } from '@alderfell/shared';
 
 export const MINUTES_PER_DAY = 1440;
 

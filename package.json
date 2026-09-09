@@ -1,8 +1,8 @@
 {
-  "name": "arcanum-academy",
+  "name": "alderfell",
   "private": true,
   "version": "0.1.0",
-  "description": "The Arcanum Academy - mobile-first web PWA fantasy RPG/TCG/sim hybrid.",
+  "description": "Alderfell - mobile-first web PWA fantasy RPG/TCG/sim hybrid.",
   "license": "UNLICENSED",
   "type": "module",
   "engines": {
@@ -19,9 +19,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "boundaries": "node tools/scripts/check-boundaries.mjs",
-    "build": "npm run typecheck && npm run build --workspace @arcanum/client && npm run build --workspace @arcanum/server",
-    "dev": "npm run dev --workspace @arcanum/client",
-    "dev:server": "npm run dev --workspace @arcanum/server",
+    "build": "npm run typecheck && npm run build --workspace @alderfell/client && npm run build --workspace @alderfell/server",
+    "dev": "npm run dev --workspace @alderfell/client",
+    "dev:server": "npm run dev --workspace @alderfell/server",
     "verify": "npm run format:check && npm run lint && npm run boundaries && npm run typecheck && npm run test",
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo node_modules/.vite"
   },

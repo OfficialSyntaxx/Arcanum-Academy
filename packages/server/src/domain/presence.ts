@@ -16,7 +16,7 @@
  * everyone standing on one tile - from undoing it.
  */
 
-import type { PlayerId, SessionId } from '@arcanum/shared';
+import type { PlayerId, SessionId } from '@alderfell/shared';
 
 export interface PresencePosition {
   readonly x: number;

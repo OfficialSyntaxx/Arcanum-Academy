@@ -22,14 +22,14 @@ import {
   type LocomotionParams,
   type NpcAgent,
   type NpcStepContext,
-} from '@arcanum/sim';
+} from '@alderfell/sim';
 import {
   NpcActivity,
   NpcRole,
   type NpcDefinition,
   type Tunables,
   type WaypointId,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 import type { WorldService } from '../world/world-service.js';
 

@@ -12,7 +12,7 @@ import {
   ok,
   ServerOpcode,
   type Failure,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 import { CloseCode, Gateway, RegistryCommandRouter, type GatewaySocket } from '../net/gateway.js';
 import { SessionStore } from '../session/session-store.js';
 import { IdentityService, InMemoryIdentityStore } from '../domain/identity.js';

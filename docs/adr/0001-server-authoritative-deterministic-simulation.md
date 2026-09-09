@@ -1,3 +1,20 @@
+> **AMENDED 2026-09-09 — the trust boundary moved.** The shared kernel below is unchanged and
+> still the point. What changed is which end is trusted: **the client runs the kernel and owns
+> outcomes while the game is single-player**, and the server stores the save and validates it
+> by replaying the command log rather than refereeing live.
+>
+> The original decision — "the server owns all outcomes" — was written for a card game with
+> live PvP. Alderfell is single-player Ironman with no trading, so a lie affects nobody but the
+> liar, while _requiring_ a server to play costs offline play entirely and puts a 30–60 second
+> free-tier cold start at the front of every session.
+>
+> A save that fails validation is **flagged, never destroyed**. An account whose history has
+> only ever come from validated sessions carries a `verified` flag, and hiscores show verified
+> accounts only. Live multiplayer moves the boundary back to the server without rewriting a
+> single system — which is exactly what one shared kernel buys.
+>
+> Full reasoning: `AI_HANDOVER.md` §4.4 and decision D24.
+
 # ADR-0001: Server-authoritative, deterministic simulation
 
 **Status:** Accepted · Phase 1

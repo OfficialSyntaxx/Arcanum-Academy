@@ -24,7 +24,7 @@ import {
   type ItemDefinitionId,
   type ItemStack,
   type Result,
-} from '@arcanum/shared';
+} from '@alderfell/shared';
 
 export interface Inventory {
   readonly stacks: readonly ItemStack[];

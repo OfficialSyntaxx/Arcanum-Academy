@@ -14,7 +14,7 @@
 
 services:
   - type: web
-    name: arcanum-server
+    name: alderfell-server
     runtime: node
     plan: free
     region: oregon
@@ -28,8 +28,8 @@ services:
     # ci rather than install: the deployed build installs exactly the tree in
     # package-lock.json and fails loudly if the manifest has drifted from it,
     # rather than quietly resolving something newer than what was tested.
-    buildCommand: npm ci --include=dev && npm run build --workspace @arcanum/server
-    startCommand: npm run start --workspace @arcanum/server
+    buildCommand: npm ci --include=dev && npm run build --workspace @alderfell/server
+    startCommand: npm run start --workspace @alderfell/server
     envVars:
       # Must match .nvmrc.
       - key: NODE_VERSION
@@ -45,7 +45,7 @@ services:
       - key: SESSION_RESUME_SECONDS
         value: '120'
       # Set in the dashboard to the Netlify origin, e.g.
-      # https://arcanum-academy.netlify.app - a wrong value here silently
+      # https://alderfell.netlify.app - a wrong value here silently
       # rejects every browser connection in production.
       - key: ALLOWED_ORIGINS
         sync: false

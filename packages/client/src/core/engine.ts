@@ -1,5 +1,5 @@
-import { FixedClock, Simulation, StateMachine, GamePhase, PHASE_TRANSITIONS } from '@arcanum/sim';
-import type { Logger } from '@arcanum/shared';
+import { FixedClock, Simulation, StateMachine, GamePhase, PHASE_TRANSITIONS } from '@alderfell/sim';
+import type { Logger } from '@alderfell/shared';
 
 /**
  * The frame loop.
