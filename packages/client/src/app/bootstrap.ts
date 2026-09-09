@@ -204,6 +204,10 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     quality,
     tunables: DEFAULT_TUNABLES,
     canvas: options.canvas,
+    onBeginTravel: () => {
+      economy.stopGathering();
+      store.setOpenStation(null);
+    },
     onEngageGatheringNode: (interactableId) => economy.startGathering(interactableId),
     onEngageCraftingStation: (interactableId) => store.setOpenStation(interactableId),
     onEngageZonePortal: (targetZoneId) => {
