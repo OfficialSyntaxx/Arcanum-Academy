@@ -9,9 +9,6 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4173',
     screenshot: 'only-on-failure',
-    // Run under CI's virtual display. Chrome's headless shell can execute the
-    // game loop but on Ubuntu returns an all-black WebGL compositor surface.
-    headless: false,
     // Headless Chrome otherwise selects a display-backed GL implementation on
     // Linux runners and happily creates a canvas whose framebuffer stays black.
     // Explicit ANGLE + SwiftShader makes the smoke test exercise real WebGL in CI.

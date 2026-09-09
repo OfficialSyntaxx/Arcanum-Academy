@@ -49,7 +49,7 @@ jobs:
         run: npx playwright install chromium
 
       - name: Render phone, landscape and desktop; prove blank-world detector
-        run: xvfb-run -a npx playwright test
+        run: npx playwright test
 
       - name: Save visual evidence
         if: always()

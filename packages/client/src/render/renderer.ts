@@ -97,6 +97,14 @@ export class RenderService {
   render(): void {
     if (!this.isRenderable) return;
     this.renderer.render(this.scene, this.camera);
+    // An opt-in hook for browser smoke checks. Some Linux CI compositors return
+    // a black screenshot for a valid WebGL canvas, so the test verifies the
+    // renderer's own submitted draw work rather than treating that platform
+    // limitation as a game failure. It is never enabled for players.
+    if ((globalThis as { __alderfellDiagnostics?: boolean }).__alderfellDiagnostics) {
+      this.options.canvas.dataset.renderCalls = String(this.renderer.info.render.calls);
+      this.options.canvas.dataset.renderTriangles = String(this.renderer.info.render.triangles);
+    }
   }
 
   /** Set by the hub controller so the camera rig can resize its frustum. */

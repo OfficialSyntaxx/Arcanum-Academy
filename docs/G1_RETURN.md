@@ -42,19 +42,22 @@ Base: `1be587ca441563f74ad1a965f7f1a06b047e65c6`, the G0 branch
 - Interactive cloud-browser verification: **blocked**. Chrome reports WebGL disabled
   (`GL_RENDERER = Disabled`), and the renderer cannot obtain a context. This is not
   evidence that the scene looks correct or performs well.
-- The branch is published as `codex/g1-shorelands` with draft PR #1. The first CI run
-  passed formatting, lint, boundaries, typecheck, 362 tests and the production build.
-  Its browser step exposed a real runner issue: the HUD and gateway loaded, but headless
-  Chromium produced a blank WebGL framebuffer. The launch configuration now explicitly
-  selects ANGLE/SwiftShader; this remains unverified until the follow-up run passes.
+- The branch is published as `codex/g1-shorelands` with draft PR #1. CI validates all
+  code gates and a full phone journey through the real gateway: map, walk, mine, earn XP,
+  inspect the satchel, then reach a crafting station. It also verifies that Three.js submits
+  the zone's draw calls and triangles in phone, landscape and desktop layouts.
+- GitHub's Linux Chrome compositor still captures an all-black WebGL screenshot despite
+  accepting the context and processing draw calls. CI screenshots are therefore diagnostic
+  only, not art approval. This runner limitation is separate from the gameplay journey,
+  which passes.
 - The production Render gateway answered `/healthz`, reported protocol version 1, and
   completed an authenticated-origin WebSocket handshake with a `player.sync` response.
 - Actual iPhone, home-screen PWA, genuine pinch and sustained 30fps: **NOT RUN**.
 
 ## Remaining G1 work / decisions
 
-1. Get a green follow-up CI browser run, then inspect its phone, landscape and desktop
-   screenshots rather than inferring visual quality from unit tests.
+1. Get a green follow-up CI run, then use a real iPhone/home-screen session to judge the
+   rendered scene; the Linux compositor cannot be used for that visual decision.
 2. Tune framing/pitch against the rendered zone with the owner; current camera tunables
    are preserved, as the handover reserves feel changes for the owner.
 3. Have the owner judge a real iPhone home-screen screenshot and measure performance.
