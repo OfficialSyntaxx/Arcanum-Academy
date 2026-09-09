@@ -175,6 +175,7 @@ Each entry names where an implementation or design already exists (§11 is the f
 | Nav mesh / waypoint graph | Validated at build: symmetry, connectivity, bounds, reachability. | Arcanum `world/graph.ts` — `buildNavGraph()` |
 | A* pathfinding | Allocation-free, integer indices, deterministic tie-breaking. | Arcanum `sim/nav.ts`; isorpg `AStar` |
 | Tap-to-walk | **The primary control.** See §5. | Arcanum `player-controller.ts` (`moveTo`, `approach`) |
+| Movement speed | **You always run. There is no run energy.** Distance itself is the cost of travel — see §3.1.1. | Arcanum `sim/locomotion.ts` |
 | Camera: rotate + pinch zoom | Free yaw, constrained pitch band. See §5. | Arcanum `camera/camera-rig.ts` (needs rework) |
 | Interactables | 9+ kinds; contextual prompt with a verb; walk-then-act. | Arcanum `world/types.ts`, `hub-controller.engagePrompt()` |
 | Collision | Obstacle shapes + a resolver; the player cannot walk through the world. | ALA `structures.js` resolver (design only — port, don't copy) |
@@ -182,6 +183,29 @@ Each entry names where an implementation or design already exists (§11 is the f
 | Seasons & weather | Rain/snow/clear, seasonal resource availability. | Oakenfall `rollWeather` + puddles/snow accumulation; ALA `weather.js`, `seasons.js` |
 | Zone streaming | Chunked loading for larger zones. | ALA `WORLDSPEC.md` §5–6 (the design is good; the code is not) |
 | Minimap | | Oakenfall |
+
+#### 3.1.1 Travel — distance is the cost, not stamina
+
+Owner decision, 2026-09-09. **No run energy. You always run.**
+
+Run energy is a friction OSRS players tolerate rather than enjoy, and it is worst on mobile,
+where tap-to-walk means the player is not even holding a control while it drains. It also
+compounds badly with no offline progression (D5): every minute spent walking slowly is a
+minute of a short session spent not playing.
+
+**The cost of travel is the travel.** A distant mine is worth more because it is far, not
+because getting there depletes a bar. That makes the following into real, earnable rewards
+rather than energy management:
+
+- **Shortcuts** gated behind skill levels — a climbable cliff, a fallen log across a ravine.
+- **Boats and carts** between fixed points, unlocked by quest progress.
+- **Teleports**, late and rare, as a genuine milestone.
+- **Bank placement** as a deliberate design lever: how far a node is from a bank is the main
+  dial on how expensive a gathering trip is.
+
+Because there is no stamina system, **zone layout carries the entire weight of pacing.** Lay
+out the Shorelands with that in mind — distance between a node, its processing station and
+the bank is a balance decision, not set dressing.
 
 ### 3.2 Skills & gathering — Tier 1
 
@@ -214,7 +238,7 @@ three levels of content is worse than no skill.
 | Resource nodes | Per-node level req, XP, yield table, depletion, regrowth timers. | Arcanum `content/data/nodes.json`; isorpg `data/Skills.ts` `ResourceDrop` |
 | Seeded harvest resolution | A session is a **seed + tick count**, never rolled results, so it replays identically. | Arcanum `sim/economy/gathering.ts` |
 | Rare finds | A small chance of a valuable variant per gather. | ALA "Pristine" mechanic |
-| Tools & durability | Better tools = faster/better yield. Durability is a **currency sink**: a broken tool never interrupts a session, it reduces the *next* one until repaired. | Arcanum (modelled, not yet granted — see §11.1) |
+| Tools & durability | Better tools = faster/better yield. Durability is a **coin sink**: a broken tool never interrupts an action, it reduces yield until repaired. **Tools can now ship** — the currency they depend on exists (§7.3). | Arcanum (modelled, not yet granted — see §11.1) |
 | Inventory / bag | **30 slots.** Stack + slot arithmetic. Top up partial stacks first; drain smallest-first; ties break on slot index. | Arcanum `sim/economy/inventory.ts` |
 | Equipment screen | Worn gear lives on a **separate equipment screen and never occupies bag slots** (OSRS's arrangement). Slots: head, cape, neck, ammo, weapon, body, shield, legs, hands, feet, ring. | — |
 | Bank | Deposit/withdraw, tabs, search. **Not yet built anywhere.** | — |
@@ -345,7 +369,29 @@ build before a fight, the card game is being rebuilt under a new name. See §3.7
 
 | Feature | Notes | Source |
 |---|---|---|
-| Quests | Chains with prerequisites, objectives, rewards; **pays once**, guaranteed by test. | isorpg `QuestSystem.ts`; ALA `zonequests.js` (content) |
+| Quests | **One authored main quest line**, plus **diaries** as the long tail. See §3.5.1. Chains carry prerequisites, objectives and rewards, and **pay once**, guaranteed by test. | isorpg `QuestSystem.ts`; ALA `zonequests.js` (content) |
+#### 3.5.1 Quest structure — one spine, many diaries
+
+Owner decision, 2026-09-09.
+
+**The main quest line.** One authored chain that carries the story of the fallen realm and
+gates the major unlocks — new areas, key shortcuts, the dungeon, the boss. Written, with
+dialogue and real characters, in the OSRS tradition where a quest is a small adventure rather
+than a fetch list. This is expensive per step and worth it: **quests are what people remember
+about OSRS**, and this chain is the strongest candidate for the differentiator (§14.2 Q2).
+
+**Diaries as the long tail.** Everything else is task lists — *mine 50 copper, kill 20 wolves,
+cook a fish at every range in the region* — grouped by area or theme, with tiered rewards
+(a small permanent convenience per tier). Cheap to author, infinite to extend, and they give
+the grind direction without pretending to be stories.
+
+**The rule that keeps them distinct:** a **quest** changes the world or unlocks something; a
+**diary task** recognises something you did. Never dress a task list as a quest — a fetch
+quest with a name is worse than an honest checklist.
+
+Both are **derived from the save on read** (§11.4), so progress cannot drift and playing out
+of order cannot desync them.
+
 | Dialogue & NPCs | Named cast with schedules, activities, deterministic barks seeded by NPC id. | Arcanum `sim/schedule.ts`, `sim/npc.ts` |
 | Ambient population | Instanced crowd, budgeted by device quality tier. | Arcanum `npc/npc-director.ts`, `world/actor-pool.ts` |
 | Shops | Buy/sell with a min-coin floor. **Ironman-limited** — see §7. | isorpg `ShopSystem.ts` |
@@ -727,7 +773,40 @@ self-gathered and self-made. No player trading.
 - **Sinks matter more than sources.** Tool repair (§3.2), consumables, construction
   materials. Currency exists to be spent, not accumulated.
 
-### 7.3 If trading ever returns
+### 7.3 Coins — the currency, and what it may not buy
+
+Owner decision, 2026-09-09. **Coins exist. Monsters drop them; shops buy and sell.**
+
+This unblocks the oldest deferral in the codebase: `Arcanum-Academy` models tools completely —
+`ToolProperties`, durability spend, reduced worn-tool yield, all tested — but has never
+granted one, because `repairCost` was denominated in a currency that did not exist. **Tools
+can now ship** (§3.2).
+
+**Sources.** Monster drops, selling to shops, quest and diary rewards, clue caskets.
+
+**Sinks — this is the part that matters.** Coins must drain faster than they accumulate, or
+they stop meaning anything:
+- Tool repair (the primary sink, and why durability exists)
+- Consumables shops sell but you cannot make yet — basic ammunition, low-tier food
+- Services: fast travel by boat or cart, storage expansion, respecs
+- Construction materials for the player's hold (§3.5) that have no gathered equivalent
+
+**What coins may never buy.** This is the line that keeps §1.3 pillar 1 intact:
+
+> **No shop sells gear, materials, or anything that competes with what you can make.**
+
+Shops sell *utilities and services*. If a player can buy their way past a production chain,
+the chain is decoration and the whole identity of the game is gone. Every shop stock list is
+reviewed against this rule.
+
+**Selling to shops is allowed** and is a real coin source — it also gives junk drops a purpose
+and stops the bag filling with things nobody wants. Sell prices should be low enough that
+selling is a convenience rather than a strategy.
+
+**Coins are not tradeable** — there is no trading (§7.1). They are a per-account sink
+currency, not an economy, and while that holds there is nothing to farm and sell.
+
+### 7.4 If trading ever returns
 
 It becomes a **mode**, not a change to the default. An account picks Ironman or Standard at
 creation and can drop from Ironman to Standard but never the reverse. The escrow, ledger and
@@ -1174,6 +1253,9 @@ to the repo.
 | D16 | **Environment art before character art.** Characters stay placeholder through G1 (§6.5). | 2026-09-09 |
 | D17 | **Agents build whole gates autonomously and stop on any design decision** (§15.1). | 2026-09-09 |
 | D18 | **Claude owns `sim`/`shared`/`server` and architecture; Codex owns content JSON, `tools/`, UI polish and pattern-following ports** (§15.2). | 2026-09-09 |
+| D19 | **Coins exist** — dropped by monsters, earned from shops and rewards. Sinks are repair, consumables and services; **no shop may sell gear or materials** (§7.3). This unblocks tools. | 2026-09-09 |
+| D20 | **No run energy — you always run.** Distance is the cost of travel; shortcuts, boats and teleports are the rewards (§3.1.1). | 2026-09-09 |
+| D21 | **One authored main quest line plus diaries** as the long tail. A quest changes the world; a diary task recognises what you did (§3.5.1). | 2026-09-09 |
 
 ### 14.2 Still open
 
