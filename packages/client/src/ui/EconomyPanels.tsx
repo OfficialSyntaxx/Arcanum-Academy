@@ -73,7 +73,13 @@ export function GatheringHud({ onCollect, onStop }: { onCollect: () => void; onS
 }
 
 /** The bag, grouped by item with a slot count against capacity. */
-export function InventoryPanel({ onClose }: { onClose: () => void }) {
+export function InventoryPanel({
+  onClose,
+  onOpenEquipment,
+}: {
+  onClose: () => void;
+  onOpenEquipment: () => void;
+}) {
   const economy = useAppStore((state) => state.economy);
 
   const totals = new Map<string, number>();
@@ -127,8 +133,60 @@ export function InventoryPanel({ onClose }: { onClose: () => void }) {
             );
           })}
       </section>
-      <button type="button" className="prompt__button" onClick={onClose}>
-        Close
+      <div className="panel-actions">
+        <button type="button" className="prompt__button" onClick={onOpenEquipment}>
+          Gear
+        </button>
+        <button type="button" className="prompt__button" onClick={onClose}>
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Equipped tools live outside the satchel so material capacity stays legible. */
+export function EquipmentPanel({ onBack }: { onBack: () => void }) {
+  const tools = useAppStore((state) => state.economy.tools);
+  const equipped = Object.entries(tools)
+    .map(([skillId, tool]) => ({
+      skillId,
+      tool,
+      definition: ITEM_CATALOG.get(tool.definitionId as never),
+    }))
+    .filter((entry) => entry.definition?.tool !== undefined);
+
+  return (
+    <div className="panel inventory-panel equipment-panel">
+      <LabelStrip title="Gear" serial={`${equipped.length} equipped`} />
+      {equipped.length === 0 ? (
+        <p className="inventory-panel__empty">No gathering tools equipped.</p>
+      ) : (
+        <ul className="equipment-panel__list">
+          {equipped.map(({ skillId, tool, definition }) => {
+            const max = definition!.tool!.maxDurability;
+            const skill = SKILL_TABLE.get(skillId as never);
+            return (
+              <li key={skillId}>
+                <div className="equipment-panel__head">
+                  <span>{definition!.name}</span>
+                  <span>{skill?.name ?? skillId}</span>
+                </div>
+                <progress
+                  aria-label={`${definition!.name} durability`}
+                  value={tool.durability}
+                  max={max}
+                />
+                <span className="equipment-panel__durability">
+                  {tool.durability}/{max} durability
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <button type="button" className="prompt__button" onClick={onBack}>
+        Back to satchel
       </button>
     </div>
   );
