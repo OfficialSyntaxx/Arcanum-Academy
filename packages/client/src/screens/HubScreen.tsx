@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { WorldMap } from '../ui/WorldMap.js';
 import { HubHud, InteractionPrompt } from '../ui/HubOverlay.js';
-import { CommandError, CraftingPanel, GatheringHud, InventoryPanel } from '../ui/EconomyPanels.js';
+import {
+  CommandError,
+  CraftingPanel,
+  EquipmentPanel,
+  GatheringHud,
+  InventoryPanel,
+} from '../ui/EconomyPanels.js';
 import { useAppStore } from '../state/app-store.js';
 
 /**
@@ -52,11 +58,11 @@ export function HubScreen({
 
   // Satchel and map are local presentation state, while crafting and prompts
   // live in the app store. They all subscribe to the same travel boundary.
-  const [satchelOpen, setSatchelOpen] = useState(false);
+  const [satchelView, setSatchelView] = useState<'inventory' | 'equipment' | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
 
   useEffect(() => {
-    setSatchelOpen(false);
+    setSatchelView(null);
     setMapOpen(false);
   }, [travelRevision]);
 
@@ -83,11 +89,17 @@ export function HubScreen({
       <button
         type="button"
         className="satchel-toggle"
-        onClick={() => setSatchelOpen((open) => !open)}
+        onClick={() => setSatchelView((view) => (view === null ? 'inventory' : null))}
       >
         Satchel
       </button>
-      {satchelOpen && <InventoryPanel onClose={() => setSatchelOpen(false)} />}
+      {satchelView === 'inventory' && (
+        <InventoryPanel
+          onClose={() => setSatchelView(null)}
+          onOpenEquipment={() => setSatchelView('equipment')}
+        />
+      )}
+      {satchelView === 'equipment' && <EquipmentPanel onBack={() => setSatchelView('inventory')} />}
       {openStationId !== null && (
         <CraftingPanel
           stationInteractableId={openStationId}
