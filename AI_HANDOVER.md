@@ -1,10 +1,11 @@
 # ALDERFELL — AI HANDOVER
 
-### The full vision, the full feature set, and how to build it
+### Game design document and engineering handover — everything needed to build it from nothing
 
 **Written:** 2026-09-09 · **Author:** Claude Code, from a full read of all four repositories
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
+**Code state:** G0 complete and pushed. G1 is next and unstarted (§13.1).
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -18,9 +19,16 @@ cold. The owner works **mostly from a phone**, directing you and one other AI. H
 write the code himself, does not have a Mac in the loop, and does not want to spend money on
 anything beyond the two AI subscriptions. Every decision below is downstream of those facts.
 
-Read §1–§4 before touching anything. §11 tells you what already exists and where to take it
-from. §12 is a list of traps that have already cost real time in these repositories — read it
-before you write code, not after.
+**This document is written so you can build Alderfell from nothing.** It is in two parts:
+
+| Part | Sections | What it is |
+|---|---|---|
+| **I — Game Design Document** | §1–§3, plus §7 | What Alderfell *is*. The design truth: pillars, loop, systems, content, what is deliberately cut. If you were rebuilding the game in a different language on a different stack, this is the part you would keep. |
+| **II — Engineering handover** | §4–§16 | How it is built and why. Stack, architecture, controls, art pipeline, mobile budgets, operations, the state of the code, the traps, the roadmap, the decision log. |
+
+**Reading order on a cold start:** §0.1 (get it running) → §1 (what the game is) → §12 (the
+traps — read these *before* writing code, not after) → §13 (which gate you are on) → then the
+sections your task touches.
 
 **The prime directive:** this is a **long-running project**. The owner is not chasing a ship
 date; he is building something he will keep adding to for years. That means architecture,
@@ -30,7 +38,66 @@ possible. Do not trade them for speed.
 **When this document and the code disagree, the code is the truth and this document is a
 bug.** Fix it in the same commit.
 
+### 0.1 Cold start — from an empty machine to a verified change
+
+```bash
+git clone <this repo> && cd alderfell
+npm install                 # workspaces; no postinstall surprises
+npm run verify              # format + lint + boundaries + typecheck + test
+```
+
+`npm run verify` is the gate and it must be green before you start, so that anything red
+afterwards is yours. As of the G0 commit it reports **362 tests across 30 files**.
+
+To actually play it, you need both halves — the client is a static bundle, the gateway is a
+long-running process:
+
+```bash
+npm run dev:server          # gateway on :8787, in-memory repository
+npm run dev                 # Vite dev server, opens the client
+```
+
+With no `DATABASE_URL` the server uses the in-memory repository, which is what local
+development and the tests want. It says so at boot. You do not need Postgres to work on this.
+
+**Prove a visual change with your eyes, not with the test suite.** This is not optional advice
+— during G0 the entire suite stayed green while the game rendered a blank screen on a phone,
+because a unit test can confirm a camera's position, orientation and clip planes and still
+miss that its *frustum shape* frames nothing. See §12 under "Rendering & mobile", and §13 G1,
+which makes an automated visual check its first deliverable.
+
+### 0.2 What exists right now
+
+Four packages, and the dependency direction is enforced by a linter rather than by convention:
+
+```
+packages/shared/   @alderfell/shared   ids, Result, RNG, tunables, wire protocol,
+                                       content catalogs (JSON, validated at load), world data
+packages/sim/      @alderfell/sim      the deterministic kernel: fixed-step clock, state hash,
+                                       phase machine, A* nav, locomotion, NPC schedules,
+                                       inventory, gathering, crafting, skills
+packages/server/   @alderfell/server   gateway (handshake, heartbeat, resume, rate limit),
+                                       identity, player service, Postgres + in-memory repos,
+                                       economy handlers; trading behind a flag
+packages/client/   @alderfell/client   three.js renderer, orthographic camera rig, input,
+                                       React overlays, Zustand store, IndexedDB, PWA shell
+tools/scripts/check-boundaries.mjs     the architecture linter; fails CI
+```
+
+**Working today:** boot → handshake → world load → walk by tapping → rotate by dragging →
+pinch to zoom → approach an interactable → gather → craft → inventory. Four zones exist as
+data (`courtyard`, `forest`, `mountains`, `snow`), built from primitives.
+
+**Not built yet:** combat of any kind, quests, banking, tools in players' hands, the hold,
+the wiki, account recovery. §11.1 lists the deliberate deferrals, which are not oversights.
+
+**The honest state of the look:** the world is untextured geometric primitives, and on a phone
+it currently reads as close to empty. That is the entire subject of G1 (§13) and it is the most
+important thing in the project.
+
 ---
+
+# PART I — GAME DESIGN DOCUMENT
 
 ## 1. The game
 
@@ -76,6 +143,26 @@ player's hold (§3.5) matters — it is the most literal expression of it.
 **Content rating: PG.** No gore, no on-screen cruelty, no horror, no adult themes. Combat is
 bloodless — a hitsplat, a stagger, a defeated creature that fades. Write dialogue a child
 could read and an adult would not find twee.
+
+### 1.1.2 High concept, at a glance
+
+| | |
+|---|---|
+| **One line** | OSRS's depth, designed for a phone from the first line of code rather than ported to one. |
+| **Genre** | Single-player skilling and combat RPG, with a persistent world and long-horizon progression. |
+| **Platform** | Browser PWA, installed to the home screen. iOS Safari is the primary target. **No App Store submission, ever.** |
+| **View** | Low-poly 3D under an orthographic camera: free yaw, constrained pitch (§5.2.1). |
+| **Session** | 2 minutes to 2 hours, all deliberately viable (§2.2). |
+| **Mode** | Ironman. Everything is self-gathered; no trading (§7). |
+| **Tone** | Warm, cosy, PG. A fallen realm being reclaimed, not mourned (§1.1.1). |
+| **Audience** | Someone who likes OSRS's grind and progression but will not sit at a desk for it. Secondarily, someone who has never played it and wants a calm game with real depth. |
+| **Comparables** | Old School RuneScape (systems, pacing, Ironman ethos); Stardew Valley (tone, cosiness); Wizard101 (readability, approachability) — the last two for *feel* only, never for mechanics. |
+| **Business model** | None. No ads, no IAP, no loot boxes. Cosmetics only, if ever, and much later. |
+| **Team** | One owner directing two AI agents. Every decision in this document is shaped by that constraint (§15.2). |
+
+**The elevator version:** *You wash up with nothing on the coast of a kingdom that has already
+fallen. Everything you own, you chopped, mined, caught, forged or killed something for. The
+realm gets warmer as you rebuild it.*
 
 ### 1.2 The core fantasy
 
@@ -549,6 +636,14 @@ game:
 | Audio | Music, ambience, SFX. First-tap unlock on iOS. Fully playable muted. See §6.6. | isorpg (8 tracks + SFX); ALA `audio.js` |
 | Versioned saves + migrations | Forward-only migration runner; a save from any older version must load. | Arcanum `persistence/local-store.ts`, shared migration runner |
 
+### 3.9 Onboarding — Tier 1
+
+A guided first-session chain where **every step is derived from the save**, so playing out of
+order cannot desync it, with a persistent objective bar and a dismiss flag.
+Source: ALA `onboarding.js` + `advice.js` (the pattern is right; port the pattern, not the code).
+
+The chain: *arrive → chop a tree → light a fire → cook a fish → mine copper → smelt a bar →
+forge a weapon → kill your first monster → bank your loot.*
 ### 3.10 The wiki — Tier 2
 
 Owner request, 2026-09-09. Alderfell gets a public wiki, and there is exactly one right way to
@@ -587,16 +682,120 @@ No server, no database, no CMS.
 with a missing input or an item nothing drops shows up as a hole in a wiki page long before a
 player finds it.
 
-### 3.9 Onboarding — Tier 1
+### 3.11 Progression pacing — the numbers
 
-A guided first-session chain where **every step is derived from the save**, so playing out of
-order cannot desync it, with a persistent objective bar and a dismiss flag.
-Source: ALA `onboarding.js` + `advice.js` (the pattern is right; port the pattern, not the code).
+Balance lives in `DEFAULT_TUNABLES` (ADR-0002) and these are the shipped values. They are
+starting points chosen to be *legible*, not the result of a tuning pass; retune them against a
+real session at G2 and G3 rather than defending them.
 
-The chain: *arrive → chop a tree → light a fire → cook a fish → mine copper → smelt a bar →
-forge a weapon → kill your first monster → bank your loot.*
+| Quantity | Value | Why |
+|---|---|---|
+| Combat tick | **600 ms** | Matches OSRS. A simulation property, decoupled from presentation (§3.4.1). |
+| XP curve | `xpCurveBase 60`, `xpCurveExponent 2.2` | XP for level n is `60 x n^2.2`. Superlinear so late levels are landmarks, gentle enough that the first ten arrive inside one session. |
+| Max skill level | 99 | Familiar, and long enough to be a genuine horizon. |
+| Bag | **30 slots** | Tight on purpose: what turns a gathering run into a decision (§3.2). |
+| Base harvest interval | 3 s (floor 900 ms) | Roughly one action per few seconds, so a trip has rhythm without being twitchy. |
+| Items kept on death | 3 | OSRS-style. Everything else to a gravestone that does not expire yet (§3.4.2). |
+| Shop sell rate | 25% of value | Selling junk is a convenience, never a strategy that outpaces gathering. |
+| Tool repair | 2 coins per durability point | The primary coin sink, and the reason durability exists (§7.3). |
+
+**Pacing targets to design against**, so "is this too slow" has an answer:
+
+| Milestone | Target elapsed play |
+|---|---|
+| First gathered resource | under 60 seconds |
+| First crafted item | under 5 minutes |
+| First monster killed | under 10 minutes |
+| First skill to level 10 | first session (~30 minutes) |
+| Second zone opened | 1–2 hours |
+| First skill to level 50 | 15–25 hours |
+| First skill to level 99 | 150+ hours, and it should feel like an achievement |
+
+**The grind rule:** a player should always be able to name the next thing they are working
+toward and roughly how far away it is. A grind with a visible target is a goal; the same grind
+without one is a chore. Every skill needs a next unlock in sight at every level.
+
+### 3.12 Launch content targets
+
+What "the Shorelands is finished" means numerically. These are targets for G5, not G1.
+
+| Content | Launch target | Notes |
+|---|---|---|
+| Zones | **1** built, 5 designed | The Shorelands, with exits stubbed for the other four (§3.1). |
+| Gathering nodes | 12–18 distinct | Enough that each gathering skill has 4+ tiers in the first zone. |
+| Items | 80–120 | Materials, tools, equipment, food, quest items. |
+| Recipes | 40–60 | Every material should have somewhere to go. |
+| Monsters | 12–15 | Spanning the whole zone's level range, plus one boss. |
+| Named NPCs | 8–12 | Each with a schedule, barks, and a reason to exist. |
+| Main quest steps | 8–12 | One authored chain (§3.5.1). |
+| Diary tasks | 30–50 | Tiered, derived from the save. |
+| Dungeon | 1 | Fixed layout, per-floor pools, one boss (§3.5). |
+
+**The rule that keeps this honest:** no skill ships without a full content chain. A skill with
+three levels of content is worse than no skill, because it promises a progression that is not
+there.
+
+### 3.13 Screens and UI inventory
+
+The world is the content; chrome is minimal and everything else opens over it.
+
+| Surface | State | What it is |
+|---|---|---|
+| **Hub HUD** | built | Zone name, world clock, population. One strip, top-left, truncating. |
+| **Interaction prompt** | built | One contextual verb button when in range of an interactable. |
+| **Satchel** | built | Inventory panel, opened from a corner button. |
+| **Crafting panel** | built | Opens at a station; lists recipes you can make. |
+| **Gathering readout** | built | What the current session has yielded, and a stop control. |
+| **Boot / fault screens** | built | Named boot steps; a fault screen that explains rather than blanks. |
+| **Context menu** | **not built** | Long-press. The OSRS right-click: many things carry more than one verb. `onContextMenu` reports the target; the menu itself is unbuilt (§5.1). |
+| **Equipment** | not built | Separate screen; worn gear never occupies bag slots (§3.2). |
+| **Bank** | not built | Deposit/withdraw, tabs, search. |
+| **Skills** | not built | The levels page. The single most-looked-at screen in a game like this. |
+| **Quest journal** | not built | Main chain plus diaries. |
+| **Collection log** | not built | Every item and where it comes from. |
+| **Settings** | not built | Accessibility, audio, graphics tier. |
+
+**Rules for every one of them:** 44 px minimum touch targets; safe-area insets on anything
+fixed; one primary action per screen; a panel that needs two equally-weighted buttons is doing
+two jobs. Full list in §6.8.3.
+
+### 3.14 Accessibility — a launch requirement, not a later pass
+
+The client already reads OS preferences and projects them onto the document
+(`a11y/preferences.ts`). Keep that and extend it.
+
+- **Reduced motion** — camera easing resolves immediately; ambient motion damps. Already wired.
+- **Text scaling** — a `--text-scale` custom property drives UI type. Already wired.
+- **Colour is never the only carrier of meaning.** Anything distinguished by colour also carries
+  a glyph, a label or a shape. This rule survived the card game's deletion because it was never
+  about cards.
+- **High contrast** — a data attribute swaps translucent panels for opaque ones.
+- **The game must be fully playable muted** (§6.6), with a visual counterpart for every audio
+  cue. Most phone players play with sound off.
+- **No timing-critical input.** Tap-to-walk and a 600 ms tick mean nothing depends on reaction
+  speed, which is an accessibility property as much as a design one.
+
+### 3.15 What "good" means, per system
+
+Acceptance criteria in plain language. If a system cannot pass its line, it is not finished
+regardless of what its tests say.
+
+| System | It is good when |
+|---|---|
+| Movement | You can cross the zone without thinking about the controls. |
+| Camera | You rotate it without meaning to think about it, and never lose the player. |
+| Gathering | Filling a bag is satisfying twenty times, not twice. |
+| Crafting | The chain from raw material to equipped item is obvious without a wiki. |
+| Combat | Killing one wolf is satisfying twenty times in a row. |
+| Death | Losing feels like your mistake, never the game's. |
+| Quests | A stranger can follow the main chain without being told anything. |
+| The hold | Every trip home shows visible progress. |
+| The world | You can walk for five minutes and every stop is worth a screenshot. |
+| Performance | It holds 30 fps on a mid-range phone with the battery not noticeably warm. |
 
 ---
+
+# PART II — ENGINEERING HANDOVER
 
 ## 4. Technology — the decisions and why
 
@@ -1514,6 +1713,29 @@ Every one of these was paid for in one of the four repositories.
   across platforms.
 - **A session is a seed and a tick count, never a list of rolled results.**
 
+### Editing at scale — paid for during G0, twice
+
+**Never delete a code block with a regex.** During G0 two mass edits over-deleted and had to be
+reverted: a pattern meant to remove a few CSS rules took **358 lines**, and one meant to remove
+four interactables from three zone files took **~400**. Both looked plausible and neither was
+caught by reading the pattern — only by `git diff --stat` showing a number far larger than the
+change deserved.
+
+Do this instead, in order of preference:
+
+1. **Delete whole files** with `git rm` where the unit of removal is a file.
+2. **Parse the structure.** A brace- or rule-matched scanner that finds the block and removes
+   exactly it. Twenty lines of Python beats a clever pattern.
+3. **Edit by exact string** with enough surrounding context to be unique.
+4. Regex only for single-line, single-token substitutions — a rename, an import path.
+
+**And check the size of every mechanical edit before committing.** `git diff --stat` takes a
+second and would have caught both. A deletion far larger than the change you intended is the
+single loudest signal available, and it is free.
+
+**Corollary: revert early.** Both over-deletions cost more to unpick than to redo, because the
+next edits were made on top of the damage. `git checkout -- <file>` and redo it properly.
+
 ### Testing
 - **A test that passes is not evidence. A test that fails when you break the code is.**
   Mutation-test new systems: deliberately break the production code and confirm the suite
@@ -1537,6 +1759,27 @@ Every one of these was paid for in one of the four repositories.
 - **Derived state is derived, never stored.** Level from XP. Completion from the save.
 
 ### Rendering & mobile
+
+- **A green test suite does not mean the game draws anything.** In G0 every check passed —
+  362 tests, typecheck, lint, boundaries — while the game showed a blank screen on a phone. A
+  unit test can confirm a camera's position, orientation and clip planes and still miss that
+  its frustum frames nothing. **If a change touches rendering, look at the pixels.**
+- **Under an orthographic camera, zoom is the frustum, never the position.** Moving the camera
+  closer changes nothing on screen and quietly breaks the near plane. This is the most common
+  way a perspective habit produces an invisible bug.
+- **Size an orthographic frustum by the *shorter* screen axis.** Holding the half-height
+  constant gave a 390x844 phone a window about five metres wide: the world rendered perfectly
+  into a slit, and the player stood in the middle of it seeing only the ground under their
+  feet. The screen looked broken while every measurement said the camera was correct.
+- **A visual test that depends on when it ran is worse than no visual test.** The world clock
+  is real time modulo the day length, so the same build looks fine at noon and blank at
+  midnight. Pin the clock before asserting anything about pixels.
+- **Set diagnostic thresholds below your observation window.** A counter that logged every 120
+  frames never fired inside an 8-second probe running at 5 fps under software rendering, which
+  read exactly like "the code never runs" and cost a round of false diagnosis.
+- **A WebGL canvas does not survive `drawImage` into a 2D canvas** without
+  `preserveDrawingBuffer`. Sampling pixels that way reports a transparent, empty image whatever
+  is actually on screen. Take a real screenshot instead.
 - **Never set `canvas.width/height` when unchanged** — it causes a resize feedback loop in
   iframes.
 - **Keep `drawImage` in try/catch in hot paths.** iOS Safari throws spurious
@@ -1593,6 +1836,72 @@ to the repo.
 
 ---
 
+### 13.1 G1 in detail — the gate you are almost certainly on
+
+G0 is complete and pushed. **G1 is the most important milestone in the plan**, and it is the
+one every previous project in this family failed. Read this whole section before starting.
+
+**The goal in one sentence:** make the Shorelands look like somewhere worth being, on a real
+iPhone, launched from the home screen.
+
+**Why it is first.** There is a working simulation under a world of untextured primitives. The
+temptation is to add systems, because systems are easier to specify and easier to test. Every
+sibling repository took that path and produced a well-tested game nobody wanted to look at —
+`isorpg` wrote its own post-mortem on exactly this. **Nothing else proceeds until G1 passes.**
+
+**Deliverable 1 — an automated visual check, first.** Before any art, build the harness that
+can tell whether the game draws anything, because the rest of G1 cannot be judged without it,
+and because a green suite over a blank screen is the specific failure this project has already
+had. It should boot the real build in a headless browser at phone and landscape sizes, pin the
+world clock (§12), and fail on: the hub never appearing, the canvas being essentially one flat
+colour, the HUD overlapping itself, or any console error. Wire it as `npm run smoke`.
+
+Two design notes learned the hard way while sketching this:
+
+- **Assert variety, not brightness.** The blank-screen failure is not a black canvas — it is
+  the ground or the sky filling every pixel. Sample a grid, quantise the colours, and fail if
+  the count is tiny. That check correctly caught the real blank screen and correctly passed a
+  frame with visible geometry, which is the discrimination that makes it worth having.
+- **Do not diff screenshots.** Pixel comparison breaks on every legitimate art change and
+  teaches people to regenerate the baseline without looking.
+
+**Deliverable 2 — the pipeline.** Port Oakenfall's asset extraction and its
+sprite-with-procedural-fallback pattern (§11.3). **Every asset consumer keeps a procedural
+fallback** — this is what lets you dress the world incrementally without ever showing a missing
+texture, and it is the single most valuable pattern in any of the four repositories.
+
+**Deliverable 3 — dress one zone.** Terrain, foliage, rocks, water, buildings, roads, lighting,
+sky, fog. **Environment only; characters stay placeholder** (§6.5) — a slightly wrong tree still
+reads as a tree, while a slightly wrong character reads as broken.
+
+**Colour direction, and a correction worth knowing:** an earlier draft of this document told you
+*not* to inherit Oakenfall's palette on the grounds that it was dark. That was wrong — it came
+from reading Oakenfall's own `CLAUDE.md` rather than running the game. The built game is bright,
+warm and sunny, and is close to where Alderfell wants to be. Take its world palette and its UI
+chrome directly (§6.1). Its grading step is **normalisation** — pulling incoming assets into the
+set — not darkening.
+
+**Deliverable 4 — fix the default framing.** Left alone, the current default zoom shows a phone
+player a flat expanse of ground. The frustum rule is correct (short axis, §5.2.1); the default
+`cameraViewSize` is not tuned, and neither is the pitch band. Tune them against a dressed zone
+rather than against primitives — that is why this is last, not first.
+
+**G1 passes when all of these are true:**
+
+1. `npm run verify` is green.
+2. `npm run smoke` is green, and has been shown to fail when the world is blanked — a check
+   nobody has seen fail is a check nobody should trust (§12, mutation testing).
+3. The owner looks at a screenshot from **his own iPhone, launched from the home screen**, and
+   thinks it looks good. This is a human gate on purpose; no automated check can stand in for
+   it.
+4. The initial download is still under 5 MB compressed, and the frame rate holds 30 fps on a
+   mid-range phone (§6.8.1).
+
+**What is explicitly not in G1:** combat, quests, banking, the hold, the wiki, characters,
+multiplayer. If you find yourself building any of them, you are no longer on G1.
+
+---
+
 ## 14. Decisions log, and what is still open
 
 ### 14.1 Resolved
@@ -1624,6 +1933,7 @@ to the repo.
 | D23 | **Full audio** — music, ambience and SFX. Music streams, SFX bundle, first-tap unlock on iOS, and the game stays fully playable muted (§6.6). | 2026-09-09 |
 | D24 | **Offline-first.** The client runs the kernel and plays with no network; the server stores the save and validates by replaying the command log. ADR-0001 amended accordingly; the trust boundary moves back to the server only for live multiplayer (§4.4). | 2026-09-09 |
 | D25 | **A wide bestiary — animals, mythical beasts, imps, bandits, constructs, custom Blender creatures — held to one visual world.** Coherence is enforced by a shared material scheme, palette, silhouette language and an admission review beside existing assets (§3.4.0). | 2026-09-09 |
+| D31 | **This document is structured as a GDD (Part I) plus an engineering handover (Part II)**, with a cold-start section, so an agent with no prior context can build the game from nothing (§0). | 2026-09-09 |
 | D26 | **`AI_HANDOVER.md` is the single source of truth.** `CLAUDE.md` and the existing `docs/` are replaced by short pointers to it (§10.3). | 2026-09-09 |
 | D27 | **The hold is OSRS's player-owned house** — Construction as a coin and resource sink paying out in teleports, farms and functional rooms. Reinforces the no-run-energy decision and is the main long-term coin sink (§3.5.2). | 2026-09-09 |
 | D28 | **A wiki generated from the game's own content JSON**, so it cannot drift. Static, free, mobile-first (§3.10). | 2026-09-09 |

@@ -20,16 +20,19 @@ under a new name.
 
 ## Where the answers are
 
-| Question                                              | Where                              |
-| ----------------------------------------------------- | ---------------------------------- |
-| What are we building, and why                         | `AI_HANDOVER.md` §1–§3             |
-| What is already decided (30 decisions)                | `AI_HANDOVER.md` §14.1             |
-| Why not Unity                                         | `AI_HANDOVER.md` §4.2              |
-| Architecture and the ADRs                             | `AI_HANDOVER.md` §4.4, `docs/adr/` |
-| Traps already paid for — **read before writing code** | `AI_HANDOVER.md` §12               |
-| What to take from the other three repos               | `AI_HANDOVER.md` §11               |
-| The gate we are on                                    | `AI_HANDOVER.md` §13               |
-| Who does what between Claude and Codex                | `AI_HANDOVER.md` §15.2             |
+| Question                                              | Where                               |
+| ----------------------------------------------------- | ----------------------------------- |
+| **Starting cold — install, run, verify**              | `AI_HANDOVER.md` §0.1               |
+| **What already exists in the code**                   | `AI_HANDOVER.md` §0.2               |
+| The game design document                              | `AI_HANDOVER.md` Part I (§1–§3, §7) |
+| What is already decided (31 decisions)                | `AI_HANDOVER.md` §14.1              |
+| **The gate you are on, in detail**                    | `AI_HANDOVER.md` §13.1              |
+| Why not Unity                                         | `AI_HANDOVER.md` §4.2               |
+| Architecture and the ADRs                             | `AI_HANDOVER.md` §4.4, `docs/adr/`  |
+| Traps already paid for — **read before writing code** | `AI_HANDOVER.md` §12                |
+| What to take from the other three repos               | `AI_HANDOVER.md` §11                |
+| The gate we are on                                    | `AI_HANDOVER.md` §13                |
+| Who does what between Claude and Codex                | `AI_HANDOVER.md` §15.2              |
 
 ## Operating rules
 
