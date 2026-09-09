@@ -443,6 +443,9 @@ interface MarkerParts {
 function buildMarker(interactable: Interactable, parts: MarkerParts): Object3D {
   const marker = new Group();
   marker.name = `interactable:${interactable.id}`;
+  // Raycasts land on a child mesh, so the id lives on the marker root and is
+  // resolved by walking up the hit object's parent chain.
+  marker.userData['interactableId'] = interactable.id;
 
   const ring = new Mesh(parts.ring, parts.material);
   ring.rotation.x = -Math.PI / 2;
