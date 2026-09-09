@@ -65,6 +65,17 @@ export class EconomyController {
   }
 
   stopGathering(): void {
+    const store = useAppStore.getState();
+    if (store.economy.gatheringNodeId === null) return;
+    // Leaving a station should feel immediate. The gateway's stop patch remains
+    // authoritative, but clearing the local projection now prevents a stale
+    // gathering HUD from following the player across the world.
+    store.setEconomy({
+      gatheringNodeId: null,
+      lastYields: [],
+      lastXpGained: 0,
+      overflowed: false,
+    });
     this.send('gathering.stop');
   }
 
