@@ -189,7 +189,7 @@ Each entry names where an implementation or design already exists (§11 is the f
 | Strength | combat | Melee max hit |
 | Defence | combat | Damage avoidance |
 | Hitpoints | combat | Health pool |
-| Magic | combat | The third leg of the triangle — see §3.4.1 |
+| Magic | combat | The third leg of the triangle — see §3.4.3 |
 
 Extensible later: Herblore/Alchemy, Fletching, Ranged as its own skill, Hunter, Thieving,
 Slayer. **Do not add a skill until there is a full content chain for it** — a skill with
@@ -202,8 +202,14 @@ three levels of content is worse than no skill.
 | Seeded harvest resolution | A session is a **seed + tick count**, never rolled results, so it replays identically. | Arcanum `sim/economy/gathering.ts` |
 | Rare finds | A small chance of a valuable variant per gather. | ALA "Pristine" mechanic |
 | Tools & durability | Better tools = faster/better yield. Durability is a **currency sink**: a broken tool never interrupts a session, it reduces the *next* one until repaired. | Arcanum (modelled, not yet granted — see §11.1) |
-| Inventory / bag | Stack + slot arithmetic. Top up partial stacks first; drain smallest-first; ties break on slot index. | Arcanum `sim/economy/inventory.ts` |
+| Inventory / bag | **30 slots.** Stack + slot arithmetic. Top up partial stacks first; drain smallest-first; ties break on slot index. | Arcanum `sim/economy/inventory.ts` |
+| Equipment screen | Worn gear lives on a **separate equipment screen and never occupies bag slots** (OSRS's arrangement). Slots: head, cape, neck, ammo, weapon, body, shield, legs, hands, feet, ring. | — |
 | Bank | Deposit/withdraw, tabs, search. **Not yet built anywhere.** | — |
+
+> **Bag size is 30 slots, and it is a design constraint rather than a number.** A tight bag is
+> what turns a gathering run into a decision — food or ore, one more rock or bank now. It is a
+> large part of why OSRS skilling reads as a game rather than a spreadsheet. `bagSlots` lives
+> in tunables, but raising it to remove friction is changing the game, not tuning it.
 
 > **No offline progression.** Owner decision, 2026-09-09. Pillar 1 wins: progress comes from
 > going somewhere and doing something. `Arcanum-Academy`'s offline-accrual code
@@ -230,20 +236,77 @@ three levels of content is worse than no skill.
 
 | Feature | Notes | Source |
 |---|---|---|
-| Tick loop | 600 ms tick. Everything resolves on it. | isorpg `TickRunner` |
+| Tick loop | **600 ms tick** — the simulation resolves on it. Presentation does not: see §3.4.1. | isorpg `TickRunner` |
 | Accuracy & max-hit rolls | The OSRS formula shape: attack roll vs defence roll, then a damage roll. | isorpg `CombatSystem.ts` (TS) / `Combat.cs` (C#) — **fully ported and parity-tested both ways** |
 | Three attack styles | Accurate (+accuracy, trains Attack) / Aggressive (+max hit, trains Strength) / Defensive (+defence, trains Defence). Constant Hitpoints trickle. | isorpg `data/Combat.ts` `ATTACK_STYLES` |
-| Combat triangle | Melee / Ranged / Magic. See §3.4.1. | — |
+| Combat triangle | Melee / Ranged / Magic. See §3.4.3. | — |
 | Resolve (special resource) | A limited buff resource spent for a short combat edge, restored by resting at a campfire. Gives food a rival for bag space. | isorpg `data/Combat.ts` `BuffId` |
 | Weapon specials | Six defined. A guaranteed special **skips the accuracy draw** — draw order is part of the contract (§12). | isorpg |
 | Monster affixes | Three defined; an affix roll takes one value on failure and two on success. | isorpg |
 | Weighted drop tables | Per-monster, with tertiary rares. A tertiary that misses takes no quantity draw. | isorpg `data/Combat.ts` |
 | Food & healing | Eat to heal, costs a tick. | isorpg |
-| Death & penalty | Tiered by zone: no penalty in town → drop unequipped inventory in dangerous zones. | isorpg GDD |
+| Death & penalty | OSRS-style: keep the 3 most valuable items, everything else goes to a gravestone at the death site. **No expiry timer for now.** See §3.4.2. | isorpg GDD |
 | Boss encounters | Enrage phases, slam attacks, multi-phase behaviour. | isorpg; ALA `archetypes.js` (design) |
 | Aggression / safe zones | Which monsters attack on sight, and where they can't. | — |
 
-#### 3.4.1 Magic — staves and runes
+#### 3.4.1 Combat feel — a 600 ms tick the player never feels
+
+Owner decision, 2026-09-09: **keep the true OSRS 600 ms tick, and make it feel fast through
+presentation.**
+
+The tick is a *simulation* property. It exists so combat is deterministic, replayable,
+verifiable against the server, and fair over a network later. It is not a statement about how
+responsive the game should look.
+
+**The rule: the simulation resolves on the tick; the presentation responds to input
+immediately.**
+
+| The moment | What happens |
+|---|---|
+| Player taps a monster | The character starts moving and the target highlights **on that frame**, not on the next tick. |
+| Player queues an attack | The UI acknowledges instantly — the action indicator lights up. |
+| The tick resolves | Damage is computed authoritatively. |
+| Damage lands | Hitsplat, sound, flinch animation and health-bar movement fire immediately on resolution, and are *animated* across the following ticks rather than snapping. |
+
+Concretely: animations interpolate across ticks rather than stepping; hitsplats and sound cue
+on the resolution frame; movement is smoothed between tick positions; and no input ever waits
+for a tick boundary to be *acknowledged*, only to be *resolved*.
+
+**`tickMs` lives in tunables** so it can be re-evaluated on a real phone at G3. But the
+default is 600 and the fix for "combat feels sluggish" is presentation work, not a shorter
+tick — shortening it silently changes every combat formula ported from isorpg.
+
+#### 3.4.2 Death and the gravestone
+
+Owner decision, 2026-09-09: **OSRS-style loss, with a gravestone that does not expire yet.**
+
+- On death you **keep the 3 most valuable items** (by a defined value ordering; ties break
+  deterministically on item id, never on inventory order).
+- **Everything else — bag and worn equipment — goes to a gravestone at the death site.**
+- **There is no expiry timer for now.** The gravestone waits indefinitely. `graveExpiryMs` is
+  authored in tunables and set to "never" so a timer can be turned on later without a code
+  change.
+- You respawn at the last shrine/settlement you rested at.
+
+**One rule this leaves open, which must be decided before G3, so here is the default:**
+*what happens if you die again before recovering a gravestone?* Without a timer this is
+reachable, and losing an old gravestone silently would be the single most enraging bug in an
+Ironman game.
+
+> **Default: one gravestone per player.** Dying again moves everything the old gravestone
+> held to the new death site, merged with the new losses. Nothing is ever destroyed by a
+> second death. If the merged pile would exceed the gravestone's capacity, the gravestone has
+> no capacity limit — it is storage, not a container.
+
+This is the safe default because it cannot lose items. The alternative (multiple simultaneous
+gravestones) is more interesting and more punishing, and can be adopted later — but the
+migration from one to many is trivial while the reverse is not, so start here.
+
+**With no timer, death costs a walk rather than an item.** That is a deliberate softening for
+now, and it is worth revisiting once the world is big enough that the walk itself is a real
+cost. Note it as a balance lever, not a permanent stance.
+
+#### 3.4.3 Magic — staves and runes
 
 Owner decision, 2026-09-09. Magic survives the removal of the schools, re-themed along OSRS
 lines. **There are no schools of magic, no spell cards, and no deck.**
@@ -531,6 +594,28 @@ carried over verbatim into the new repo):
 - No bevels below 2 cm. No subdivision surface. No microdetail geometry.
 - Colour from flat materials or a small texture atlas — never per-object 2K maps.
 - **Never bake lighting or AO into textures.** The game lights the scene.
+
+### 6.1.1 The player avatar — one rig, light customisation
+
+Owner decision, 2026-09-09. **A single humanoid rig for the player**, with a small set of
+choices at character creation: head/face variant, hair, skin tone, and a colour or two.
+Everything beyond that comes from **equipped gear**, attached to bones.
+
+**Why this is the right call for a solo dev with AI:** one rig means one skeleton, one
+animation set, and one retarget target for every free-asset character pack you ever import.
+A second body type is not "one more model" — it is a second full animation set to author,
+maintain and keep in sync forever, and it is where solo 3D projects historically drown.
+
+Practical consequences to honour:
+- **One skeleton, fixed joint names.** Every imported character is retargeted onto it. The
+  free packs genuinely disagree here (a Mixamo-style 19-joint rig vs KayKit/Quaternius 41-joint
+  skeletons), so the retarget step is a real, scripted part of the pipeline — not an
+  afterthought.
+- **Customisation is material and mesh-swap, never skeleton change.** Hair and head variants
+  are swappable meshes parented to the same joints; skin and colour are material parameters.
+- **Gear attaches to named bones.** One attachment table, shared by the world renderer and any
+  character preview, so a preview can never drift from what you see in the world.
+- NPCs and monsters use the same rig wherever plausible, which is most of the humanoid cast.
 
 ### 6.2 Sources
 
@@ -1048,6 +1133,10 @@ to the repo.
 | D8 | **Ironman is the default and only mode at launch.** No player trading (§7). | 2026-09-09 |
 | D9 | **Unity is rejected** (§4.2). Web + three.js + PWA. Blender is a build-time tool in CI. | 2026-09-09 |
 | D10 | **`Arcanum-Academy` is the spine**; the other three repositories are frozen quarries (§10). | 2026-09-09 |
+| D11 | **Death: OSRS-style.** Keep the 3 most valuable items; everything else to a gravestone at the death site, **with no expiry timer for now**. One gravestone per player — a second death merges into it, so nothing is ever destroyed (§3.4.2). | 2026-09-09 |
+| D12 | **600 ms tick, with presentation decoupled from it.** The tick is a simulation property; input is acknowledged on the frame and only *resolved* on the tick (§3.4.1). | 2026-09-09 |
+| D13 | **30 bag slots, plus a separate equipment screen** — worn gear never occupies bag slots (§3.2). | 2026-09-09 |
+| D14 | **One player rig with light customisation** at creation; all other visual identity comes from gear on bones (§6.1.1). | 2026-09-09 |
 
 ### 14.2 Still open
 
