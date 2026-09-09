@@ -72,6 +72,12 @@ export class PlayerController {
     return isMoving(this.mover);
   }
 
+  /** The final reachable point of the active route, for world-space feedback. */
+  get destination(): Vec2 | null {
+    if (!isMoving(this.mover)) return null;
+    return this.mover.path[this.mover.path.length - 1] ?? null;
+  }
+
   /**
    * Routes the player to the nearest authored navigation point.
    *
