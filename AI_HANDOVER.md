@@ -833,11 +833,26 @@ orthographic and re-tuning the band is a contained change to one file.
 **Warm, cosy, low-poly medieval.** Storybook rather than gritty. Think a bright autumn
 afternoon in a place people used to live.
 
-> ⚠️ **Do not inherit Oakenfall's palette or its GRADE convention.** Oakenfall is deliberately
-> dark, desaturated and earth-tinted, and every asset in it is colour-graded *darker* before it
-> ships. Alderfell is the opposite direction (§1.1.1). The **pipeline** is worth taking; the
-> **grading step is inverted** — new assets are warmed and slightly brightened, not darkened.
-> This is the one place where copying Oakenfall would actively hurt.
+> ✅ **Correction, 2026-09-09 — inherit Oakenfall's palette after all.** An earlier draft of this
+> document said Oakenfall was "dark, desaturated and earth-tinted" and warned against copying
+> it. **That was wrong.** It came from reading Oakenfall's own `CLAUDE.md` — which still
+> describes a "dark old-school-MMORPG palette" — rather than from running the game. The built
+> game (see `docs/baseline/2026-09-09-oakenfall-*.png`) is **bright, warm and sunny**: vivid but
+> unsaturated greens, clear water, soft shadows, a spring afternoon. It is already close to
+> where Alderfell wants to be.
+>
+> This is the §12 trap — *verify against a running build, not against reasoning* — and it was
+> walked into while writing the very document that records it. Left visible on purpose.
+
+**What to actually take from Oakenfall:**
+
+- **The world palette, directly.** Warm, bright, readable in daylight on a phone.
+- **The UI chrome, directly.** Amber and warm wood on near-black. It works *because* it frames a
+  bright world — a dark HUD around a sunny scene reads as cosy, not grim.
+- **The GRADE convention, correctly understood.** It exists to pull incoming assets *into the
+  set* so a new sprite doesn't sit too bright or too blue beside existing ones. That is
+  **normalisation, not darkening** — and it is precisely the mechanism the bestiary coherence
+  rule needs (§3.4.0).
 
 The palette:
 
@@ -1433,10 +1448,11 @@ excellent **specification** of correct behaviour. Read the C# tests when porting
   implementation for a game that behaves correctly on an iPhone home screen.
 - The **landscape re-dock** pattern (bottom sheets become side sheets).
 - The **asset pipeline**: `tools/extract-assets.mjs`, `tools/rewrite-assets.mjs`, and the
-  colour-grading tooling — **but invert the grade**: warm and lift, never darken (§6.1).
+  colour-grading tooling, understood as **normalisation** — pulling new assets into the set,
+  not darkening them (§6.1).
 - The **sprite-with-procedural-fallback pattern**. Protect this above all else.
-- ~~The palette and dark-medieval art direction.~~ **Do not take this.** Alderfell is warm and
-  cosy (§1.1.1, §6.1). Take the *tooling*, not the colours.
+- **The palette — world and UI chrome both.** Verified against the running game, not its docs:
+  it is bright and warm, not dark (§6.1). Take the colours as well as the tooling.
 - The **feedback loop**: `netlify/functions/submit-feedback.js`, `errorLog` ring buffer,
   `buildDiagnostics()`, GAME_VERSION + CHANGELOG discipline (the site build fails if they
   disagree — keep that gate).
@@ -1604,7 +1620,7 @@ to the repo.
 | D19 | **Coins exist** — dropped by monsters, earned from shops and rewards. Sinks are repair, consumables and services; **no shop may sell gear or materials** (§7.3). This unblocks tools. | 2026-09-09 |
 | D20 | **No run energy — you always run.** Distance is the cost of travel; shortcuts, boats and teleports are the rewards (§3.1.1). | 2026-09-09 |
 | D21 | **One authored main quest line plus diaries** as the long tail. A quest changes the world; a diary task recognises what you did (§3.5.1). | 2026-09-09 |
-| D22 | **Tone is warm, cosy and PG** — a fallen realm being reclaimed, not mourned. **Oakenfall's dark palette and darkening GRADE step are explicitly not inherited** (§1.1.1, §6.1). | 2026-09-09 |
+| D22 | **Tone is warm, cosy and PG** — a fallen realm being reclaimed, not mourned. **Oakenfall's palette IS inherited** — corrected 2026-09-09 after running the game rather than trusting its docs; it is bright and warm, and its GRADE step is normalisation rather than darkening (§1.1.1, §6.1). | 2026-09-09 |
 | D23 | **Full audio** — music, ambience and SFX. Music streams, SFX bundle, first-tap unlock on iOS, and the game stays fully playable muted (§6.6). | 2026-09-09 |
 | D24 | **Offline-first.** The client runs the kernel and plays with no network; the server stores the save and validates by replaying the command log. ADR-0001 amended accordingly; the trust boundary moves back to the server only for live multiplayer (§4.4). | 2026-09-09 |
 | D25 | **A wide bestiary — animals, mythical beasts, imps, bandits, constructs, custom Blender creatures — held to one visual world.** Coherence is enforced by a shared material scheme, palette, silhouette language and an admission review beside existing assets (§3.4.0). | 2026-09-09 |
