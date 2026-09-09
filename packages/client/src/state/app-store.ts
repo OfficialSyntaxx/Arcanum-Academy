@@ -43,6 +43,8 @@ export interface EconomyState {
   readonly stacks: readonly { definitionId: string; quantity: number }[];
   readonly slotCapacity: number;
   readonly skills: Readonly<Record<string, { level: number; xp: number }>>;
+  /** Equipped gathering tool by skill, separate from the material satchel. */
+  readonly tools: Readonly<Record<string, { definitionId: string; durability: number }>>;
   /** The node being worked, or null when nothing is running. */
   readonly gatheringNodeId: string | null;
   /** Yields from the most recent collection, for a transient readout. */
@@ -63,6 +65,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   stacks: [],
   slotCapacity: 0,
   skills: {},
+  tools: {},
   gatheringNodeId: null,
   lastYields: [],
   lastXpGained: 0,
@@ -119,6 +122,7 @@ export interface AppState {
   setOpenStation(interactableId: string | null): void;
   setPlayerId(playerId: string): void;
   setQueued(queued: { queueSize: number } | null): void;
+  beginTravel(): void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
