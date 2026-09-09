@@ -73,17 +73,17 @@ export class PlayerController {
   }
 
   /**
-   * Routes the player to an arbitrary world point via the navigation graph.
+   * Routes the player to the nearest authored navigation point.
    *
-   * The tapped point is appended after the final graph node so the player walks
-   * the last metre to exactly where they tapped rather than stopping on a
-   * waypoint centre — the difference between feeling responsive and feeling
-   * like the world is on rails.
+   * The graph is the walkable part of the zone: adding a raw tap point after
+   * the route lets an avatar take a final straight-line shortcut through a
+   * building, tree, or landmark. Snapping the destination keeps travel on the
+   * visible paths and gives level art a reliable physical boundary.
    */
   moveTo(destination: Vec2): void {
     const path = this.options.world.pathfinder.between(this.mover.position, destination);
     if (path.length === 0) return;
-    this.mover = setPath(this.mover, [...path, destination], this.params.arrivalRadius);
+    this.mover = setPath(this.mover, path, this.params.arrivalRadius);
   }
 
   /** Routes to an interactable's approach waypoint and adopts its facing. */
