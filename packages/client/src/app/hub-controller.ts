@@ -52,6 +52,8 @@ export interface HubControllerOptions {
   readonly now?: () => number;
   /** Called before the player begins a new route, to end station-bound activity. */
   readonly onBeginTravel?: () => void;
+  /** Called before the player begins a new route, to end station-bound activity. */
+  readonly onBeginTravel?: () => void;
   /**
    * Called when the player engages a gathering node.
    *
@@ -187,7 +189,7 @@ export class HubController {
   navigateToInteractable(id: string): void {
     const target = this.world.zone.interactables.find((item) => item.id === id);
     if (target) {
-      this.options.onBeginTravel?.();
+      this.beginTravel();
       this.player.approach(target.approach);
     }
   }
@@ -286,7 +288,7 @@ export class HubController {
       const point = this.pickGround(x, y);
       if (point) {
         this.pendingInteractionId = null;
-        this.options.onBeginTravel?.();
+        this.beginTravel();
         this.player.moveTo({ x: point.x, z: point.z });
       }
     });
@@ -351,7 +353,7 @@ export class HubController {
   private routeToInteractable(id: string): void {
     const target = this.world.zone.interactables.find((interactable) => interactable.id === id);
     if (!target) return;
-    this.options.onBeginTravel?.();
+    this.beginTravel();
     this.player.approach(target.approach);
     this.pendingInteractionId =
       target.kind === InteractableKind.MerchantStall || target.kind === InteractableKind.QuestBoard
@@ -375,6 +377,13 @@ export class HubController {
     }
   }
 
+  /** Ends contextual UI before an avatar leaves the current location. */
+  private beginTravel(): void {
+    this.lastPromptId = null;
+    useAppStore.getState().beginTravel();
+    this.options.onBeginTravel?.();
+  }
+
   /** Throttled projection of world state into the UI store. */
   private publish(dtMs: number): void {
     this.storeAccumulatorMs += dtMs;
@@ -382,10 +391,12 @@ export class HubController {
     this.storeAccumulatorMs = 0;
 
     const store = useAppStore.getState();
-    const nearest = this.world.nearestInteractable(
-      this.player.position,
-      this.options.tunables.world.interactionRadius,
-    );
+    const nearest = this.player.isTravelling
+      ? null
+      : this.world.nearestInteractable(
+          this.player.position,
+          this.options.tunables.world.interactionRadius,
+        );
 
     const promptId = nearest?.interactable.id ?? null;
     if (promptId !== this.lastPromptId) {
