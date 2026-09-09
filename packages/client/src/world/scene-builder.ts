@@ -108,6 +108,15 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   const wood = track(
     new MeshStandardMaterial({ color: Palette.wood, roughness: 0.8, metalness: 0.05 }),
   );
+  const plaster = track(
+    new MeshStandardMaterial({ color: 0xd6ba82, roughness: 0.96, metalness: 0 }),
+  );
+  const roofTile = track(
+    new MeshStandardMaterial({ color: 0x9b4e35, roughness: 0.9, metalness: 0.02 }),
+  );
+  const doorWood = track(
+    new MeshStandardMaterial({ color: 0x392116, roughness: 0.82, metalness: 0.03 }),
+  );
   const flame = track(
     new MeshStandardMaterial({
       color: Palette.flame,
@@ -172,7 +181,7 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
       x: (building.minX + building.maxX) / 2,
       z: (building.minZ + building.maxZ) / 2,
     });
-    const built = buildBuilding(building, floorY, { wood, track });
+    const built = buildBuilding(building, floorY, { wood, plaster, roofTile, doorWood, track });
     doors.push(built.door);
     group.add(built.object);
   }
@@ -531,6 +540,9 @@ function doorFlankPoints(
 
 interface BuildingParts {
   readonly wood: Material;
+  readonly plaster: Material;
+  readonly roofTile: Material;
+  readonly doorWood: Material;
   readonly track: <T extends BufferGeometry | Material>(item: T) => T;
 }
 
@@ -556,7 +568,7 @@ function buildBuilding(
   const addWall = (cx: number, cz: number, sx: number, sz: number): void => {
     if (sx <= 0.02 || sz <= 0.02) return;
     const geometry = parts.track(new BoxGeometry(sx, building.wallHeight, sz));
-    const wall = new Mesh(geometry, parts.wood);
+    const wall = new Mesh(geometry, parts.plaster);
     wall.position.set(cx, floorY + building.wallHeight / 2, cz);
     object.add(wall);
   };
@@ -620,7 +632,7 @@ function buildBuilding(
   const roofGeometry = parts.track(
     buildHipRoofGeometry(width + 0.6, depth + 0.6, building.roofHeight),
   );
-  const roof = new Mesh(roofGeometry, parts.wood);
+  const roof = new Mesh(roofGeometry, parts.roofTile);
   roof.position.set(centerX, floorY + building.wallHeight, centerZ);
   object.add(roof);
 
@@ -630,7 +642,7 @@ function buildBuilding(
   const doorHeight = building.wallHeight * 0.86;
   const doorThickness = 0.1;
   const doorGeometry = parts.track(new BoxGeometry(building.doorWidth, doorHeight, doorThickness));
-  const doorMesh = new Mesh(doorGeometry, parts.wood);
+  const doorMesh = new Mesh(doorGeometry, parts.doorWood);
   doorMesh.position.set(building.doorWidth / 2, doorHeight / 2, 0);
 
   const pivot = new Group();

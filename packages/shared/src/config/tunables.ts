@@ -226,18 +226,19 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     playerTurnRate: 9,
     waypointArrivalRadius: 0.35,
     interactionRadius: 2.2,
-    cameraViewSize: 9,
-    cameraMinViewSize: 5,
-    cameraMaxViewSize: 20,
+    // The old close, shallow opening framed one oversized academy roof and
+    // hid the paths, trees and landmarks that make the zone readable. Start
+    // high enough to show a living district on a portrait phone.
+    cameraViewSize: 13,
+    cameraMinViewSize: 7,
+    cameraMaxViewSize: 26,
     cameraBoomLength: 120,
     cameraHeight: 5.5,
     cameraSmoothing: 8,
-    // Roughly 30 to 60 degrees above the horizon. Deliberately shallow: the
-    // player never sees the top of a roof or the underside of anything, so
-    // neither has to be modelled. Widening this band is an art-budget decision,
-    // not a camera tweak.
-    cameraMinPitch: 0.52,
-    cameraMaxPitch: 1.05,
+    // A high isometric opening keeps the player, routes and landmarks in one
+    // composition. The player can still drag down for a closer ground view.
+    cameraMinPitch: 0.78,
+    cameraMaxPitch: 1.2,
     npcDwellMinMs: 4_000,
     npcDwellMaxMs: 20_000,
     npcWalkSpeed: 1.5,

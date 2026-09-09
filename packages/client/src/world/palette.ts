@@ -2,20 +2,20 @@
 
 export const Palette = {
   ink: 0x11161d,
-  slate: 0x81965a,
-  slateRaised: 0xb4a486,
-  haze: 0xc6cfd8,
-  hazeDim: 0x8496a8,
-  verdigris: 0x3fa88e,
+  slate: 0x3f6f3b,
+  slateRaised: 0xa87a47,
+  haze: 0xf0dfb0,
+  hazeDim: 0x8a785f,
+  verdigris: 0x2bbbaa,
   /** Warm accent for navigation and landmarks. */
-  gilt: 0xc9a227,
+  gilt: 0xf0a62e,
   alarm: 0xd0524a,
   /** Still water — canals, ponds, river segments. Flat colour; flow lands later. */
-  canal: 0x61a9b1,
+  canal: 0x258db5,
   /** Walkway strips laid along waypoint links. */
-  path: 0xcbb38b,
+  path: 0xe0c27e,
   /** Doors and roof timber. */
-  wood: 0x8b6448,
+  wood: 0x5c3524,
   /** Lamps, torches, lanterns — warm decorative light, not a dynamic source. */
   flame: 0xffb15a,
 } as const;
@@ -39,14 +39,14 @@ export interface Atmosphere {
  */
 const PRESETS: Readonly<Record<string, Atmosphere>> = {
   'courtyard.afternoon': {
-    sky: 0xc5ded3,
-    fog: 0xb4a486,
-    fogNear: 34,
-    fogFar: 96,
-    sunColour: 0xffe9c4,
-    sunIntensity: 2.2,
-    ambientColour: 0xe4eed3,
-    ambientIntensity: 1.2,
+    sky: 0x78b5c4,
+    fog: 0x89a56c,
+    fogNear: 46,
+    fogFar: 120,
+    sunColour: 0xffd18a,
+    sunIntensity: 1.35,
+    ambientColour: 0x86b7a8,
+    ambientIntensity: 0.48,
   },
   'forest.canopy': {
     sky: 0x1f3327,

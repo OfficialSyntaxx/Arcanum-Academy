@@ -66,7 +66,10 @@ export class WorldService {
     this.sun = new DirectionalLight(this.atmosphere.sunColour, this.atmosphere.sunIntensity);
     this.sun.castShadow = quality.shadowsEnabled;
     if (quality.shadowsEnabled) {
-      this.sun.shadow.mapSize.set(1024, 1024);
+      this.sun.shadow.mapSize.set(
+        quality.tier === 'high' ? 1024 : 512,
+        quality.tier === 'high' ? 1024 : 512,
+      );
       this.sun.shadow.camera.near = 1;
       this.sun.shadow.camera.far = 90;
       this.sun.shadow.camera.left = -30;
