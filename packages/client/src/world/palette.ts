@@ -41,8 +41,8 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
   'courtyard.afternoon': {
     sky: 0x78b5c4,
     fog: 0x89a56c,
-    fogNear: 46,
-    fogFar: 120,
+    fogNear: 155,
+    fogFar: 300,
     sunColour: 0xffd18a,
     sunIntensity: 1.35,
     ambientColour: 0x86b7a8,
@@ -51,8 +51,8 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
   'forest.canopy': {
     sky: 0x1f3327,
     fog: 0x223a2c,
-    fogNear: 22,
-    fogFar: 70,
+    fogNear: 135,
+    fogFar: 260,
     sunColour: 0xcfe8a8,
     sunIntensity: 0.85,
     ambientColour: 0x5f8f6c,
@@ -61,8 +61,8 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
   'mountains.overcast': {
     sky: 0x3a3f47,
     fog: 0x40454d,
-    fogNear: 28,
-    fogFar: 88,
+    fogNear: 155,
+    fogFar: 310,
     sunColour: 0xd8dee6,
     sunIntensity: 0.95,
     ambientColour: 0x7c828c,
@@ -71,8 +71,8 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
   'snow.overcast': {
     sky: 0xcbd9e6,
     fog: 0xd8e4ee,
-    fogNear: 20,
-    fogFar: 76,
+    fogNear: 135,
+    fogFar: 270,
     sunColour: 0xf3f8ff,
     sunIntensity: 1.05,
     ambientColour: 0xb9cbdc,
