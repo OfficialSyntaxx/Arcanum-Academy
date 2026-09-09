@@ -20,6 +20,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   RingGeometry,
+  type Object3D,
   type Scene,
 } from 'three';
 import {
@@ -155,6 +156,19 @@ export class WorldService {
       }
     }
     return best;
+  }
+
+  /** Resolves an object hit by a raycast to its authored world interaction. */
+  interactableFromObject(object: Object3D): Interactable | null {
+    let current: Object3D | null = object;
+    while (current !== null && current !== this.root) {
+      const id = current.userData['interactableId'];
+      if (typeof id === 'string') {
+        return this.zone.interactables.find((interactable) => interactable.id === id) ?? null;
+      }
+      current = current.parent;
+    }
+    return null;
   }
 
   /**
