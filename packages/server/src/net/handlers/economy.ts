@@ -83,6 +83,7 @@ function project(state: PlayerState) {
   return {
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     skills: state.skills,
+    tools: state.tools,
     gathering: state.gathering,
   };
 }
