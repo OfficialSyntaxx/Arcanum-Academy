@@ -22,6 +22,10 @@ interface HarvestPatch {
     readonly stacks?: readonly { definitionId: string; quantity: number }[];
     readonly slotCapacity?: number;
   };
+  readonly bank?: {
+    readonly stacks?: readonly { definitionId: string; quantity: number }[];
+    readonly slotCapacity?: number;
+  };
   readonly skills?: Readonly<Record<string, { level: number; xp: number }>>;
   readonly tools?: Readonly<Record<string, { definitionId: string; durability: number }>>;
   readonly gathering?: { readonly nodeId?: string } | null;
@@ -44,6 +48,8 @@ const OWNED = new Set([
   'gathering.collect',
   'gathering.stop',
   'crafting.craft',
+  'bank.deposit',
+  'bank.withdraw',
 ]);
 
 export class EconomyController {
@@ -82,6 +88,14 @@ export class EconomyController {
 
   craft(recipeId: string): void {
     this.send('crafting.craft', { recipeId });
+  }
+
+  deposit(itemId: string, quantity: number): void {
+    this.send('bank.deposit', { itemId, quantity });
+  }
+
+  withdraw(itemId: string, quantity: number): void {
+    this.send('bank.withdraw', { itemId, quantity });
   }
 
   dispose(): void {
@@ -128,6 +142,10 @@ export class EconomyController {
       ...(patch.inventory?.stacks !== undefined ? { stacks: patch.inventory.stacks } : {}),
       ...(patch.inventory?.slotCapacity !== undefined
         ? { slotCapacity: patch.inventory.slotCapacity }
+        : {}),
+      ...(patch.bank?.stacks !== undefined ? { bankStacks: patch.bank.stacks } : {}),
+      ...(patch.bank?.slotCapacity !== undefined
+        ? { bankSlotCapacity: patch.bank.slotCapacity }
         : {}),
       ...(patch.skills !== undefined ? { skills: patch.skills } : {}),
       ...(patch.tools !== undefined ? { tools: patch.tools } : {}),
