@@ -169,7 +169,15 @@ export class HubController {
     // Under reduced motion the camera resolves immediately instead of easing.
     this.camera.update(focus, this.accessibility.reducedMotion ? 1 : dtSeconds);
 
-    this.world.actors.setTransform(this.playerSlot, focus.x, focus.y, focus.z, this.player.facing);
+    this.world.actors.setTransform(
+      this.playerSlot,
+      focus.x,
+      focus.y,
+      focus.z,
+      this.player.facing,
+      this.player.gait,
+      this.now(),
+    );
     this.npcs.update(this.now(), dtSeconds * 1000);
     this.world.actors.flush();
 
