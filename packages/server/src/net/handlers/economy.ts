@@ -35,6 +35,7 @@ import {
   type Failure,
   type InteractableId,
   type ItemCatalog,
+  type ItemInstanceId,
   type NodeCatalog,
   type NodeDefinition,
   type RecipeBook,
@@ -446,6 +447,47 @@ export function registerEconomyHandlers(
       return ok({ state: next, value: { ...project(next), repairCost: cost } });
     });
   };
+  const upgradeTool: CommandHandler = async (session: Session, payload: unknown) => {
+    const toolId = readString(payload, 'toolId');
+    if (toolId === null) return err(invalid('merchant.tool_missing', 'toolId is required'));
+    const definition = catalogs.items.get(toolId as never);
+    if (definition?.tool === undefined || definition.category !== ItemCategory.Tool) {
+      return err(failure(FailureCode.NotFound, 'merchant.tool_unknown'));
+    }
+    const skillId = definition.tool.boundSkillId;
+    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      const level = skillProgress(state, skillId).level;
+      const required = definition.tool!.requiredSkillLevel ?? 1;
+      if (level < required) {
+        return err(invalid('merchant.skill_too_low', `requires ${skillId} level ${required}`));
+      }
+      const current = state.tools[skillId];
+      if (current?.definitionId === definition.id) {
+        return err(invalid('merchant.tool_already_equipped', 'this tool is already equipped'));
+      }
+      if (state.coins < definition.baseValue) {
+        return err(
+          failure(FailureCode.Conflict, 'merchant.insufficient_coins', {
+            context: { cost: definition.baseValue, held: state.coins },
+          }),
+        );
+      }
+      const next: PlayerState = {
+        ...state,
+        coins: state.coins - definition.baseValue,
+        tools: {
+          ...state.tools,
+          [skillId]: {
+            instanceId: `merchant-${toolId}-${now()}` as ItemInstanceId,
+            definitionId: definition.id,
+            durability: definition.tool!.maxDurability,
+            acquiredAtMs: now(),
+          },
+        },
+      };
+      return ok({ state: next, value: { ...project(next), toolCost: definition.baseValue } });
+    });
+  };
   const sync: CommandHandler = async (session: Session) => {
     const loaded = await players.load(session.playerId);
     if (!loaded.ok) return err(loaded.error);
@@ -461,5 +503,6 @@ export function registerEconomyHandlers(
     .register('bank.deposit', moveBankItem('deposit'))
     .register('bank.withdraw', moveBankItem('withdraw'))
     .register('merchant.sell', sell)
-    .register('merchant.repair', repair);
+    .register('merchant.repair', repair)
+    .register('merchant.upgrade_tool', upgradeTool);
 }
