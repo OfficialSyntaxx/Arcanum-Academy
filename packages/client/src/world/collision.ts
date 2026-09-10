@@ -69,6 +69,35 @@ export function resolveMovement(
   return { position: { x: from.x + dx * safeT, z: from.z + dz * safeT }, collided: true };
 }
 
+/** True when the centre of a player-sized actor can occupy this point. */
+export function isPointWalkable(
+  point: Vec2,
+  bounds: ZoneBounds,
+  obstacles: readonly WorldObstacle[],
+  radius: number,
+): boolean {
+  if (
+    point.x < bounds.minX + radius ||
+    point.x > bounds.maxX - radius ||
+    point.z < bounds.minZ + radius ||
+    point.z > bounds.maxZ - radius
+  )
+    return false;
+  return !obstacles.some((obstacle) => {
+    if (obstacle.kind === 'circle') {
+      const dx = point.x - obstacle.centre.x;
+      const dz = point.z - obstacle.centre.z;
+      return dx * dx + dz * dz < (obstacle.radius + radius) ** 2;
+    }
+    return (
+      point.x > obstacle.minX - radius &&
+      point.x < obstacle.maxX + radius &&
+      point.z > obstacle.minZ - radius &&
+      point.z < obstacle.maxZ + radius
+    );
+  });
+}
+
 function segmentRectContact(
   from: Vec2,
   to: Vec2,
