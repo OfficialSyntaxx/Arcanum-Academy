@@ -64,6 +64,8 @@ export interface HubControllerOptions {
   readonly onEngageCraftingStation?: (interactableId: string) => void;
   /** Called when the player reaches a bank chest. */
   readonly onEngageBankChest?: (interactableId: string) => void;
+  /** Called when the player reaches a merchant stall. */
+  readonly onEngageMerchantStall?: (interactableId: string) => void;
   /** Called when the player engages a zone portal, with the target zone id. */
   readonly onEngageZonePortal?: (targetZoneId: string) => void;
   /**
@@ -355,10 +357,7 @@ export class HubController {
     if (!target) return;
     this.beginTravel();
     this.player.approach(target.approach);
-    this.pendingInteractionId =
-      target.kind === InteractableKind.MerchantStall || target.kind === InteractableKind.QuestBoard
-        ? null
-        : target.id;
+    this.pendingInteractionId = target.kind === InteractableKind.QuestBoard ? null : target.id;
   }
 
   /** Starts a queued skilling or travel action once the avatar reaches it. */
@@ -374,6 +373,8 @@ export class HubController {
       this.options.onEngageCraftingStation?.(target.id);
     } else if (target.kind === InteractableKind.BankChest) {
       this.options.onEngageBankChest?.(target.id);
+    } else if (target.kind === InteractableKind.MerchantStall) {
+      this.options.onEngageMerchantStall?.(target.id);
     } else if (target.kind === InteractableKind.ZonePortal && target.targetZone) {
       this.options.onEngageZonePortal?.(target.targetZone);
     }
