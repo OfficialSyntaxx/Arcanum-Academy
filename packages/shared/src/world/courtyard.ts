@@ -45,7 +45,7 @@ export const COURTYARD: Zone = {
       // The mines cut downwards.
       { minX: -24, maxX: -10, minZ: -24, maxZ: -10, height: -0.8 },
     ],
-    canals: [],
+    canals: [{ minX: 11.5, maxX: 19, minZ: -10.5, maxZ: -4.5, waterHeight: 0.03 }],
   },
   spawn: wp('wp.plaza.center'),
   atmosphere: 'courtyard.afternoon',
@@ -229,8 +229,15 @@ export const COURTYARD: Zone = {
       id: wp('wp.library.entry'),
       position: { x: 13.5, z: -13.5 },
       radius: 2,
-      links: [wp('wp.plaza.northeast'), wp('wp.library.stacks')],
+      links: [wp('wp.plaza.northeast'), wp('wp.library.stacks'), wp('wp.tidepool.bank')],
       tags: ['quests'],
+    },
+    {
+      id: wp('wp.tidepool.bank'),
+      position: { x: 10.3, z: -7.5 },
+      radius: 1.6,
+      links: [wp('wp.library.entry')],
+      tags: ['gathering', 'fishing'],
     },
     {
       id: wp('wp.library.stacks'),
@@ -337,6 +344,15 @@ export const COURTYARD: Zone = {
       facing: Math.PI * 0.75,
       label: 'Emberwood Stand',
       verb: 'Fell',
+    },
+    {
+      id: ix('int.node.tidepool'),
+      kind: InteractableKind.GatheringNode,
+      position: { x: 14, z: -7.5 },
+      approach: wp('wp.tidepool.bank'),
+      facing: Math.PI * 0.5,
+      label: 'Starlit Tide Pool',
+      verb: 'Fish',
     },
     {
       id: ix('int.station.distillery'),
