@@ -1,11 +1,9 @@
 /**
  * Actor rendering pool.
  *
- * Every walking figure in the courtyard — the player, six named NPCs and the
- * ambient crowd — is drawn from two `InstancedMesh` objects: one for bodies, one
- * for heads. That is two draw calls for the entire population regardless of how
- * many actors the quality tier allows, which is the difference between a phone
- * holding frame rate and not.
+ * Every walking figure is a small low-poly character model: robe, head, hair,
+ * arms, and legs. Each body part is an instanced mesh, so the entire crowd is
+ * still only a handful of draw calls on a phone.
  *
  * The pool is fixed-capacity and allocated once. Acquiring an actor hands back a
  * slot index; releasing returns it. Nothing is created or destroyed at runtime,
@@ -46,31 +44,62 @@ export function appearanceColour(key: string): number {
 
 const BODY_HEIGHT = 1.15;
 const HEAD_HEIGHT = 1.62;
+const HAIR_HEIGHT = 1.76;
+const LEG_HEIGHT = 0.52;
+const ARM_HEIGHT = 1.22;
+
+function hairColour(body: number): number {
+  return new Color(body).offsetHSL(0.02, -0.35, -0.28).getHex();
+}
 
 export class ActorPool {
   readonly group = new Group();
   private readonly bodies: InstancedMesh;
   private readonly heads: InstancedMesh;
+  private readonly hairs: InstancedMesh;
+  private readonly leftArms: InstancedMesh;
+  private readonly rightArms: InstancedMesh;
+  private readonly leftLegs: InstancedMesh;
+  private readonly rightLegs: InstancedMesh;
   private readonly free: number[];
   private readonly active: Uint8Array;
   private readonly matrix = new Matrix4();
   private readonly quaternion = new Quaternion();
+  private readonly limbQuaternion = new Quaternion();
   private readonly position = new Vector3();
   private readonly scale = new Vector3(1, 1, 1);
   private readonly hidden = new Vector3(0, -1000, 0);
   private readonly colour = new Color();
+  private readonly axisY = new Vector3(0, 1, 0);
+  private readonly axisX = new Vector3(1, 0, 0);
 
   constructor(
     readonly capacity: number,
     shadowsEnabled: boolean,
   ) {
-    const bodyGeometry = new CapsuleGeometry(0.28, 0.72, 4, 8);
+    const bodyGeometry = new CapsuleGeometry(0.3, 0.72, 4, 8);
     const headGeometry = new SphereGeometry(0.21, 10, 8);
+    const hairGeometry = new SphereGeometry(0.225, 8, 6);
+    const limbGeometry = new CapsuleGeometry(0.075, 0.34, 3, 6);
+    const legGeometry = new CapsuleGeometry(0.09, 0.38, 3, 6);
     const material = new MeshStandardMaterial({ roughness: 0.78, metalness: 0.02 });
 
     this.bodies = new InstancedMesh(bodyGeometry, material, capacity);
     this.heads = new InstancedMesh(headGeometry, material.clone(), capacity);
-    for (const mesh of [this.bodies, this.heads]) {
+    this.hairs = new InstancedMesh(hairGeometry, material.clone(), capacity);
+    this.leftArms = new InstancedMesh(limbGeometry, material.clone(), capacity);
+    this.rightArms = new InstancedMesh(limbGeometry, material.clone(), capacity);
+    this.leftLegs = new InstancedMesh(legGeometry, material.clone(), capacity);
+    this.rightLegs = new InstancedMesh(legGeometry, material.clone(), capacity);
+    for (const mesh of [
+      this.bodies,
+      this.heads,
+      this.hairs,
+      this.leftArms,
+      this.rightArms,
+      this.leftLegs,
+      this.rightLegs,
+    ]) {
       mesh.castShadow = shadowsEnabled;
       mesh.frustumCulled = false;
       this.group.add(mesh);
@@ -97,8 +126,24 @@ export class ActorPool {
     this.colour.setHex(appearanceColour(appearance));
     this.bodies.setColorAt(slot, this.colour);
     this.heads.setColorAt(slot, this.colour.clone().offsetHSL(0, -0.15, 0.12));
-    if (this.bodies.instanceColor) this.bodies.instanceColor.needsUpdate = true;
-    if (this.heads.instanceColor) this.heads.instanceColor.needsUpdate = true;
+    this.hairs.setColorAt(slot, new Color(hairColour(this.colour.getHex())));
+    const clothDark = this.colour.clone().offsetHSL(0, -0.08, -0.18);
+    const clothLight = this.colour.clone().offsetHSL(0, -0.05, 0.06);
+    this.leftArms.setColorAt(slot, clothLight);
+    this.rightArms.setColorAt(slot, clothLight);
+    this.leftLegs.setColorAt(slot, clothDark);
+    this.rightLegs.setColorAt(slot, clothDark);
+    for (const mesh of [
+      this.bodies,
+      this.heads,
+      this.hairs,
+      this.leftArms,
+      this.rightArms,
+      this.leftLegs,
+      this.rightLegs,
+    ]) {
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
     return slot;
   }
 
@@ -110,27 +155,53 @@ export class ActorPool {
   }
 
   /** Places an actor. `facing` is radians, matching the simulation convention. */
-  setTransform(slot: number, x: number, y: number, z: number, facing: number): void {
+  setTransform(
+    slot: number,
+    x: number,
+    y: number,
+    z: number,
+    facing: number,
+    gait = 0,
+    nowMs = 0,
+  ): void {
     if (slot < 0 || slot >= this.capacity || this.active[slot] === 0) return;
-    this.quaternion.setFromAxisAngle(new Vector3(0, 1, 0), facing);
+    this.quaternion.setFromAxisAngle(this.axisY, facing);
 
-    this.position.set(x, y + BODY_HEIGHT, z);
-    this.matrix.compose(this.position, this.quaternion, this.scale);
-    this.bodies.setMatrixAt(slot, this.matrix);
+    this.setPart(this.bodies, slot, x, y + BODY_HEIGHT, z, this.quaternion);
+    this.setPart(this.heads, slot, x, y + HEAD_HEIGHT, z, this.quaternion);
+    this.setPart(this.hairs, slot, x, y + HAIR_HEIGHT, z - 0.03, this.quaternion, 1, 0.62, 1);
 
-    this.position.set(x, y + HEAD_HEIGHT, z);
-    this.matrix.compose(this.position, this.quaternion, this.scale);
-    this.heads.setMatrixAt(slot, this.matrix);
+    const stride = Math.sin(nowMs * 0.012 + slot * 0.71) * gait * 0.72;
+    this.setLimb(this.leftArms, slot, x, y + ARM_HEIGHT, z, facing, -0.35, -stride);
+    this.setLimb(this.rightArms, slot, x, y + ARM_HEIGHT, z, facing, 0.35, stride);
+    this.setLimb(this.leftLegs, slot, x, y + LEG_HEIGHT, z, facing, -0.13, stride);
+    this.setLimb(this.rightLegs, slot, x, y + LEG_HEIGHT, z, facing, 0.13, -stride);
   }
 
   /** Uploads this frame's transforms. Call once per frame, after all writes. */
   flush(): void {
-    this.bodies.instanceMatrix.needsUpdate = true;
-    this.heads.instanceMatrix.needsUpdate = true;
+    for (const mesh of [
+      this.bodies,
+      this.heads,
+      this.hairs,
+      this.leftArms,
+      this.rightArms,
+      this.leftLegs,
+      this.rightLegs,
+    ])
+      mesh.instanceMatrix.needsUpdate = true;
   }
 
   dispose(): void {
-    for (const mesh of [this.bodies, this.heads]) {
+    for (const mesh of [
+      this.bodies,
+      this.heads,
+      this.hairs,
+      this.leftArms,
+      this.rightArms,
+      this.leftLegs,
+      this.rightLegs,
+    ]) {
       mesh.dispose();
       mesh.geometry.dispose();
       (mesh.material as MeshStandardMaterial).dispose();
@@ -140,7 +211,52 @@ export class ActorPool {
 
   private park(slot: number): void {
     this.matrix.compose(this.hidden, this.quaternion, this.scale);
-    this.bodies.setMatrixAt(slot, this.matrix);
-    this.heads.setMatrixAt(slot, this.matrix);
+    for (const mesh of [
+      this.bodies,
+      this.heads,
+      this.hairs,
+      this.leftArms,
+      this.rightArms,
+      this.leftLegs,
+      this.rightLegs,
+    ])
+      mesh.setMatrixAt(slot, this.matrix);
+  }
+
+  private setPart(
+    mesh: InstancedMesh,
+    slot: number,
+    x: number,
+    y: number,
+    z: number,
+    rotation: Quaternion,
+    sx = 1,
+    sy = 1,
+    sz = 1,
+  ) {
+    this.position.set(x, y, z);
+    this.scale.set(sx, sy, sz);
+    this.matrix.compose(this.position, rotation, this.scale);
+    mesh.setMatrixAt(slot, this.matrix);
+    this.scale.set(1, 1, 1);
+  }
+
+  private setLimb(
+    mesh: InstancedMesh,
+    slot: number,
+    x: number,
+    y: number,
+    z: number,
+    facing: number,
+    side: number,
+    swing: number,
+  ) {
+    const localX = side * 0.31;
+    const worldX = x + Math.cos(facing) * localX;
+    const worldZ = z - Math.sin(facing) * localX;
+    this.quaternion.setFromAxisAngle(this.axisY, facing);
+    this.limbQuaternion.setFromAxisAngle(this.axisX, swing);
+    this.quaternion.multiply(this.limbQuaternion);
+    this.setPart(mesh, slot, worldX, y, worldZ, this.quaternion);
   }
 }
