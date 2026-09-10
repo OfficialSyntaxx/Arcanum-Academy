@@ -1,12 +1,16 @@
+Warning: truncated output (original token count: 31651)
+Total output lines: 2051
+
 # ALDERFELL — AI HANDOVER
 
 ### Game design document and engineering handover — everything needed to build it from nothing
 
-**Written:** 2026-09-09 · **Author:** Claude Code, from a full read of all four repositories
+**Written:** 2026-09-09 · **Updated:** 2026-09-10 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G0 complete. G1 environment implementation is on `codex/g1-shorelands`;
-**not passed**. See `docs/G1_RETURN.md` for validation and outstanding human evidence.
+**Code state:** G1 is implemented and deployed. The project is in the post-G1 vertical-slice
+phase: reliable skilling/economy, persistence, observability, and character visuals are being
+iterated before fishing, dialogue/quests, and combat.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -48,7 +52,8 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of the G0 commit it reports **362 tests across 30 files**.
+afterwards is yours. As of the 2026-09-10 movement/character work it reports **376 tests across
+35 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -85,16 +90,35 @@ packages/client/   @alderfell/client   three.js renderer, orthographic camera ri
 tools/scripts/check-boundaries.mjs     the architecture linter; fails CI
 ```
 
-**Working today:** boot → handshake → world load → walk by tapping → rotate by dragging →
-pinch to zoom → approach an interactable → gather → craft → inventory. Four zones exist as
-data (`courtyard`, `forest`, `mountains`, `snow`), built from primitives.
+**Working today:** boot → durable identity handshake → world load → direct tap-to-walk → rotate
+by dragging → pinch to zoom → approach an interactable → gather → craft → inventory. The player
+is **not** constrained to the waypoint routes: authored navigation remains for NPC schedules and
+approach points, while direct walking collides with buildings, canals, Courtyard trees, rocks and
+homes. Four zones exist as data (`courtyard`, `forest`, `mountains`, `snow`).
 
-**Not built yet:** combat of any kind, quests, banking, tools in players' hands, the hold,
-the wiki, account recovery. §11.1 lists the deliberate deferrals, which are not oversights.
+Skilling and economy: Mining, Forestry, Foraging, Refining and Scribing work through world
+stations; equipment has starter tools, durability/repair, and level-gated merchant upgrades;
+the bank supports deposits/withdrawals; merchant sales support explicit quantities. Inventory,
+resource collection feedback, skill XP, panel auto-close on travel, local map travel, and a top
+HUD collection feed are live.
 
-**The honest state of the look:** the world is untextured geometric primitives, and on a phone
-it currently reads as close to empty. That is the entire subject of G1 (§13) and it is the most
-important thing in the project.
+Reliability and operations: production uses Render Postgres for player and identity persistence.
+The client submits low-volume diagnostic events; a protected server diagnostic feed persists them
+in Postgres; the in-game **Logs** panel exposes a local session trace. `/healthz`, `/readyz`,
+`/version`, and `/metrics` are available on the server. GitHub Actions runs formatting, lint,
+architecture boundaries, types, 376 tests, production build, and Playwright phone/landscape/
+desktop visual checks with screenshot artifacts. Netlify production is
+`https://arcanum-academy.netlify.app`; Render is `https://alderfell-server.onrender.com`.
+
+Visual state: Courtyard has low-poly environment GLB upgrades with primitive fallbacks. Characters
+are now a low-poly instanced model made from robe, head, hair, arms and legs, including a
+procedural walk cycle and appearance palettes. It is intentionally asset-light and mobile-safe;
+the next art step is authored GLB character assets with richer silhouette, equipment attachment
+points, and idle/gathering animations.
+
+**Still not built:** fishing and fishing tools, combat, quests/dialogue, the hold, wiki, account
+recovery, achievement/collection-log screens, and authored character GLB assets. §11.1 lists the
+deliberate deferrals, which are not oversights.
 
 ---
 
@@ -342,10 +366,10 @@ three levels of content is worse than no skill.
 | Resource nodes | Per-node level req, XP, yield table, depletion, regrowth timers. | Arcanum `content/data/nodes.json`; isorpg `data/Skills.ts` `ResourceDrop` |
 | Seeded harvest resolution | A session is a **seed + tick count**, never rolled results, so it replays identically. | Arcanum `sim/economy/gathering.ts` |
 | Rare finds | A small chance of a valuable variant per gather. | ALA "Pristine" mechanic |
-| Tools & durability | Better tools = faster/better yield. Durability is a **coin sink**: a broken tool never interrupts an action, it reduces yield until repaired. **Tools can now ship** — the currency they depend on exists (§7.3). | Arcanum (modelled, not yet granted — see §11.1) |
+| Tools & durability | Better tools = faster/better yield. A broken tool never interrupts an action; it reduces yield until repaired. Every player receives an equipped Academy starter kit, shown separately from the bag. Repair remains the next currency-backed slice. | Arcanum (implemented in G2) |
 | Inventory / bag | **30 slots.** Stack + slot arithmetic. Top up partial stacks first; drain smallest-first; ties break on slot index. | Arcanum `sim/economy/inventory.ts` |
 | Equipment screen | Worn gear lives on a **separate equipment screen and never occupies bag slots** (OSRS's arrangement). Slots: head, cape, neck, ammo, weapon, body, shield, legs, hands, feet, ring. | — |
-| Bank | Deposit/withdraw, tabs, search. **Not yet built anywhere.** | — |
+| Bank | Deposit/withdraw through the Reclaimer’s Cache in the world. Tabs and search remain future UX improvements. | Alderfell G2 |
 
 > **Bag size is 30 slots, and it is a design constraint rather than a number.** A tight bag is
 > what turns a gathering run into a decision — food or ore, one more rock or bank now. It is a
@@ -957,126 +981,7 @@ joystick.**
 An earlier draft of this plan argued for a camera locked at a fixed isometric angle, on the
 grounds that it is a *budget* decision — models only ever look right from one angle, so
 backfaces never show and buildings need no backs. The owner chose free rotation instead, and
-that is the right call for an OSRS-style game: you rotate constantly to see round terrain and
-line up a click. Record the cost honestly, because it is real:
-
-> Every asset must now read correctly from **360° of yaw**. Nothing gets a missing back.
-
-**What limits the damage: pitch stays constrained** (roughly 30–60° above the horizon). You
-never see the top of a roof or the underside of anything, so roofs stay simple, interiors are
-never visible from outside, and anything above eye level can be aggressively LOD'd.
-
-**The consequence for art — this is the important one.** A free camera pushes decisively
-toward **low-poly rigged 3D meshes over pre-rendered sprite sheets** for anything animated. A
-sprite sheet under free yaw needs 8–16 directions × every animation frame × every gear
-variant, which multiplies out of control on the first piece of equipment. A rigged low-poly
-mesh animates once and works from every angle, at any zoom, with gear attached to bones.
-
-**Pre-rendered sprites are not gone — they are demoted to where yaw doesn't matter:** item
-and skill icons, UI, distant billboarded foliage, and flat ground decals. See §6.
-
-#### 5.2.1 What to call this style — read this before saying "2.5D"
-
-This caused real confusion once already, so it is written down plainly.
-
-**Alderfell is low-poly 3D rendered under an orthographic camera with free yaw and a
-constrained pitch.** It is *not* 2.5D isometric, and it is not 2D.
-
-Earlier planning did recommend 2.5D isometric, and that recommendation was sound **on the
-assumption of a locked camera** — locking the angle is precisely what makes a 3D scene "2.5D",
-because models then only ever need one face. Approving the free camera (D6) removed the lock,
-and the label went with it. The label changing is not a change of ambition or a scope
-increase — it is a consequence that should have been stated at the time.
-
-**What holds, unchanged, from the original 2.5D direction:**
-
-- Low-poly, flat-shaded, chunky, stylised. Not photoreal, not a AAA pipeline.
-- **Orthographic** projection, so the world still reads flat and diorama-like rather than
-  cinematic — this is most of what makes it *look* isometric.
-- CC0 asset packs, Blender in CI, no paid tools.
-- No Unity, no App Store, still a PWA on the home screen.
-- The pitch band still means no roof tops and no undersides, so those stay cheap.
-
-**What genuinely changed:** models must read correctly through 360° of yaw.
-
-**Why that cost is modest rather than severe:** we render **3D meshes, not pre-rendered
-sprites** (§5.2). A low-poly hut modelled all the way round is barely more work than one
-modelled front-only — a mesh has a back whether the camera sees it or not. The same change
-would have been punishing with sprite sheets, which is exactly why the free camera pushed the
-art direction to meshes in the first place.
-
-**Two alternatives were considered and rejected by the owner**, recorded so they are not
-re-proposed as new ideas: *snapped rotation* to 4 or 8 fixed compass angles (cheaper art, more
-diorama-like) and *true locked isometric* (cheapest art, but you can never look behind
-anything, and it contradicts the tap-to-rotate control in D7).
-
-**Camera spec:**
-
-| Property | Value |
-|---|---|
-| Projection | Orthographic |
-| Yaw | Free, 360°, smoothed |
-| Pitch | Clamped to a band (start ~30–60°, tune on device) |
-| Zoom | Clamped ortho frustum size, pinch-driven |
-| Follow | Exponential smoothing toward the player |
-| Framing | A `frame()` call for scripted shots (boss entry, quest beats) |
-
-`camera-rig.ts` currently uses a `PerspectiveCamera` with yaw/pitch orbit. Converting it to
-orthographic and re-tuning the band is a contained change to one file.
-
----
-
-## 6. Art direction & the asset pipeline
-
-### 6.1 Direction
-
-**Warm, cosy, low-poly medieval.** Storybook rather than gritty. Think a bright autumn
-afternoon in a place people used to live.
-
-> ✅ **Correction, 2026-09-09 — inherit Oakenfall's palette after all.** An earlier draft of this
-> document said Oakenfall was "dark, desaturated and earth-tinted" and warned against copying
-> it. **That was wrong.** It came from reading Oakenfall's own `CLAUDE.md` — which still
-> describes a "dark old-school-MMORPG palette" — rather than from running the game. The built
-> game (see `docs/baseline/2026-09-09-oakenfall-*.png`) is **bright, warm and sunny**: vivid but
-> unsaturated greens, clear water, soft shadows, a spring afternoon. It is already close to
-> where Alderfell wants to be.
->
-> This is the §12 trap — *verify against a running build, not against reasoning* — and it was
-> walked into while writing the very document that records it. Left visible on purpose.
-
-**What to actually take from Oakenfall:**
-
-- **The world palette, directly.** Warm, bright, readable in daylight on a phone.
-- **The UI chrome, directly.** Amber and warm wood on near-black. It works *because* it frames a
-  bright world — a dark HUD around a sunny scene reads as cosy, not grim.
-- **The GRADE convention, correctly understood.** It exists to pull incoming assets *into the
-  set* so a new sprite doesn't sit too bright or too blue beside existing ones. That is
-  **normalisation, not darkening** — and it is precisely the mechanism the bestiary coherence
-  rule needs (§3.4.0).
-
-The palette:
-
-- **Warm neutrals** for stone and timber — honey, oatmeal, weathered terracotta, not grey.
-- **Rich but not neon greens** for foliage, with yellow in the mix rather than blue.
-- **Golden key light.** Sun low enough to be warm, high enough to read the ground.
-- **Soft, coloured shadows** — never black. Shadow is where a scene reads as cheap.
-- **Glowing windows, lanterns and fires** as the signature — the single strongest cue that a
-  place is safe and inhabited, and worth spending real effort on.
-- Contrast stays gentle. Readability on a phone in daylight comes from **value separation and
-  silhouette**, not from cranking saturation or darkness.
-
-Silhouettes are **rounded and chunky** rather than jagged. Nothing spiky, nothing skeletal.
-
-**This makes the free-asset story easier, not harder.** KayKit, Kenney and Quaternius are all
-naturally warm and stylised — Oakenfall had to fight them darker. Alderfell mostly gets to use
-them as authored, which removes a whole processing step and a whole class of coherence bug.
-
-Style rules (inherited from ALA's `BLENDERTODO.md` §0, which are correct and should be
-carried over verbatim into the new repo):
-
-- 1 Blender unit = 1 metre; metric; scale 1.0. Apply all transforms before export.
-- Flat-shaded, low-poly. Hard edges. Chunky, readable silhouettes.
-- Detail below ~5 cm is invisible at play distance — delete it.
+that is the right call for an OSRS-style game: you rotate c…1651 tokens truncated… ~5 cm is invisible at play distance — delete it.
 - No bevels below 2 cm. No subdivision surface. No microdetail geometry.
 - Colour from flat materials or a small texture atlas — never per-object 2K maps.
 - **Never bake lighting or AO into textures.** The game lights the scene.
