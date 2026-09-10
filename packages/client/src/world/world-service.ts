@@ -40,7 +40,12 @@ import { Pathfinder } from '@alderfell/sim';
 
 import type { QualitySettings } from '../core/device.js';
 import { ActorPool } from './actor-pool.js';
-import { authoredObstacles, resolveMovement, type WorldObstacle } from './collision.js';
+import {
+  authoredObstacles,
+  isPointWalkable,
+  resolveMovement,
+  type WorldObstacle,
+} from './collision.js';
 import { environmentCollisionPlacements } from './environment-assets.js';
 import { Palette, atmosphereFor, daylight, sunElevation, type Atmosphere } from './palette.js';
 import { buildZoneGeometry, type ZoneGeometry } from './scene-builder.js';
@@ -163,6 +168,126 @@ export class WorldService {
   /** Resolves a free-form player step against solid scenery and zone bounds. */
   resolvePlayerMovement(from: Vec2, requested: Vec2) {
     return resolveMovement(from, requested, this.zone.bounds, this.obstacles, 0.38);
+  }
+
+  /**
+   * Finds a free-form route around scenery when a straight run is blocked.
+   *
+   * This is intentionally a small local grid rather than the authored NPC
+   * graph: players may cut across grass anywhere, but long taps never strand
+   * them against a tree, rock, building or canal. The result is line-of-sight
+   * simplified before it reaches the mover, so it still looks like natural
+   * direct movement rather than tile-by-tile path following.
+   */
+  planPlayerPath(from: Vec2, destination: Vec2): readonly Vec2[] {
+    const radius = 0.38;
+    const target = this.nearestWalkable(destination, radius);
+    if (target === null) return [];
+    if (!this.resolvePlayerMovement(from, target).collided) return [target];
+
+    const cell = 0.9;
+    const minX = this.zone.bounds.minX + radius;
+    const minZ = this.zone.bounds.minZ + radius;
+    const width = Math.floor((this.zone.bounds.maxX - radius - minX) / cell) + 1;
+    const height = Math.floor((this.zone.bounds.maxZ - radius - minZ) / cell) + 1;
+    const pointFor = (x: number, z: number): Vec2 => ({ x: minX + x * cell, z: minZ + z * cell });
+    const toCell = (point: Vec2) => ({
+      x: Math.max(0, Math.min(width - 1, Math.round((point.x - minX) / cell))),
+      z: Math.max(0, Math.min(height - 1, Math.round((point.z - minZ) / cell))),
+    });
+    const start = toCell(from);
+    const goal = toCell(target);
+    const key = (x: number, z: number) => `${x},${z}`;
+    const startKey = key(start.x, start.z);
+    const goalKey = key(goal.x, goal.z);
+    const open = [{ ...start, score: 0 }];
+    const cost = new Map<string, number>([[startKey, 0]]);
+    const cameFrom = new Map<string, string>();
+    const cells = new Map<string, { x: number; z: number }>([[startKey, start]]);
+    const steps = [
+      [-1, -1],
+      [0, -1],
+      [1, -1],
+      [-1, 0],
+      [1, 0],
+      [-1, 1],
+      [0, 1],
+      [1, 1],
+    ] as const;
+    let found = false;
+
+    while (open.length > 0) {
+      let bestIndex = 0;
+      for (let i = 1; i < open.length; i += 1) {
+        if (open[i]!.score < open[bestIndex]!.score) bestIndex = i;
+      }
+      const current = open.splice(bestIndex, 1)[0]!;
+      const currentKey = key(current.x, current.z);
+      if (currentKey === goalKey) {
+        found = true;
+        break;
+      }
+      const currentCost = cost.get(currentKey)!;
+      for (const [dx, dz] of steps) {
+        const nx = current.x + dx;
+        const nz = current.z + dz;
+        if (nx < 0 || nx >= width || nz < 0 || nz >= height) continue;
+        const next = pointFor(nx, nz);
+        if (!isPointWalkable(next, this.zone.bounds, this.obstacles, radius)) continue;
+        // Diagonals may not cut through two touching obstacles.
+        if (this.resolvePlayerMovement(pointFor(current.x, current.z), next).collided) continue;
+        const nextKey = key(nx, nz);
+        const nextCost = currentCost + (dx === 0 || dz === 0 ? 1 : Math.SQRT2);
+        if (nextCost >= (cost.get(nextKey) ?? Number.POSITIVE_INFINITY)) continue;
+        cost.set(nextKey, nextCost);
+        cameFrom.set(nextKey, currentKey);
+        cells.set(nextKey, { x: nx, z: nz });
+        const heuristic = Math.hypot(goal.x - nx, goal.z - nz);
+        open.push({ x: nx, z: nz, score: nextCost + heuristic });
+      }
+    }
+    if (!found) return [];
+
+    const route: Vec2[] = [target];
+    let cursor = goalKey;
+    while (cursor !== startKey) {
+      const previous = cameFrom.get(cursor);
+      if (previous === undefined) return [];
+      const cellPosition = cells.get(cursor)!;
+      route.unshift(pointFor(cellPosition.x, cellPosition.z));
+      cursor = previous;
+    }
+    route.unshift(from);
+
+    const simplified: Vec2[] = [];
+    let anchor = 0;
+    while (anchor < route.length - 1) {
+      let farthest = route.length - 1;
+      while (
+        farthest > anchor + 1 &&
+        this.resolvePlayerMovement(route[anchor]!, route[farthest]!).collided
+      )
+        farthest -= 1;
+      simplified.push(route[farthest]!);
+      anchor = farthest;
+    }
+    return simplified;
+  }
+
+  private nearestWalkable(destination: Vec2, radius: number): Vec2 | null {
+    if (isPointWalkable(destination, this.zone.bounds, this.obstacles, radius)) return destination;
+    for (let ring = 1; ring <= 12; ring += 1) {
+      const distance = ring * 0.45;
+      for (let step = 0; step < 16; step += 1) {
+        const angle = (step / 16) * Math.PI * 2;
+        const candidate = {
+          x: destination.x + Math.cos(angle) * distance,
+          z: destination.z + Math.sin(angle) * distance,
+        };
+        if (isPointWalkable(candidate, this.zone.bounds, this.obstacles, radius)) return candidate;
+      }
+    }
+    return null;
   }
 
   /**
