@@ -43,6 +43,7 @@ export interface Waypoint {
 export const InteractableKind = {
   GatheringNode: 'GATHERING_NODE',
   CraftingStation: 'CRAFTING_STATION',
+  BankChest: 'BANK_CHEST',
   MerchantStall: 'MERCHANT_STALL',
   ZonePortal: 'ZONE_PORTAL',
   QuestBoard: 'QUEST_BOARD',
