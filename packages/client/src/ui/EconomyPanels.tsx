@@ -356,3 +356,56 @@ export function CommandError() {
     </div>
   );
 }
+
+export function MerchantPanel({
+  onSell,
+  onRepair,
+  onClose,
+}: {
+  onSell: (itemId: string, quantity: number) => void;
+  onRepair: (skillId: string) => void;
+  onClose: () => void;
+}) {
+  const economy = useAppStore((state) => state.economy);
+  return (
+    <div className="panel bank-panel">
+      <LabelStrip title="Quartermaster Vell" serial={`${economy.coins} coins`} />
+      <p className="bank-panel__hint">
+        Sell materials for coins. Repairs cost 2 coins per durability.
+      </p>
+      <section className="bank-panel__column">
+        <h3>Sell from satchel</h3>
+        <ul className="bank-panel__list">
+          {economy.stacks.map((stack) => (
+            <li key={stack.definitionId}>
+              <span>
+                {itemName(stack.definitionId)} × {stack.quantity}
+              </span>
+              <button type="button" onClick={() => onSell(stack.definitionId, stack.quantity)}>
+                Sell all
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="bank-panel__column">
+        <h3>Repair tools</h3>
+        <ul className="bank-panel__list">
+          {Object.entries(economy.tools).map(([skillId, tool]) => (
+            <li key={skillId}>
+              <span>
+                {itemName(tool.definitionId)} · {tool.durability}
+              </span>
+              <button type="button" onClick={() => onRepair(skillId)}>
+                Repair
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <button type="button" className="prompt__button" onClick={onClose}>
+        Close
+      </button>
+    </div>
+  );
+}
