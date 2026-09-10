@@ -87,7 +87,8 @@ export class PlayerController {
    * props, letting the player freely choose how to go around them.
    */
   moveTo(destination: Vec2): void {
-    this.mover = setPath(this.mover, [destination], this.params.arrivalRadius);
+    const route = this.options.world.planPlayerPath(this.mover.position, destination);
+    this.mover = setPath(this.mover, route, this.params.arrivalRadius);
   }
 
   /** Routes to an interactable's approach waypoint and adopts its facing. */
@@ -131,7 +132,12 @@ export class PlayerController {
     this.mover = {
       ...advanced,
       position: resolved.position,
-      path: [],
+      // A dynamic collision (for example a late-loading environment asset)
+      // gets a fresh free-form route instead of leaving a long tap stuck.
+      path: this.options.world.planPlayerPath(
+        resolved.position,
+        this.destination ?? resolved.position,
+      ),
       pathIndex: 0,
       velocity: dtSeconds > 0 ? moved / dtSeconds : 0,
     };
