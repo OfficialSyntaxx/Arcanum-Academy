@@ -208,6 +208,10 @@ export class HubController {
       this.options.onEngageGatheringNode?.(prompt.id);
     } else if (prompt.kind === InteractableKind.CraftingStation) {
       this.options.onEngageCraftingStation?.(prompt.id);
+    } else if (prompt.kind === InteractableKind.BankChest) {
+      this.options.onEngageBankChest?.(prompt.id);
+    } else if (prompt.kind === InteractableKind.MerchantStall) {
+      this.options.onEngageMerchantStall?.(prompt.id);
     } else if (prompt.kind === InteractableKind.ZonePortal && prompt.targetZone) {
       this.options.onEngageZonePortal?.(prompt.targetZone);
     }
