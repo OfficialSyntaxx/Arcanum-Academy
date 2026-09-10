@@ -15,6 +15,8 @@ const schema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   /** Comma-separated list of origins allowed to open a socket. */
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173'),
+  /** Read credential for the retained diagnostics feed; never sent to clients. */
+  DIAGNOSTICS_READ_KEY: z.string().min(16).optional(),
   /** Hard cap on concurrent sockets per process. Protects memory under load. */
   MAX_CONNECTIONS: z.coerce.number().int().positive().default(2_000),
   /** Seconds a disconnected session stays resumable. */
