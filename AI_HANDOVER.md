@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 31750)
-Total output lines: 2056
-
 # ALDERFELL — AI HANDOVER
 
 ### Game design document and engineering handover — everything needed to build it from nothing
@@ -115,15 +112,17 @@ Academy Shore Net, a level-10 Starglass Net merchant upgrade, Tidefin/Moonray/St
 and the Starlit Tide Pool in the Courtyard at the Library-side bank. Existing saves receive the
 starter net through the same forward-compatible tool backfill used by the other gathering skills.
 
-Visual state: Courtyard has low-poly environment GLB upgrades with primitive fallbacks. Characters
-are now a low-poly instanced model made from robe, head, hair, arms and legs, including a
-procedural walk cycle and appearance palettes. It is intentionally asset-light and mobile-safe;
-the next art step is authored GLB character assets with richer silhouette, equipment attachment
-points, and idle/gathering animations.
+Visual state: Courtyard has low-poly environment GLB upgrades with primitive fallbacks, a
+continuous sea plane, irregular coastal apron and distant landform silhouettes so the playable
+zone does not read as a floating square tile. Characters are a low-poly instanced model made
+from robe, head, hair, arms and legs, including a procedural walk cycle, appearance palettes,
+and skill-aware held equipment (pick, axe, sickle and net) with a gathering animation. It is
+intentionally asset-light and mobile-safe; authored GLB character assets are the later art step,
+not a prerequisite for iterating on tool placement and action timing.
 
-**Still not built:** fishing and fishing tools, combat, quests/dialogue, the hold, wiki, account
-recovery, achievement/collection-log screens, and authored character GLB assets. §11.1 lists the
-deliberate deferrals, which are not oversights.
+**Still not built:** combat, quests/dialogue, the hold, wiki, account recovery,
+achievement/collection-log screens, and authored character GLB assets. §11.1 lists the deliberate
+deferrals, which are not oversights.
 
 ---
 
@@ -981,7 +980,131 @@ joystick.**
 
 ### 5.2 The camera
 
-**Decision, 2026-09-…1750 tokens truncated… ~5 cm is invisible at play distance — delete it.
+**Decision, 2026-09-09: a free camera. The locked isometric look is abandoned.**
+
+An earlier draft of this plan argued for a camera locked at a fixed isometric angle, on the
+grounds that it is a *budget* decision — models only ever look right from one angle, so
+backfaces never show and buildings need no backs. The owner chose free rotation instead, and
+that is the right call for an OSRS-style game: you rotate constantly to see round terrain and
+line up a click. Record the cost honestly, because it is real:
+
+> Every asset must now read correctly from **360° of yaw**. Nothing gets a missing back.
+
+**What limits the damage: pitch stays constrained** (roughly 30–60° above the horizon). You
+never see the top of a roof or the underside of anything, so roofs stay simple, interiors are
+never visible from outside, and anything above eye level can be aggressively LOD'd.
+
+**The consequence for art — this is the important one.** A free camera pushes decisively
+toward **low-poly rigged 3D meshes over pre-rendered sprite sheets** for anything animated. A
+sprite sheet under free yaw needs 8–16 directions × every animation frame × every gear
+variant, which multiplies out of control on the first piece of equipment. A rigged low-poly
+mesh animates once and works from every angle, at any zoom, with gear attached to bones.
+
+**Pre-rendered sprites are not gone — they are demoted to where yaw doesn't matter:** item
+and skill icons, UI, distant billboarded foliage, and flat ground decals. See §6.
+
+#### 5.2.1 What to call this style — read this before saying "2.5D"
+
+This caused real confusion once already, so it is written down plainly.
+
+**Alderfell is low-poly 3D rendered under an orthographic camera with free yaw and a
+constrained pitch.** It is *not* 2.5D isometric, and it is not 2D.
+
+Earlier planning did recommend 2.5D isometric, and that recommendation was sound **on the
+assumption of a locked camera** — locking the angle is precisely what makes a 3D scene "2.5D",
+because models then only ever need one face. Approving the free camera (D6) removed the lock,
+and the label went with it. The label changing is not a change of ambition or a scope
+increase — it is a consequence that should have been stated at the time.
+
+**What holds, unchanged, from the original 2.5D direction:**
+
+- Low-poly, flat-shaded, chunky, stylised. Not photoreal, not a AAA pipeline.
+- **Orthographic** projection, so the world still reads flat and diorama-like rather than
+  cinematic — this is most of what makes it *look* isometric.
+- CC0 asset packs, Blender in CI, no paid tools.
+- No Unity, no App Store, still a PWA on the home screen.
+- The pitch band still means no roof tops and no undersides, so those stay cheap.
+
+**What genuinely changed:** models must read correctly through 360° of yaw.
+
+**Why that cost is modest rather than severe:** we render **3D meshes, not pre-rendered
+sprites** (§5.2). A low-poly hut modelled all the way round is barely more work than one
+modelled front-only — a mesh has a back whether the camera sees it or not. The same change
+would have been punishing with sprite sheets, which is exactly why the free camera pushed the
+art direction to meshes in the first place.
+
+**Two alternatives were considered and rejected by the owner**, recorded so they are not
+re-proposed as new ideas: *snapped rotation* to 4 or 8 fixed compass angles (cheaper art, more
+diorama-like) and *true locked isometric* (cheapest art, but you can never look behind
+anything, and it contradicts the tap-to-rotate control in D7).
+
+**Camera spec:**
+
+| Property | Value |
+|---|---|
+| Projection | Orthographic |
+| Yaw | Free, 360°, smoothed |
+| Pitch | Clamped to a band (start ~30–60°, tune on device) |
+| Zoom | Clamped ortho frustum size, pinch-driven |
+| Follow | Exponential smoothing toward the player |
+| Framing | A `frame()` call for scripted shots (boss entry, quest beats) |
+
+`camera-rig.ts` currently uses a `PerspectiveCamera` with yaw/pitch orbit. Converting it to
+orthographic and re-tuning the band is a contained change to one file.
+
+---
+
+## 6. Art direction & the asset pipeline
+
+### 6.1 Direction
+
+**Warm, cosy, low-poly medieval.** Storybook rather than gritty. Think a bright autumn
+afternoon in a place people used to live.
+
+> ✅ **Correction, 2026-09-09 — inherit Oakenfall's palette after all.** An earlier draft of this
+> document said Oakenfall was "dark, desaturated and earth-tinted" and warned against copying
+> it. **That was wrong.** It came from reading Oakenfall's own `CLAUDE.md` — which still
+> describes a "dark old-school-MMORPG palette" — rather than from running the game. The built
+> game (see `docs/baseline/2026-09-09-oakenfall-*.png`) is **bright, warm and sunny**: vivid but
+> unsaturated greens, clear water, soft shadows, a spring afternoon. It is already close to
+> where Alderfell wants to be.
+>
+> This is the §12 trap — *verify against a running build, not against reasoning* — and it was
+> walked into while writing the very document that records it. Left visible on purpose.
+
+**What to actually take from Oakenfall:**
+
+- **The world palette, directly.** Warm, bright, readable in daylight on a phone.
+- **The UI chrome, directly.** Amber and warm wood on near-black. It works *because* it frames a
+  bright world — a dark HUD around a sunny scene reads as cosy, not grim.
+- **The GRADE convention, correctly understood.** It exists to pull incoming assets *into the
+  set* so a new sprite doesn't sit too bright or too blue beside existing ones. That is
+  **normalisation, not darkening** — and it is precisely the mechanism the bestiary coherence
+  rule needs (§3.4.0).
+
+The palette:
+
+- **Warm neutrals** for stone and timber — honey, oatmeal, weathered terracotta, not grey.
+- **Rich but not neon greens** for foliage, with yellow in the mix rather than blue.
+- **Golden key light.** Sun low enough to be warm, high enough to read the ground.
+- **Soft, coloured shadows** — never black. Shadow is where a scene reads as cheap.
+- **Glowing windows, lanterns and fires** as the signature — the single strongest cue that a
+  place is safe and inhabited, and worth spending real effort on.
+- Contrast stays gentle. Readability on a phone in daylight comes from **value separation and
+  silhouette**, not from cranking saturation or darkness.
+
+Silhouettes are **rounded and chunky** rather than jagged. Nothing spiky, nothing skeletal.
+
+**This makes the free-asset story easier, not harder.** KayKit, Kenney and Quaternius are all
+naturally warm and stylised — Oakenfall had to fight them darker. Alderfell mostly gets to use
+them as authored, which removes a whole processing step and a whole class of coherence bug.
+
+Style rules (inherited from ALA's `BLENDERTODO.md` §0, which are correct and should be
+carried over verbatim into the new repo):
+
+- 1 Blender unit = 1 metre; metric; scale 1.0. Apply all transforms before export.
+- Flat-shaded, low-poly. Hard edges. Chunky, readable silhouettes.
+- Detail below ~5 cm is invisible at play distance — delete it.
 - No bevels below 2 cm. No subdivision surface. No microdetail geometry.
 - Colour from flat materials or a small texture atlas — never per-object 2K maps.
 - **Never bake lighting or AO into textures.** The game lights the scene.
