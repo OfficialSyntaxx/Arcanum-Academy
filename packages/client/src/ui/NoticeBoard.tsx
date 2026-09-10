@@ -42,8 +42,8 @@ export function NoticeBoard({ onClose }: { readonly onClose: () => void }) {
         <strong>{hasMushrooms ? 'Ready to turn in' : `${mushroomCount}/3`}</strong>
       </div>
       <p className="notice-board__hint">
-        Find the patch in the Alchemy Gardens, west of the plaza. Quest turn-in and durable quest
-        progress arrive with the server quest ledger.
+        Find the patch in the Alchemy Gardens, west of the plaza. For now this tracks progress; the
+        next phase adds server-owned acceptance, turn-in and rewards.
       </p>
       <button type="button" className="prompt__button notice-board__close" onClick={onClose}>
         Continue exploring
