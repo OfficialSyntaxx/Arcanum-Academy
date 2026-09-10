@@ -97,6 +97,7 @@ function project(state: PlayerState) {
     coins: state.coins,
     skills: state.skills,
     tools: state.tools,
+    quests: state.quests,
     gathering: state.gathering,
   };
 }
