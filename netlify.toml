@@ -10,7 +10,10 @@
 # browser from opening an insecure WebSocket.
 
 [build]
-  command = "npm run build --workspace @alderfell/client"
+  # Pin the install step because the client compiler and Vite PWA plugin live
+  # in workspace devDependencies. Netlify's inferred install has previously
+  # omitted part of that tree and failed with TypeScript exit code 2.
+  command = "npm ci --include=dev && npm run build --workspace @alderfell/client"
   publish = "packages/client/dist"
 
 [build.environment]
