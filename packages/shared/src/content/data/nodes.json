@@ -93,6 +93,37 @@
           "maxQuantity": 1
         }
       ]
+    },
+    {
+      "id": "node.courtyard.tidepool",
+      "interactableId": "int.node.tidepool",
+      "kind": "TIDEFISH",
+      "requiredSkillId": "skill.fishing",
+      "requiredSkillLevel": 1,
+      "harvestIntervalMs": 3200,
+      "xpPerHarvest": 13,
+      "depletionHarvests": 40,
+      "regenerationMs": 300000,
+      "dropTable": [
+        {
+          "itemId": "item.fish.tidefin",
+          "weight": 820,
+          "minQuantity": 1,
+          "maxQuantity": 2
+        },
+        {
+          "itemId": "item.fish.moonray",
+          "weight": 160,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        },
+        {
+          "itemId": "item.fish.stargill",
+          "weight": 20,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        }
+      ]
     }
   ]
 }
