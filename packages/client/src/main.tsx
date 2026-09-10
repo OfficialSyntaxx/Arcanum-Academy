@@ -2,15 +2,14 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './app/App.js';
-import { useAppStore } from './state/app-store.js';
 import './styles/app.css';
 
 /**
  * Entry point. Mounts React and registers the service worker.
  *
- * Updates are offered, never forced: reloading under a player mid-duel would
- * cost them the match, so the store records that an update is waiting and the UI
- * surfaces it at a safe moment.
+ * The game has no session-in-progress that can be lost at the application
+ * shell boundary, so installs take a new build automatically. This prevents a
+ * phone from keeping an old input handler after a production repair.
  */
 
 const container = document.getElementById('root');
@@ -22,6 +21,4 @@ createRoot(container).render(
   </StrictMode>,
 );
 
-registerSW({
-  onNeedRefresh: () => useAppStore.getState().setUpdateAvailable(true),
-});
+registerSW({ immediate: true });
