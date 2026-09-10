@@ -156,6 +156,11 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
   container.register('transport', () => transport);
   transport.events.on('status', ({ status }) => {
     store.setTransportStatus(status);
+    store.recordDiagnostic({
+      level: status === TransportStatus.Open ? 'info' : 'warn',
+      source: 'network',
+      message: `Connection status: ${status}`,
+    });
     if (status === TransportStatus.Open) store.setBootStep('network', { status: 'done' });
   });
   transport.events.on('latency', ({ roundTripMs }) => store.setLatency(Math.round(roundTripMs)));
