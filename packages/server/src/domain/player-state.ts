@@ -63,6 +63,12 @@ const STARTER_TOOLS: Readonly<Record<string, ItemInstance>> = {
     durability: 500,
     acquiredAtMs: 0,
   },
+  'skill.fishing': {
+    instanceId: asId<ItemInstanceId>('academy-starter-net'),
+    definitionId: 'item.tool.net' as ItemDefinitionId,
+    durability: 500,
+    acquiredAtMs: 0,
+  },
 };
 
 function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
