@@ -357,6 +357,15 @@ export const COURTYARD: Zone = {
       verb: 'Refine',
     },
     {
+      id: ix('int.arcade.cache'),
+      kind: InteractableKind.BankChest,
+      position: { x: 20.6, z: 4 },
+      approach: wp('wp.arcade.consignment'),
+      facing: Math.PI * 0.5,
+      label: 'Reclaimer’s Cache',
+      verb: 'Bank',
+    },
+    {
       id: ix('int.arcade.quartermaster'),
       kind: InteractableKind.MerchantStall,
       position: { x: 20.6, z: -4 },
