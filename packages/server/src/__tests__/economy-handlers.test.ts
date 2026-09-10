@@ -141,6 +141,52 @@ describe('banking', () => {
   });
 });
 
+describe('merchant', () => {
+  it('sells an explicit quantity and leaves the rest in the satchel', async () => {
+    const h = harness();
+    const shard = asId<ItemDefinitionId>('item.crystal.shard');
+    const seeded = await h.players.update(PLAYER, (state) => {
+      const inventory = addItems(state.inventory, shard, 7, ITEM_CATALOG);
+      if (!inventory.ok) throw new Error('seed should fit');
+      return ok({ state: { ...state, inventory: inventory.value }, value: null });
+    });
+    expect(seeded.ok).toBe(true);
+
+    const sold = await h.dispatch('merchant.sell', { itemId: shard, quantity: 3 });
+    expect(sold.ok).toBe(true);
+    const state = await h.state();
+    expect(quantityOf(state.inventory, shard)).toBe(4);
+    const value = ITEM_CATALOG.get(shard)!.baseValue;
+    expect(state.coins).toBe(
+      Math.floor((value * 3 * DEFAULT_TUNABLES.economy.shopSellRateBasisPoints) / 10_000),
+    );
+  });
+
+  it('repairs only the chosen equipped tool after charging its missing durability', async () => {
+    const h = harness();
+    const seeded = await h.players.update(PLAYER, (state) =>
+      ok({
+        state: {
+          ...state,
+          coins: 100,
+          tools: {
+            ...state.tools,
+            'skill.foraging': { ...state.tools['skill.foraging']!, durability: 480 },
+          },
+        },
+        value: null,
+      }),
+    );
+    expect(seeded.ok).toBe(true);
+
+    const repaired = await h.dispatch('merchant.repair', { skillId: 'skill.foraging' });
+    expect(repaired.ok).toBe(true);
+    const state = await h.state();
+    expect(state.tools['skill.foraging']!.durability).toBe(500);
+    expect(state.coins).toBe(60);
+  });
+});
+
 describe('gathering.start', () => {
   it('refuses an interactable that is not a gathering node', async () => {
     const h = harness();
