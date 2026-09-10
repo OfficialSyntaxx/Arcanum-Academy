@@ -41,6 +41,8 @@ export interface HubScreenProps {
   readonly onSell: (itemId: string, quantity: number) => void;
   readonly onRepair: (skillId: string) => void;
   readonly onUpgradeTool: (toolId: string) => void;
+  readonly onAcceptQuest: (questId: string) => void;
+  readonly onCompleteQuest: (questId: string) => void;
 }
 
 /**
@@ -63,6 +65,8 @@ export function HubScreen({
   onSell,
   onRepair,
   onUpgradeTool,
+  onAcceptQuest,
+  onCompleteQuest,
   onNavigate,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
@@ -143,7 +147,13 @@ export function HubScreen({
           onClose={() => setOpenMerchant(null)}
         />
       )}
-      {openNoticeId !== null && <NoticeBoard onClose={() => setOpenNotice(null)} />}
+      {openNoticeId !== null && (
+        <NoticeBoard
+          onAccept={onAcceptQuest}
+          onComplete={onCompleteQuest}
+          onClose={() => setOpenNotice(null)}
+        />
+      )}
     </div>
   );
 }
