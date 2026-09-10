@@ -28,6 +28,8 @@ import {
   type NodeId,
   type NodeState,
   type PlayerId,
+  QuestStatus,
+  type QuestProgress,
   type Result,
   type Failure,
   type SkillId,
@@ -77,7 +79,7 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 1;
+export const PLAYER_SCHEMA_VERSION = 2;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
 export interface PlayerState {
@@ -94,6 +96,8 @@ export interface PlayerState {
   readonly nodes: Readonly<Record<string, NodeState>>;
   readonly gathering: GatheringSession | null;
   /** Every card the player has scribed. The collection, not the deck. */
+  /** Accepted/completed quests. An absent id is available but not accepted. */
+  readonly quests: Readonly<Record<string, QuestProgress>>;
   /**
    * Last moment the player was demonstrably present.
    *
@@ -110,6 +114,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     skills: {},
     tools: starterTools(nowMs),
     nodes: {},
+    quests: {},
     gathering: null,
     lastSeenAtMs: nowMs,
   };
@@ -204,6 +209,27 @@ function readGathering(value: unknown): GatheringSession | null {
   };
 }
 
+function readQuests(value: unknown): Record<string, QuestProgress> {
+  if (!isRecord(value)) return {};
+  const quests: Record<string, QuestProgress> = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (
+      !isRecord(raw) ||
+      (raw.status !== QuestStatus.Active && raw.status !== QuestStatus.Completed)
+    )
+      continue;
+    quests[id] = {
+      status: raw.status,
+      acceptedAtMs: Math.max(0, readNumber(raw.acceptedAtMs, 0)),
+      completedAtMs:
+        typeof raw.completedAtMs === 'number' && Number.isFinite(raw.completedAtMs)
+          ? Math.max(0, raw.completedAtMs)
+          : null,
+    };
+  }
+  return quests;
+}
+
 /**
  * Reads a stored record into player state.
  *
@@ -225,6 +251,7 @@ export function parsePlayerState(
     // kit while preserving any future upgraded equipment it already owns.
     tools: { ...starterTools(record.updatedAtMs), ...readTools(data.tools) },
     nodes: readNodes(data.nodes),
+    quests: readQuests(data.quests),
     gathering: readGathering(data.gathering),
     lastSeenAtMs: readNumber(data.lastSeenAtMs, record.updatedAtMs),
   });
@@ -239,6 +266,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     skills: state.skills,
     tools: state.tools,
     nodes: state.nodes,
+    quests: state.quests,
     gathering: state.gathering,
     lastSeenAtMs: state.lastSeenAtMs,
   };
