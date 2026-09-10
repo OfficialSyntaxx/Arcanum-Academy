@@ -39,6 +39,8 @@ export interface ToolProperties {
   readonly yieldMultiplierBasisPoints: number;
   /** The gathering skill this tool equips against. One tool per skill. */
   readonly boundSkillId: SkillId;
+  /** Minimum level needed to equip or buy this tool. */
+  readonly requiredSkillLevel?: number;
   /** Currency to restore full durability. Durability is a sink, not a wall. */
   readonly repairCost: number;
 }
