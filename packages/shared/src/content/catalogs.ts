@@ -206,6 +206,12 @@ export function buildItemCatalog(
         if (!isPositiveInteger(item.tool.maxDurability)) {
           problems.push(`tool "${item.id}" has a non-positive max durability`);
         }
+        if (
+          item.tool.requiredSkillLevel !== undefined &&
+          !isPositiveInteger(item.tool.requiredSkillLevel)
+        ) {
+          problems.push(`tool "${item.id}" has an invalid required skill level`);
+        }
         if (skills.get(item.tool.boundSkillId) === undefined) {
           problems.push(`tool "${item.id}" binds to unknown skill "${item.tool.boundSkillId}"`);
         }
