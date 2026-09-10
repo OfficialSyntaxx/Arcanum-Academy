@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveMovement, type WorldObstacle } from '../world/collision.js';
+import { isPointWalkable, resolveMovement, type WorldObstacle } from '../world/collision.js';
 
 const bounds = { minX: -10, maxX: 10, minZ: -10, maxZ: 10 };
 
@@ -25,5 +25,12 @@ describe('free-form world collision', () => {
     const result = resolveMovement({ x: -8, z: 0 }, { x: 8, z: 0 }, bounds, obstacles, 0.4);
     expect(result.collided).toBe(true);
     expect(result.position.x).toBeLessThan(-1.39);
+  });
+
+  it('marks scenery footprints and boundary margins as unavailable to route planning', () => {
+    const obstacles: WorldObstacle[] = [{ kind: 'circle', centre: { x: 0, z: 0 }, radius: 1 }];
+    expect(isPointWalkable({ x: 0, z: 0 }, bounds, obstacles, 0.4)).toBe(false);
+    expect(isPointWalkable({ x: -9.8, z: 0 }, bounds, obstacles, 0.4)).toBe(false);
+    expect(isPointWalkable({ x: 3, z: 3 }, bounds, obstacles, 0.4)).toBe(true);
   });
 });
