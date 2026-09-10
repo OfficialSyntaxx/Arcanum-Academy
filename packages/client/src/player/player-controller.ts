@@ -79,17 +79,15 @@ export class PlayerController {
   }
 
   /**
-   * Routes the player to the nearest authored navigation point.
+   * Walks directly toward the point tapped in the world.
    *
-   * The graph is the walkable part of the zone: adding a raw tap point after
-   * the route lets an avatar take a final straight-line shortcut through a
-   * building, tree, or landmark. Snapping the destination keeps travel on the
-   * visible paths and gives level art a reliable physical boundary.
+   * Authored navigation still has value for NPC schedules and interaction
+   * approach points, but it no longer constrains the player to painted paths.
+   * `WorldService` resolves every frame against buildings, water, trees, and
+   * props, letting the player freely choose how to go around them.
    */
   moveTo(destination: Vec2): void {
-    const path = this.options.world.pathfinder.between(this.mover.position, destination);
-    if (path.length === 0) return;
-    this.mover = setPath(this.mover, path, this.params.arrivalRadius);
+    this.mover = setPath(this.mover, [destination], this.params.arrivalRadius);
   }
 
   /** Routes to an interactable's approach waypoint and adopts its facing. */
@@ -113,6 +111,29 @@ export class PlayerController {
    * layout makes, not one the player manages with a bar.
    */
   step(dtSeconds: number): void {
-    this.mover = followPath(this.mover, this.params, dtSeconds);
+    const advanced = followPath(this.mover, this.params, dtSeconds);
+    if (!isMoving(this.mover) || advanced.position === this.mover.position) {
+      this.mover = advanced;
+      return;
+    }
+    const resolved = this.options.world.resolvePlayerMovement(
+      this.mover.position,
+      advanced.position,
+    );
+    if (!resolved.collided) {
+      this.mover = advanced;
+      return;
+    }
+    const moved = Math.hypot(
+      resolved.position.x - this.mover.position.x,
+      resolved.position.z - this.mover.position.z,
+    );
+    this.mover = {
+      ...advanced,
+      position: resolved.position,
+      path: [],
+      pathIndex: 0,
+      velocity: dtSeconds > 0 ? moved / dtSeconds : 0,
+    };
   }
 }
