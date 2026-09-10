@@ -438,13 +438,21 @@ export function CommandError() {
 export function MerchantPanel({
   onSell,
   onRepair,
+  onUpgradeTool,
   onClose,
 }: {
   onSell: (itemId: string, quantity: number) => void;
   onRepair: (skillId: string) => void;
+  onUpgradeTool: (toolId: string) => void;
   onClose: () => void;
 }) {
   const economy = useAppStore((state) => state.economy);
+  const upgrades = ITEM_CATALOG.items.filter(
+    (item) =>
+      item.tool !== undefined &&
+      (item.tool.requiredSkillLevel ?? 1) > 1 &&
+      economy.tools[item.tool.boundSkillId]?.definitionId !== item.id,
+  );
   return (
     <div className="panel bank-panel">
       <LabelStrip title="Quartermaster Vell" serial={`${economy.coins} coins`} />
@@ -482,6 +490,29 @@ export function MerchantPanel({
             </li>
           ))}
         </ul>
+      </section>
+      <section className="bank-panel__column">
+        <h3>Tool upgrades</h3>
+        {upgrades.map((tool) => {
+          const required = tool.tool!.requiredSkillLevel ?? 1;
+          const level = economy.skills[tool.tool!.boundSkillId]?.level ?? 1;
+          const affordable = economy.coins >= tool.baseValue;
+          return (
+            <div key={tool.id} className="merchant-upgrade">
+              <span>{tool.name}</span>
+              <small>
+                Level {required} · {tool.baseValue} coins · +40% yield
+              </small>
+              <button
+                type="button"
+                disabled={level < required || !affordable}
+                onClick={() => onUpgradeTool(tool.id)}
+              >
+                {level < required ? `Needs level ${required}` : `Equip for ${tool.baseValue}`}
+              </button>
+            </div>
+          );
+        })}
       </section>
       <button type="button" className="prompt__button" onClick={onClose}>
         Close
