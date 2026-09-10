@@ -14,9 +14,12 @@
  */
 
 import {
+  addItems,
   assertCanCraft,
   assertCanWork,
   awardXp,
+  quantityOf,
+  removeItems,
   resolveCraft,
   resolveHarvest,
   startSession,
@@ -78,10 +81,17 @@ function readString(payload: unknown, key: string): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+function readPositiveInteger(payload: unknown, key: string): number | null {
+  if (typeof payload !== 'object' || payload === null) return null;
+  const value = (payload as Record<string, unknown>)[key];
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null;
+}
+
 /** The public shape of player state, safe to send and simple to apply. */
 function project(state: PlayerState) {
   return {
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
+    bank: { stacks: state.bank.stacks, slotCapacity: state.bank.slotCapacity },
     skills: state.skills,
     tools: state.tools,
     gathering: state.gathering,
@@ -339,6 +349,43 @@ export function registerEconomyHandlers(
       });
     });
   };
+  const moveBankItem =
+    (direction: 'deposit' | 'withdraw'): CommandHandler =>
+    async (session: Session, payload: unknown) => {
+      const itemId = readString(payload, 'itemId');
+      const quantity = readPositiveInteger(payload, 'quantity');
+      if (itemId === null || quantity === null) {
+        return err(
+          invalid('bank.item_or_quantity_missing', 'itemId and a positive quantity are required'),
+        );
+      }
+      const definition = catalogs.items.get(itemId as never);
+      if (definition === undefined) {
+        return err(failure(FailureCode.NotFound, 'bank.unknown_item', { context: { itemId } }));
+      }
+
+      return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+        const from = direction === 'deposit' ? state.inventory : state.bank;
+        const to = direction === 'deposit' ? state.bank : state.inventory;
+        const held = quantityOf(from, definition.id);
+        if (held < quantity) {
+          return err(
+            failure(FailureCode.Conflict, 'bank.insufficient_items', {
+              context: { itemId, quantity, held },
+            }),
+          );
+        }
+        const removed = removeItems(from, definition.id, quantity);
+        if (!removed.ok) return err(removed.error);
+        const added = addItems(to, definition.id, quantity, catalogs.items);
+        if (!added.ok) return err(added.error);
+        const next: PlayerState =
+          direction === 'deposit'
+            ? { ...state, inventory: removed.value, bank: added.value }
+            : { ...state, bank: removed.value, inventory: added.value };
+        return ok({ state: next, value: project(next) });
+      });
+    };
   const sync: CommandHandler = async (session: Session) => {
     const loaded = await players.load(session.playerId);
     if (!loaded.ok) return err(loaded.error);
@@ -350,5 +397,7 @@ export function registerEconomyHandlers(
     .register('gathering.start', start)
     .register('gathering.collect', collect)
     .register('gathering.stop', stop)
-    .register('crafting.craft', craft);
+    .register('crafting.craft', craft)
+    .register('bank.deposit', moveBankItem('deposit'))
+    .register('bank.withdraw', moveBankItem('withdraw'));
 }
