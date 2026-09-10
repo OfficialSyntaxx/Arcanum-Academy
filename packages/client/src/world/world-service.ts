@@ -40,6 +40,8 @@ import { Pathfinder } from '@alderfell/sim';
 
 import type { QualitySettings } from '../core/device.js';
 import { ActorPool } from './actor-pool.js';
+import { authoredObstacles, resolveMovement, type WorldObstacle } from './collision.js';
+import { environmentCollisionPlacements } from './environment-assets.js';
 import { Palette, atmosphereFor, daylight, sunElevation, type Atmosphere } from './palette.js';
 import { buildZoneGeometry, type ZoneGeometry } from './scene-builder.js';
 
@@ -53,6 +55,7 @@ export class WorldService {
   readonly graph: NavGraph;
   readonly pathfinder: Pathfinder;
   readonly actors: ActorPool;
+  private readonly obstacles: readonly WorldObstacle[];
 
   private readonly geometry: ZoneGeometry;
   private readonly atmosphere: Atmosphere;
@@ -68,6 +71,27 @@ export class WorldService {
     this.graph = graph;
     this.pathfinder = new Pathfinder(graph);
     this.geometry = buildZoneGeometry(zone, quality);
+    // This scenery pack currently renders in the Courtyard only. Do not give
+    // other zones invisible collision until their own prop packs exist.
+    const scenery = zone.id === 'zone.courtyard' ? environmentCollisionPlacements(quality) : null;
+    this.obstacles = [
+      ...authoredObstacles(zone),
+      ...(scenery?.trees ?? []).map(([x, z, size]): WorldObstacle => ({
+        kind: 'circle',
+        centre: { x, z },
+        radius: Math.max(0.55, size * 0.22),
+      })),
+      ...(scenery?.rocks ?? []).map(([x, z, size]): WorldObstacle => ({
+        kind: 'circle',
+        centre: { x, z },
+        radius: Math.max(0.32, size * 0.28),
+      })),
+      ...(scenery?.homes ?? []).map(([x, z, size]): WorldObstacle => ({
+        kind: 'circle',
+        centre: { x, z },
+        radius: Math.max(0.9, size * 0.38),
+      })),
+    ];
     this.atmosphere = atmosphereFor(zone.atmosphere);
 
     // The player plus the named cast plus the crowd the device can afford.
@@ -134,6 +158,11 @@ export class WorldService {
   /** Ground height at a point, from the zone's authored terraces. */
   heightAt(point: Vec2): number {
     return heightAt(this.zone.terrain, point);
+  }
+
+  /** Resolves a free-form player step against solid scenery and zone bounds. */
+  resolvePlayerMovement(from: Vec2, requested: Vec2) {
+    return resolveMovement(from, requested, this.zone.bounds, this.obstacles, 0.38);
   }
 
   /**
