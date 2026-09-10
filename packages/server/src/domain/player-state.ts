@@ -72,8 +72,12 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
 }
 
 export const PLAYER_SCHEMA_VERSION = 1;
+/** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
+export const BANK_SLOT_CAPACITY = 400;
 export interface PlayerState {
   readonly inventory: Inventory;
+  /** Secure resource storage, accessed only through a world bank chest. */
+  readonly bank: Inventory;
   /** Progress per skill. Absent means untouched, which reads as level one. */
   readonly skills: Readonly<Record<string, SkillProgress>>;
   /** The tool equipped for each gathering skill, keyed by skill id. */
@@ -93,6 +97,7 @@ export interface PlayerState {
 export function createInitialState(slotCapacity: number, nowMs: number): PlayerState {
   return {
     inventory: createInventory(slotCapacity),
+    bank: createInventory(BANK_SLOT_CAPACITY),
     skills: {},
     tools: starterTools(nowMs),
     nodes: {},
@@ -204,6 +209,7 @@ export function parsePlayerState(
   const data = record.data;
   return ok({
     inventory: readInventory(data.inventory, slotCapacity),
+    bank: readInventory(data.bank, BANK_SLOT_CAPACITY),
     skills: readSkills(data.skills),
     // Merge rather than replace so every pre-tool save receives the Academy
     // kit while preserving any future upgraded equipment it already owns.
@@ -218,6 +224,7 @@ export function parsePlayerState(
 export function serialisePlayerState(state: PlayerState): Readonly<Record<string, unknown>> {
   return {
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
+    bank: { stacks: state.bank.stacks, slotCapacity: state.bank.slotCapacity },
     skills: state.skills,
     tools: state.tools,
     nodes: state.nodes,
