@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { GamePhase } from '@alderfell/sim';
+import type { QuestProgress } from '@alderfell/shared';
 import type { QualityTier } from '../core/device.js';
 import type { TransportStatus } from '../net/transport.js';
 import { DEFAULT_ACCESSIBILITY, type AccessibilityPreferences } from '../a11y/preferences.js';
@@ -71,6 +72,8 @@ export interface EconomyState {
     foil: boolean;
     serial: string | null;
   }[];
+  /** Server-confirmed quest progress. Missing means the quest is available. */
+  readonly quests: Readonly<Record<string, QuestProgress>>;
 }
 
 export const EMPTY_ECONOMY: EconomyState = {
@@ -86,6 +89,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   lastXpGained: 0,
   overflowed: false,
   cards: [],
+  quests: {},
 };
 
 export interface AppState {
