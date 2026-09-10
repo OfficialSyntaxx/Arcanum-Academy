@@ -62,6 +62,26 @@
       ]
     },
     {
+      "id": "skill.fishing",
+      "name": "Fishing",
+      "category": "GATHERING",
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Cast into tide pools",
+          "nodeKind": "TIDEFISH"
+        },
+        {
+          "atLevel": 20,
+          "description": "Moonrays appear more often"
+        },
+        {
+          "atLevel": 45,
+          "description": "Stargills appear more often"
+        }
+      ]
+    },
+    {
       "id": "skill.refining",
       "name": "Refining",
       "category": "CRAFTING",
