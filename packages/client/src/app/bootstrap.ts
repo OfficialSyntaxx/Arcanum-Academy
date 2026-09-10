@@ -5,6 +5,7 @@ import {
   COURTYARD,
   DEFAULT_TUNABLES,
   LogLevel,
+  ServerOpcode,
   zoneById,
   type Logger,
   type ZoneId,
@@ -168,7 +169,24 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     if (status === TransportStatus.Open) store.setBootStep('network', { status: 'done' });
   });
   transport.events.on('latency', ({ roundTripMs }) => store.setLatency(Math.round(roundTripMs)));
+  let recoveringStaleIdentity = false;
   transport.events.on('frame', (frame) => {
+    if (frame.op === ServerOpcode.CommandRejected) {
+      const failure = frame.p as { reason?: string } | null;
+      // An account created before durable Postgres was configured cannot be
+      // recovered: its server-side record vanished with the old process. Drop
+      // only that stale device token and let the next boot enroll normally.
+      if (failure?.reason === 'identity.token_unknown' && !recoveringStaleIdentity) {
+        recoveringStaleIdentity = true;
+        store.recordDiagnostic({
+          level: 'warn',
+          source: 'network',
+          message: 'Stale identity cleared; reconnecting with a new account',
+        });
+        void storage.delete(IDENTITY_KEY).then(() => window.location.reload());
+        return;
+      }
+    }
     if (frame.op === 's:handshake_ok') {
       const payload = frame.p as {
         resumeToken?: string;
