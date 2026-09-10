@@ -53,6 +53,7 @@ const OWNED = new Set([
   'bank.withdraw',
   'merchant.sell',
   'merchant.repair',
+  'merchant.upgrade_tool',
 ]);
 
 export class EconomyController {
@@ -107,6 +108,10 @@ export class EconomyController {
 
   repair(skillId: string): void {
     this.send('merchant.repair', { skillId });
+  }
+
+  upgradeTool(toolId: string): void {
+    this.send('merchant.upgrade_tool', { toolId });
   }
 
   dispose(): void {
