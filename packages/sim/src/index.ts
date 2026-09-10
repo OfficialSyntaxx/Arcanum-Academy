@@ -8,6 +8,7 @@
 
 export * from './hash.js';
 export * from './clock.js';
+export * from './combat.js';
 export * from './fsm.js';
 export * from './phases.js';
 export * from './kernel.js';
