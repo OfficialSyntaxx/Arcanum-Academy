@@ -173,6 +173,9 @@ export function InventoryPanel({
   return (
     <div className="panel inventory-panel">
       <LabelStrip title="Satchel" serial={`${economy.stacks.length}/${economy.slotCapacity}`} />
+      <div className="inventory-panel__coins" aria-label={`${economy.coins} coins`}>
+        <span aria-hidden="true">●</span> {economy.coins.toLocaleString()} coins
+      </div>
       {totals.size === 0 ? (
         <p className="inventory-panel__empty">Nothing gathered yet.</p>
       ) : (
