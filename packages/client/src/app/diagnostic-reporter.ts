@@ -20,7 +20,7 @@ export function startDiagnosticReporter(serverUrl: string): () => void {
   let stopped = false;
   const unsubscribe = useAppStore.subscribe((state) => {
     const pending = state.diagnostics.filter(
-      (entry) => entry.id > lastId && entry.level !== 'info',
+      (entry) => entry.id > lastId && (entry.level !== 'info' || entry.source === 'world'),
     );
     if (pending.length === 0 || stopped) return;
     lastId = Math.max(...state.diagnostics.map((entry) => entry.id));
