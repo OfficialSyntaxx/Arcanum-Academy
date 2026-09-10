@@ -247,7 +247,63 @@
 .hub {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+.status-bar button,
+.diagnostics-panel button {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--verdigris);
+  font: inherit;
+  cursor: pointer;
+}
+
+.diagnostics-panel {
+  pointer-events: auto;
+  position: absolute;
+  z-index: 8;
+  inset: auto var(--space-3) calc(var(--inset-bottom) + 4rem) var(--space-3);
+  max-height: min(22rem, 52vh);
+  overflow: auto;
+  padding: var(--space-3);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--ink) 94%, transparent);
+  color: var(--haze);
+  font: var(--text-xs) var(--font-serial);
+}
+
+.diagnostics-panel__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--verdigris);
+}
+
+.diagnostics-panel p {
+  margin: 0;
+}
+.diagnostics-panel ol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.diagnostics-panel li {
+  display: grid;
+  grid-template-columns: 3.5rem 4.5rem 1fr;
+  gap: var(--space-1);
+}
+.diagnostics-panel li[data-level='error'] {
+  color: var(--alarm);
+}
+.diagnostics-panel li[data-level='warn'] {
+  color: var(--gilt);
 }
 
 /* Width reserved at the top-right for the satchel button, so the HUD strip and
