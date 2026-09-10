@@ -21,6 +21,15 @@ export interface BootStep {
   readonly detail?: string;
 }
 
+/** Small, player-visible trace entry for diagnosing a live session on mobile. */
+export interface DiagnosticEntry {
+  readonly id: number;
+  readonly atMs: number;
+  readonly level: 'info' | 'warn' | 'error';
+  readonly source: 'world' | 'network' | 'economy';
+  readonly message: string;
+}
+
 /** The interactable the player is currently standing next to, if any. */
 export interface InteractionPromptState {
   readonly id: string;
@@ -89,6 +98,9 @@ export interface AppState {
   readonly simulationTick: number;
   readonly faultMessage: string | null;
   readonly updateAvailable: boolean;
+  /** Most recent client-visible interaction and network events, oldest first. */
+  readonly diagnostics: readonly DiagnosticEntry[];
+  readonly diagnosticsOpen: boolean;
   readonly interactionPrompt: InteractionPromptState | null;
   /** The zone currently loaded in the world. */
   readonly currentZoneId: string;
@@ -122,6 +134,9 @@ export interface AppState {
   setFrameStats(fps: number, simulationTick: number): void;
   setFault(message: string | null): void;
   setUpdateAvailable(available: boolean): void;
+  recordDiagnostic(entry: Omit<DiagnosticEntry, 'id' | 'atMs'>): void;
+  setDiagnosticsOpen(open: boolean): void;
+  clearDiagnostics(): void;
   setInteractionPrompt(prompt: InteractionPromptState | null): void;
   setZone(id: string, name: string): void;
   setWorldMinute(minute: number): void;
@@ -147,6 +162,8 @@ export const useAppStore = create<AppState>((set) => ({
   simulationTick: 0,
   faultMessage: null,
   updateAvailable: false,
+  diagnostics: [],
+  diagnosticsOpen: false,
   interactionPrompt: null,
   currentZoneId: '',
   currentZoneName: '',
@@ -174,6 +191,17 @@ export const useAppStore = create<AppState>((set) => ({
   setFrameStats: (fps, simulationTick) => set({ fps, simulationTick }),
   setFault: (faultMessage) => set({ faultMessage }),
   setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),
+  recordDiagnostic: (entry) =>
+    set((state) => {
+      const next: DiagnosticEntry = {
+        ...entry,
+        id: state.diagnostics.length + Date.now(),
+        atMs: Date.now(),
+      };
+      return { diagnostics: [...state.diagnostics, next].slice(-80) };
+    }),
+  setDiagnosticsOpen: (diagnosticsOpen) => set({ diagnosticsOpen }),
+  clearDiagnostics: () => set({ diagnostics: [] }),
   setInteractionPrompt: (interactionPrompt) => set({ interactionPrompt }),
   setZone: (currentZoneId, currentZoneName) => set({ currentZoneId, currentZoneName }),
   setWorldMinute: (worldMinute) => set({ worldMinute }),
