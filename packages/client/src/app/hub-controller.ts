@@ -68,6 +68,8 @@ export interface HubControllerOptions {
   readonly onEngageBankChest?: (interactableId: string) => void;
   /** Called when the player reaches a merchant stall. */
   readonly onEngageMerchantStall?: (interactableId: string) => void;
+  /** Called when the player reads an in-world notice or quest board. */
+  readonly onEngageQuestBoard?: (interactableId: string) => void;
   /** Called when the player engages a zone portal, with the target zone id. */
   readonly onEngageZonePortal?: (targetZoneId: string) => void;
   /**
@@ -236,6 +238,8 @@ export class HubController {
       this.options.onEngageBankChest?.(prompt.id);
     } else if (prompt.kind === InteractableKind.MerchantStall) {
       this.options.onEngageMerchantStall?.(prompt.id);
+    } else if (prompt.kind === InteractableKind.QuestBoard) {
+      this.options.onEngageQuestBoard?.(prompt.id);
     } else if (prompt.kind === InteractableKind.ZonePortal && prompt.targetZone) {
       this.options.onEngageZonePortal?.(prompt.targetZone);
     }
@@ -397,7 +401,7 @@ export class HubController {
     if (!target) return;
     this.beginTravel();
     this.player.approach(target.approach);
-    this.pendingInteractionId = target.kind === InteractableKind.QuestBoard ? null : target.id;
+    this.pendingInteractionId = target.id;
   }
 
   /** Starts a queued skilling or travel action once the avatar reaches it. */
@@ -427,6 +431,8 @@ export class HubController {
       this.options.onEngageBankChest?.(target.id);
     } else if (target.kind === InteractableKind.MerchantStall) {
       this.options.onEngageMerchantStall?.(target.id);
+    } else if (target.kind === InteractableKind.QuestBoard) {
+      this.options.onEngageQuestBoard?.(target.id);
     } else if (target.kind === InteractableKind.ZonePortal && target.targetZone) {
       this.options.onEngageZonePortal?.(target.targetZone);
     }
