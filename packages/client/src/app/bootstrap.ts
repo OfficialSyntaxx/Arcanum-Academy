@@ -26,6 +26,7 @@ import {
 } from '../persistence/local-store.js';
 import { useAppStore } from '../state/app-store.js';
 import { HubController } from './hub-controller.js';
+import { startDiagnosticReporter } from './diagnostic-reporter.js';
 
 /**
  * Composition root.
@@ -41,6 +42,7 @@ import { HubController } from './hub-controller.js';
  */
 
 export interface ClientServices {
+  diagnostics: { dispose(): void };
   logger: Logger;
   quality: QualitySettings;
   storage: KeyValueStore;
@@ -74,6 +76,8 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
   const store = useAppStore.getState();
   store.registerBootSteps(BOOT_STEPS);
   const container = new Container<ClientServices>();
+  const stopDiagnosticReporter = startDiagnosticReporter(options.serverUrl);
+  container.register('diagnostics', () => ({ dispose: stopDiagnosticReporter }));
 
   const memorySink = createMemorySink(200);
   const logger = createLogger({
