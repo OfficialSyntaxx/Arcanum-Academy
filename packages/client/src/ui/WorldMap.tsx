@@ -22,6 +22,7 @@ export function WorldMap({
     (item) =>
       item.kind === InteractableKind.GatheringNode ||
       item.kind === InteractableKind.CraftingStation ||
+      item.kind === InteractableKind.QuestBoard ||
       item.kind === InteractableKind.ZonePortal,
   );
   const width = zone.bounds.maxX - zone.bounds.minX;
