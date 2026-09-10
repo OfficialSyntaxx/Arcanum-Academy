@@ -6,12 +6,14 @@ import {
   RECIPE_BOOK,
   SKILL_TABLE,
   asId,
+  ok,
   type Failure,
   type ItemDefinitionId,
   type PlayerId,
   type SessionId,
   type SkillId,
 } from '@alderfell/shared';
+import { addItems, quantityOf } from '@alderfell/sim';
 import { RegistryCommandRouter } from '../net/gateway.js';
 import { InMemoryPlayerRepository } from '../persistence/repository.js';
 import { PlayerService } from '../domain/player-service.js';
@@ -111,6 +113,31 @@ describe('player.sync', () => {
     if (!stored.ok || stored.value === null) throw new Error('expected a stored record');
     expect(stored.value.schemaVersion).toBe(PLAYER_SCHEMA_VERSION);
     expect(parsePlayerState(stored.value, SLOTS).ok).toBe(true);
+  });
+});
+
+describe('banking', () => {
+  it('moves a resource between the satchel and cache without creating or losing it', async () => {
+    const h = harness();
+    const shard = asId<ItemDefinitionId>('item.crystal.shard');
+    const seeded = await h.players.update(PLAYER, (state) => {
+      const inventory = addItems(state.inventory, shard, 7, ITEM_CATALOG);
+      if (!inventory.ok) throw new Error('seed should fit');
+      return ok({ state: { ...state, inventory: inventory.value }, value: null });
+    });
+    expect(seeded.ok).toBe(true);
+
+    const deposited = await h.dispatch('bank.deposit', { itemId: shard, quantity: 7 });
+    expect(deposited.ok).toBe(true);
+    let state = await h.state();
+    expect(quantityOf(state.inventory, shard)).toBe(0);
+    expect(quantityOf(state.bank, shard)).toBe(7);
+
+    const withdrawn = await h.dispatch('bank.withdraw', { itemId: shard, quantity: 3 });
+    expect(withdrawn.ok).toBe(true);
+    state = await h.state();
+    expect(quantityOf(state.inventory, shard)).toBe(3);
+    expect(quantityOf(state.bank, shard)).toBe(4);
   });
 });
 
