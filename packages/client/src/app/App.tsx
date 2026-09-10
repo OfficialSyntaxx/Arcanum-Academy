@@ -114,6 +114,8 @@ export function App() {
               onSell={(itemId, quantity) => economy?.sell(itemId, quantity)}
               onRepair={(skillId) => economy?.repair(skillId)}
               onUpgradeTool={(toolId) => economy?.upgradeTool(toolId)}
+              onAcceptQuest={(questId) => economy?.acceptQuest(questId)}
+              onCompleteQuest={(questId) => economy?.completeQuest(questId)}
             />
           ) : (
             <Screen />
