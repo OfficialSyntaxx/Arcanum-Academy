@@ -111,6 +111,8 @@ export function App() {
               onCraft={(recipeId) => economy?.craft(recipeId)}
               onDeposit={(itemId, quantity) => economy?.deposit(itemId, quantity)}
               onWithdraw={(itemId, quantity) => economy?.withdraw(itemId, quantity)}
+              onSell={(itemId, quantity) => economy?.sell(itemId, quantity)}
+              onRepair={(skillId) => economy?.repair(skillId)}
             />
           ) : (
             <Screen />
