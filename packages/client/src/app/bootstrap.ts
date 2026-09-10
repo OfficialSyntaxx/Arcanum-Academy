@@ -238,6 +238,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     onEngageCraftingStation: (interactableId) => store.setOpenStation(interactableId),
     onEngageBankChest: (interactableId) => store.setOpenBank(interactableId),
     onEngageMerchantStall: (interactableId) => store.setOpenMerchant(interactableId),
+    onEngageQuestBoard: (interactableId) => store.setOpenNotice(interactableId),
     onEngageZonePortal: (targetZoneId) => {
       const zone = zoneById(targetZoneId as ZoneId);
       if (!zone) {
