@@ -168,6 +168,57 @@
         "boundSkillId": "skill.forestry",
         "repairCost": 50
       }
+    },
+    {
+      "id": "item.tool.sickle.moonsteel",
+      "name": "Moonsteel Sickle",
+      "description": "A balanced sickle that keeps its edge through dense patches.",
+      "category": "TOOL",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 650,
+      "iconKey": "tool-sickle-moonsteel",
+      "tool": {
+        "maxDurability": 900,
+        "yieldMultiplierBasisPoints": 14000,
+        "boundSkillId": "skill.foraging",
+        "requiredSkillLevel": 10,
+        "repairCost": 70
+      }
+    },
+    {
+      "id": "item.tool.pick.starseam",
+      "name": "Starseam Pick",
+      "description": "A keen pick whose head rings true against crystal seams.",
+      "category": "TOOL",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 700,
+      "iconKey": "tool-pick-starseam",
+      "tool": {
+        "maxDurability": 900,
+        "yieldMultiplierBasisPoints": 14000,
+        "boundSkillId": "skill.mining",
+        "requiredSkillLevel": 10,
+        "repairCost": 75
+      }
+    },
+    {
+      "id": "item.tool.axe.emberforged",
+      "name": "Emberforged Axe",
+      "description": "A heated edge made for heartwood and long sessions in the grove.",
+      "category": "TOOL",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 750,
+      "iconKey": "tool-axe-emberforged",
+      "tool": {
+        "maxDurability": 950,
+        "yieldMultiplierBasisPoints": 14000,
+        "boundSkillId": "skill.forestry",
+        "requiredSkillLevel": 10,
+        "repairCost": 80
+      }
     }
   ]
 }
