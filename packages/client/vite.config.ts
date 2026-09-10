@@ -36,7 +36,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      // A game shell must not remain on an old interaction build indefinitely.
+      // Hashed assets make this safe: a reload is always internally consistent.
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Alderfell',
