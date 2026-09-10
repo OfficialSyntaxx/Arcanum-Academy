@@ -92,6 +92,8 @@ export class NpcDirector {
         this.world.heightAt(position),
         position.z,
         facing,
+        Math.min(1, actor.agent.mover.velocity / this.locomotion.speed),
+        nowMs,
       );
     }
   }
