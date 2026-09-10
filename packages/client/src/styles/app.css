@@ -626,6 +626,67 @@
   gap: var(--space-3);
 }
 
+.notice-board {
+  pointer-events: auto;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(24rem, calc(100vw - var(--space-6)));
+  max-height: 66vh;
+  overflow-y: auto;
+}
+
+.notice-board__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.notice-board h2 {
+  margin: 0;
+}
+
+.notice-board > p {
+  color: var(--haze-dim);
+  line-height: 1.5;
+}
+
+.notice-board__objective {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-2);
+  align-items: center;
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+}
+
+.notice-board__objective > span:first-child,
+.notice-board__objective strong {
+  color: var(--gilt);
+}
+
+.notice-board__objective[data-complete='true'] {
+  border-color: var(--verdigris);
+}
+
+.notice-board__objective[data-complete='true'] > span:first-child,
+.notice-board__objective[data-complete='true'] strong {
+  color: var(--verdigris);
+}
+
+.notice-board__hint {
+  font-size: var(--text-xs);
+}
+
+.notice-board__close {
+  width: 100%;
+}
+
 .bank-panel {
   pointer-events: auto;
   position: absolute;
