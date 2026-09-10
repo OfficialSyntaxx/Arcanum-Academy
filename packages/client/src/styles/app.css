@@ -516,18 +516,24 @@
   pointer-events: none;
   position: absolute;
   left: 50%;
-  bottom: calc(var(--inset-bottom) + 13rem);
+  /* A drop feed belongs near the diary/header area, never over the player or
+     route. Keeping a fixed readable width also prevents a brief empty yield
+     state from collapsing into the distracting black square seen on mobile. */
+  top: calc(var(--inset-top) + 9.25rem);
+  bottom: auto;
   transform: translateX(-50%);
   z-index: 4;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.15rem;
-  max-width: calc(100vw - 2rem);
-  padding: 0.6rem 0.85rem;
-  border: 1px solid color-mix(in srgb, var(--verdigris) 72%, var(--haze));
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--ink) 90%, transparent);
+  width: min(19rem, calc(100vw - 3rem));
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--gilt) 72%, var(--haze));
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--ink) 94%, transparent);
+  box-shadow: 0 0.4rem 1rem rgba(0, 0, 0, 0.24);
   color: var(--haze);
   font: var(--text-sm) var(--font-book);
   text-align: center;
@@ -535,7 +541,7 @@
 }
 
 .collection-toast span:last-child {
-  color: var(--verdigris);
+  color: var(--gilt);
   font: var(--text-xs) var(--font-serial);
 }
 
