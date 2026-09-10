@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 31651)
-Total output lines: 2051
+Warning: truncated output (original token count: 31750)
+Total output lines: 2056
 
 # ALDERFELL — AI HANDOVER
 
@@ -96,7 +96,7 @@ is **not** constrained to the waypoint routes: authored navigation remains for N
 approach points, while direct walking collides with buildings, canals, Courtyard trees, rocks and
 homes. Four zones exist as data (`courtyard`, `forest`, `mountains`, `snow`).
 
-Skilling and economy: Mining, Forestry, Foraging, Refining and Scribing work through world
+Skilling and economy: Mining, Forestry, Foraging, **Fishing**, Refining and Scribing work through world
 stations; equipment has starter tools, durability/repair, and level-gated merchant upgrades;
 the bank supports deposits/withdrawals; merchant sales support explicit quantities. Inventory,
 resource collection feedback, skill XP, panel auto-close on travel, local map travel, and a top
@@ -109,6 +109,11 @@ in Postgres; the in-game **Logs** panel exposes a local session trace. `/healthz
 architecture boundaries, types, 376 tests, production build, and Playwright phone/landscape/
 desktop visual checks with screenshot artifacts. Netlify production is
 `https://arcanum-academy.netlify.app`; Render is `https://alderfell-server.onrender.com`.
+
+Fishing slice (2026-09-10): `skill.fishing` is a server-authoritative gathering skill with an
+Academy Shore Net, a level-10 Starglass Net merchant upgrade, Tidefin/Moonray/Stargill drops,
+and the Starlit Tide Pool in the Courtyard at the Library-side bank. Existing saves receive the
+starter net through the same forward-compatible tool backfill used by the other gathering skills.
 
 Visual state: Courtyard has low-poly environment GLB upgrades with primitive fallbacks. Characters
 are now a low-poly instanced model made from robe, head, hair, arms and legs, including a
@@ -976,12 +981,7 @@ joystick.**
 
 ### 5.2 The camera
 
-**Decision, 2026-09-09: a free camera. The locked isometric look is abandoned.**
-
-An earlier draft of this plan argued for a camera locked at a fixed isometric angle, on the
-grounds that it is a *budget* decision — models only ever look right from one angle, so
-backfaces never show and buildings need no backs. The owner chose free rotation instead, and
-that is the right call for an OSRS-style game: you rotate c…1651 tokens truncated… ~5 cm is invisible at play distance — delete it.
+**Decision, 2026-09-…1750 tokens truncated… ~5 cm is invisible at play distance — delete it.
 - No bevels below 2 cm. No subdivision surface. No microdetail geometry.
 - Colour from flat materials or a small texture atlas — never per-object 2K maps.
 - **Never bake lighting or AO into textures.** The game lights the scene.
