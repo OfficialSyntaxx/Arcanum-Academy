@@ -247,6 +247,12 @@
 .hub {
   position: absolute;
   inset: 0;
+  /* The world canvas owns movement and camera gestures. Only visible hub
+     controls opt in, so this full-screen wrapper cannot swallow a tap. */
+  pointer-events: none;
+}
+
+.hub > * {
   pointer-events: auto;
 }
 
@@ -781,7 +787,7 @@
   left: calc(var(--inset-left) + 0.75rem);
   background: rgba(29, 22, 16, 0.88);
   font-size: 0.75rem;
-  pointer-events: none;
+  pointer-events: auto;
 }
 .prompt__label {
   color: var(--haze);
