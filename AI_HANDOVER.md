@@ -6,8 +6,9 @@
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
 **Code state:** G1 is implemented and deployed. The project is in the post-G1 vertical-slice
-phase: reliable skilling/economy, persistence, observability, and character visuals are being
-iterated before fishing, dialogue/quests, and combat.
+phase: reliable skilling/economy, persistence, observability, character visuals, and the first
+quest-facing interactions are in place; the next major gameplay gate is server-authoritative
+combat followed by a durable quest ledger.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -98,6 +99,12 @@ stations; equipment has starter tools, durability/repair, and level-gated mercha
 the bank supports deposits/withdrawals; merchant sales support explicit quantities. Inventory,
 resource collection feedback, skill XP, panel auto-close on travel, local map travel, and a top
 HUD collection feed are live.
+
+Quest-facing UI (2026-09-10): the Library Notice Board is a real in-world interaction and presents
+the first objective, **The First Kindling**. It reads actual mushroom counts from the confirmed
+satchel projection and closes automatically on travel. This is deliberately a presentation slice:
+acceptance, turn-in, rewards and quest completion must wait for the server-authoritative quest
+ledger rather than being faked in browser storage.
 
 Reliability and operations: production uses Render Postgres for player and identity persistence.
 The client submits low-volume diagnostic events; a protected server diagnostic feed persists them
