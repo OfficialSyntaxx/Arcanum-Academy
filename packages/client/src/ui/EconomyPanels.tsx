@@ -8,6 +8,7 @@ import {
   levelForXp,
   xpForLevel,
 } from '@alderfell/shared';
+import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../state/app-store.js';
 import { LabelStrip } from './LabelStrip.js';
 
@@ -68,6 +69,81 @@ export function GatheringHud({ onCollect, onStop }: { onCollect: () => void; onS
           Stop
         </button>
       </div>
+    </div>
+  );
+}
+
+/** A short, high-contrast confirmation for each server-authoritative haul. */
+export function CollectionToast() {
+  const yields = useAppStore((state) => state.economy.lastYields);
+  const xp = useAppStore((state) => state.economy.lastXpGained);
+  const [visible, setVisible] = useState(false);
+  const previous = useRef('');
+  const signature = `${yields.map((entry) => `${entry.itemId}:${entry.quantity}`).join(',')}|${xp}`;
+
+  useEffect(() => {
+    if (yields.length === 0 || signature === previous.current) return;
+    previous.current = signature;
+    setVisible(true);
+    const timer = window.setTimeout(() => setVisible(false), 2_600);
+    return () => window.clearTimeout(timer);
+  }, [signature, yields.length]);
+
+  if (!visible) return null;
+  return (
+    <div className="collection-toast" role="status" aria-live="polite">
+      <span>
+        {yields.map((entry) => `+${entry.quantity} ${itemName(entry.itemId)}`).join(' · ')}
+      </span>
+      {xp > 0 && <span>+{xp} XP</span>}
+    </div>
+  );
+}
+
+function QuantityActions({
+  available,
+  verb,
+  onChoose,
+}: {
+  available: number;
+  verb: string;
+  onChoose: (quantity: number) => void;
+}) {
+  const [custom, setCustom] = useState('');
+  const commitCustom = () => {
+    const quantity = Math.floor(Number(custom));
+    if (Number.isFinite(quantity) && quantity > 0) onChoose(Math.min(available, quantity));
+    setCustom('');
+  };
+  const quantities = [1, 5, 10].filter((quantity) => quantity <= available);
+  return (
+    <div className="quantity-actions">
+      {quantities.map((quantity) => (
+        <button type="button" key={quantity} onClick={() => onChoose(quantity)}>
+          {verb} {quantity}
+        </button>
+      ))}
+      <label>
+        <span className="sr-only">Custom quantity</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          min="1"
+          max={available}
+          value={custom}
+          placeholder="X"
+          onChange={(event) => setCustom(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') commitCustom();
+          }}
+        />
+      </label>
+      <button type="button" disabled={custom.trim().length === 0} onClick={commitCustom}>
+        {verb} X
+      </button>
+      <button type="button" onClick={() => onChoose(available)}>
+        {verb} all
+      </button>
     </div>
   );
 }
@@ -218,9 +294,7 @@ export function BankPanel({
         title="Reclaimer’s Cache"
         serial={`${economy.bankStacks.length}/${economy.bankSlotCapacity}`}
       />
-      <p className="bank-panel__hint">
-        Tap a bag stack to deposit it all. Tap stored resources to withdraw them all.
-      </p>
+      <p className="bank-panel__hint">Choose 1, 5, 10, a custom amount, or all of any resource.</p>
       <section className="bank-panel__column" aria-label="Satchel resources">
         <h3>Satchel</h3>
         {bag.length === 0 ? (
@@ -230,9 +304,11 @@ export function BankPanel({
             {bag.map(([itemId, quantity]) => (
               <li key={itemId}>
                 <span>{itemName(itemId)}</span>
-                <button type="button" onClick={() => onDeposit(itemId, quantity)}>
-                  Deposit {quantity}
-                </button>
+                <QuantityActions
+                  available={quantity}
+                  verb="Deposit"
+                  onChoose={(amount) => onDeposit(itemId, amount)}
+                />
               </li>
             ))}
           </ul>
@@ -247,9 +323,11 @@ export function BankPanel({
             {bank.map(([itemId, quantity]) => (
               <li key={itemId}>
                 <span>{itemName(itemId)}</span>
-                <button type="button" onClick={() => onWithdraw(itemId, quantity)}>
-                  Withdraw {quantity}
-                </button>
+                <QuantityActions
+                  available={quantity}
+                  verb="Withdraw"
+                  onChoose={(amount) => onWithdraw(itemId, amount)}
+                />
               </li>
             ))}
           </ul>
@@ -381,9 +459,11 @@ export function MerchantPanel({
               <span>
                 {itemName(stack.definitionId)} × {stack.quantity}
               </span>
-              <button type="button" onClick={() => onSell(stack.definitionId, stack.quantity)}>
-                Sell all
-              </button>
+              <QuantityActions
+                available={stack.quantity}
+                verb="Sell"
+                onChoose={(amount) => onSell(stack.definitionId, amount)}
+              />
             </li>
           ))}
         </ul>
