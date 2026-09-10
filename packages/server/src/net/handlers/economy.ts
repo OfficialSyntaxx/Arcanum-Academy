@@ -29,6 +29,7 @@ import {
   err,
   failure,
   FailureCode,
+  ItemCategory,
   ok,
   Rng,
   type Failure,
@@ -92,6 +93,7 @@ function project(state: PlayerState) {
   return {
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     bank: { stacks: state.bank.stacks, slotCapacity: state.bank.slotCapacity },
+    coins: state.coins,
     skills: state.skills,
     tools: state.tools,
     gathering: state.gathering,
@@ -386,6 +388,64 @@ export function registerEconomyHandlers(
         return ok({ state: next, value: project(next) });
       });
     };
+  const sell: CommandHandler = async (session: Session, payload: unknown) => {
+    const itemId = readString(payload, 'itemId');
+    const quantity = readPositiveInteger(payload, 'quantity');
+    if (itemId === null || quantity === null) {
+      return err(
+        invalid('merchant.item_or_quantity_missing', 'itemId and a positive quantity are required'),
+      );
+    }
+    const definition = catalogs.items.get(itemId as never);
+    if (definition === undefined)
+      return err(failure(FailureCode.NotFound, 'merchant.unknown_item'));
+    if (definition.category !== ItemCategory.Material) {
+      return err(invalid('merchant.unsellable_item', 'only gathered materials can be sold'));
+    }
+    const coins = Math.floor(
+      (definition.baseValue * quantity * tunables.economy.shopSellRateBasisPoints) / 10_000,
+    );
+    if (coins < 1) return err(invalid('merchant.value_too_low', 'this quantity has no sale value'));
+    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      const removed = removeItems(state.inventory, definition.id, quantity);
+      if (!removed.ok) return err(removed.error);
+      const next: PlayerState = {
+        ...state,
+        inventory: removed.value,
+        coins: Math.min(tunables.economy.currencyCap, state.coins + coins),
+      };
+      return ok({ state: next, value: { ...project(next), coinsGained: coins } });
+    });
+  };
+  const repair: CommandHandler = async (session: Session, payload: unknown) => {
+    const skillId = readString(payload, 'skillId');
+    if (skillId === null) return err(invalid('repair.skill_missing', 'skillId is required'));
+    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      const tool = state.tools[skillId];
+      if (tool === undefined) return err(failure(FailureCode.NotFound, 'repair.tool_missing'));
+      const definition = catalogs.items.get(tool.definitionId);
+      if (definition?.tool === undefined)
+        return err(failure(FailureCode.NotFound, 'repair.tool_unknown'));
+      const missing = Math.max(0, definition.tool.maxDurability - tool.durability);
+      const cost = missing * tunables.economy.toolRepairCostPerDurability;
+      if (cost === 0) return err(invalid('repair.not_needed', 'this tool is already pristine'));
+      if (state.coins < cost)
+        return err(
+          failure(FailureCode.Conflict, 'repair.insufficient_coins', {
+            context: { cost, held: state.coins },
+          }),
+        );
+      const next: PlayerState = {
+        ...state,
+        coins: state.coins - cost,
+        tools: {
+          ...state.tools,
+          [skillId]: { ...tool, durability: definition.tool.maxDurability },
+        },
+      };
+      return ok({ state: next, value: { ...project(next), repairCost: cost } });
+    });
+  };
   const sync: CommandHandler = async (session: Session) => {
     const loaded = await players.load(session.playerId);
     if (!loaded.ok) return err(loaded.error);
@@ -399,5 +459,7 @@ export function registerEconomyHandlers(
     .register('gathering.stop', stop)
     .register('crafting.craft', craft)
     .register('bank.deposit', moveBankItem('deposit'))
-    .register('bank.withdraw', moveBankItem('withdraw'));
+    .register('bank.withdraw', moveBankItem('withdraw'))
+    .register('merchant.sell', sell)
+    .register('merchant.repair', repair);
 }
