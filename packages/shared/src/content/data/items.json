@@ -92,6 +92,36 @@
       "iconKey": "emberwood-core"
     },
     {
+      "id": "item.fish.tidefin",
+      "name": "Tidefin",
+      "description": "A silver-blue fish that gathers in the sheltered academy pool.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 5,
+      "iconKey": "fish-tidefin"
+    },
+    {
+      "id": "item.fish.moonray",
+      "name": "Moonray",
+      "description": "Its fins catch the light even under an overcast sky.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 24,
+      "iconKey": "fish-moonray"
+    },
+    {
+      "id": "item.fish.stargill",
+      "name": "Stargill",
+      "description": "A rare, cold-water catch with a constellation across its scales.",
+      "category": "MATERIAL",
+      "rarity": "RARE",
+      "stackCap": 999,
+      "baseValue": 125,
+      "iconKey": "fish-stargill"
+    },
+    {
       "id": "item.dust.resonant",
       "name": "Resonant Dust",
       "description": "Ground crystal, fine enough to suspend in ink without clouding it.",
@@ -170,6 +200,22 @@
       }
     },
     {
+      "id": "item.tool.net",
+      "name": "Shore Net",
+      "description": "A light hand net made for sheltered pools and patient casts.",
+      "category": "TOOL",
+      "rarity": "COMMON",
+      "stackCap": 1,
+      "baseValue": 130,
+      "iconKey": "tool-net",
+      "tool": {
+        "maxDurability": 500,
+        "yieldMultiplierBasisPoints": 12000,
+        "boundSkillId": "skill.fishing",
+        "repairCost": 45
+      }
+    },
+    {
       "id": "item.tool.sickle.moonsteel",
       "name": "Moonsteel Sickle",
       "description": "A balanced sickle that keeps its edge through dense patches.",
@@ -218,6 +264,23 @@
         "boundSkillId": "skill.forestry",
         "requiredSkillLevel": 10,
         "repairCost": 80
+      }
+    },
+    {
+      "id": "item.tool.net.starglass",
+      "name": "Starglass Net",
+      "description": "Fine starglass threads hold their shape beneath the surface.",
+      "category": "TOOL",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 675,
+      "iconKey": "tool-net-starglass",
+      "tool": {
+        "maxDurability": 900,
+        "yieldMultiplierBasisPoints": 14000,
+        "boundSkillId": "skill.fishing",
+        "requiredSkillLevel": 10,
+        "repairCost": 70
       }
     }
   ]
