@@ -23,6 +23,7 @@ import { PresenceService } from './domain/presence.js';
 import { InMemoryTradeStore, TradingService } from './domain/trading.js';
 import { registerSocialHandlers } from './net/handlers/social.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
+import { DiagnosticBuffer, diagnosticReportSchema } from './diagnostics.js';
 import {
   IdentityService,
   InMemoryIdentityStore,
@@ -164,6 +165,8 @@ async function main(): Promise<void> {
   });
 
   const app = Fastify({ logger: false });
+  const diagnostics = new DiagnosticBuffer();
+  const diagnosticRate = new Map<string, { windowStartedMs: number; count: number }>();
   let ready = false;
 
   app.get('/healthz', async () => ({ status: 'ok' }));
@@ -182,6 +185,33 @@ async function main(): Promise<void> {
     uptimeSeconds: Math.floor(process.uptime()),
     rss: process.memoryUsage().rss,
   }));
+  app.post('/diagnostics/events', async (request, reply) => {
+    const origin = request.headers.origin ?? '';
+    if (config.NODE_ENV === 'production' && !config.allowedOrigins.includes(origin)) {
+      return reply.code(403).send({ error: 'origin_not_allowed' });
+    }
+    const ip = request.ip;
+    const nowMs = Date.now();
+    const window = diagnosticRate.get(ip);
+    if (window === undefined || nowMs - window.windowStartedMs >= 60_000) {
+      diagnosticRate.set(ip, { windowStartedMs: nowMs, count: 1 });
+    } else if (window.count >= 60) {
+      return reply.code(429).send({ error: 'rate_limited' });
+    } else {
+      window.count += 1;
+    }
+    const parsed = diagnosticReportSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'invalid_report' });
+    diagnostics.add({ ...parsed.data, receivedAtMs: nowMs, ip });
+    return reply.code(202).send({ accepted: true });
+  });
+  app.get('/diagnostics/events', async (request, reply) => {
+    const key = config.DIAGNOSTICS_READ_KEY;
+    if (key === undefined || request.headers['x-diagnostics-key'] !== key) {
+      return reply.code(404).send({ error: 'not_found' });
+    }
+    return { events: diagnostics.list() };
+  });
 
   await app.ready();
 
