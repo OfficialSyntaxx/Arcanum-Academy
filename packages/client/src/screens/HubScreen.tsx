@@ -12,6 +12,7 @@ import {
   InventoryPanel,
 } from '../ui/EconomyPanels.js';
 import { useAppStore } from '../state/app-store.js';
+import { NoticeBoard } from '../ui/NoticeBoard.js';
 
 /**
  * The hub overlay.
@@ -68,10 +69,12 @@ export function HubScreen({
   const openStationId = useAppStore((state) => state.openStationId);
   const openBankId = useAppStore((state) => state.openBankId);
   const openMerchantId = useAppStore((state) => state.openMerchantId);
+  const openNoticeId = useAppStore((state) => state.openNoticeId);
   const travelRevision = useAppStore((state) => state.travelRevision);
   const setOpenStation = useAppStore((state) => state.setOpenStation);
   const setOpenBank = useAppStore((state) => state.setOpenBank);
   const setOpenMerchant = useAppStore((state) => state.setOpenMerchant);
+  const setOpenNotice = useAppStore((state) => state.setOpenNotice);
 
   // Satchel and map are local presentation state, while crafting and prompts
   // live in the app store. They all subscribe to the same travel boundary.
@@ -140,6 +143,7 @@ export function HubScreen({
           onClose={() => setOpenMerchant(null)}
         />
       )}
+      {openNoticeId !== null && <NoticeBoard onClose={() => setOpenNotice(null)} />}
     </div>
   );
 }
