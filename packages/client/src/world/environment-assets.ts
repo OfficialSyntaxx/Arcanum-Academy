@@ -20,7 +20,60 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { heightAt, type Zone } from '@alderfell/shared';
 import type { QualitySettings } from '../core/device.js';
 
-type Placement = readonly [x: number, z: number, height: number, yaw: number];
+export type EnvironmentPlacement = readonly [x: number, z: number, height: number, yaw: number];
+type Placement = EnvironmentPlacement;
+
+const TREE_SPOTS: Placement[] = [
+  [-5, -4, 4.4, 0],
+  [5, -4, 4.1, 1],
+  [-5, 4, 4.0, 2],
+  [5, 4, 3.7, 0.5],
+  [-11, 5, 4.8, 0],
+  [-11, -5, 4.2, 1],
+  [11, 6, 4.5, 2],
+  [11, -6, 4.3, 0.2],
+  [-23, 10, 5.2, 1],
+  [-24, 15, 4.3, 0],
+  [-16, 23, 5.4, 1],
+  [-11, 22, 4.5, 2],
+  [-22, -7, 4.9, 2],
+  [-25, -3, 4.0, 1],
+  [-25, 1, 4.5, 0],
+  [24, 8, 4.9, 0],
+  [25, 0, 4.4, 1],
+  [24, -8, 4.8, 2],
+  [12, -22, 4.9, 0],
+  [22, 23, 4.3, 0],
+  [15, 24, 4.1, 1],
+  [-24, -25, 3.8, 2],
+];
+const ROCK_SPOTS: Placement[] = [
+  [-24, -19, 1.8, 0],
+  [-22, -21, 2, 1],
+  [-17, -23, 1.7, 2],
+  [-12, -21, 1.3, 0],
+  [-8, 24, 1.3, 2],
+  [9, 24, 1.8, 1],
+  [25, 19, 2.2, 0],
+  [25, 13, 1.2, 1],
+  [-8, -10, 0.8, 0],
+  [9, -10, 0.9, 2],
+  [-8, 10, 0.7, 1],
+  [8, 10, 0.8, 0],
+];
+const HOME_SPOTS: Placement[] = [
+  [17, 8, 4.0, Math.PI],
+  [8, 19, 3.8, -Math.PI / 2],
+];
+
+/** Physical footprints match the visible scenery across every quality tier. */
+export function environmentCollisionPlacements(quality: QualitySettings) {
+  return {
+    trees: TREE_SPOTS.slice(0, quality.tier === 'low' ? 14 : TREE_SPOTS.length),
+    rocks: ROCK_SPOTS,
+    homes: HOME_SPOTS,
+  };
+}
 
 /** Bundled model upgrades, with visible geometry from the very first frame.
  * Each source mesh becomes ONE instance batch. Textures and geometry are shared,
@@ -117,58 +170,18 @@ export function buildEnvironment(zone: Zone, quality: QualitySettings) {
 
   // Hand-composed pockets between existing routes. No navigation or gameplay
   // content is changed by this scenery layer.
-  const treeSpots: Placement[] = [
-    [-5, -4, 4.4, 0],
-    [5, -4, 4.1, 1],
-    [-5, 4, 4.0, 2],
-    [5, 4, 3.7, 0.5],
-    [-11, 5, 4.8, 0],
-    [-11, -5, 4.2, 1],
-    [11, 6, 4.5, 2],
-    [11, -6, 4.3, 0.2],
-    [-23, 10, 5.2, 1],
-    [-24, 15, 4.3, 0],
-    [-16, 23, 5.4, 1],
-    [-11, 22, 4.5, 2],
-    [-22, -7, 4.9, 2],
-    [-25, -3, 4.0, 1],
-    [-25, 1, 4.5, 0],
-    [24, 8, 4.9, 0],
-    [25, 0, 4.4, 1],
-    [24, -8, 4.8, 2],
-    [12, -22, 4.9, 0],
-    [22, 23, 4.3, 0],
-    [15, 24, 4.1, 1],
-    [-24, -25, 3.8, 2],
-  ];
-  const trees = treeSpots.slice(0, quality.tier === 'low' ? 14 : treeSpots.length);
+  const trees = TREE_SPOTS.slice(0, quality.tier === 'low' ? 14 : TREE_SPOTS.length);
   const treeFallback = new Group();
   batch(new CylinderGeometry(0.045, 0.075, 0.48, 7), bark, matricesFor(trees, 0.24), treeFallback);
   batch(new SphereGeometry(0.31, 7, 5), leaves, matricesFor(trees, 0.69, 1.1), treeFallback);
   upgrade('tree', trees, treeFallback);
 
-  const rocks: Placement[] = [
-    [-24, -19, 1.8, 0],
-    [-22, -21, 2, 1],
-    [-17, -23, 1.7, 2],
-    [-12, -21, 1.3, 0],
-    [-8, 24, 1.3, 2],
-    [9, 24, 1.8, 1],
-    [25, 19, 2.2, 0],
-    [25, 13, 1.2, 1],
-    [-8, -10, 0.8, 0],
-    [9, -10, 0.9, 2],
-    [-8, 10, 0.7, 1],
-    [8, 10, 0.8, 0],
-  ];
+  const rocks = ROCK_SPOTS;
   const rockFallback = new Group();
   batch(new SphereGeometry(0.6, 7, 4), rock, matricesFor(rocks, 0.45, 0.8), rockFallback);
   upgrade('rock', rocks, rockFallback);
 
-  const homes: Placement[] = [
-    [17, 8, 4.0, Math.PI],
-    [8, 19, 3.8, -Math.PI / 2],
-  ];
+  const homes = HOME_SPOTS;
   const homeFallback = new Group();
   batch(new BoxGeometry(0.8, 0.6, 0.8), plaster, matricesFor(homes, 0.3), homeFallback);
   batch(new ConeGeometry(0.65, 0.4, 4), roof, matricesFor(homes, 0.8), homeFallback);
