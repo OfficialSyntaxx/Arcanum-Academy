@@ -113,6 +113,7 @@ export function App() {
               onWithdraw={(itemId, quantity) => economy?.withdraw(itemId, quantity)}
               onSell={(itemId, quantity) => economy?.sell(itemId, quantity)}
               onRepair={(skillId) => economy?.repair(skillId)}
+              onUpgradeTool={(toolId) => economy?.upgradeTool(toolId)}
             />
           ) : (
             <Screen />
