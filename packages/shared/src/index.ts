@@ -19,4 +19,5 @@ export * from './items/types.js';
 export * from './gathering/types.js';
 export * from './crafting/types.js';
 export * from './skills/types.js';
+export * from './quests/types.js';
 export * from './content/index.js';
