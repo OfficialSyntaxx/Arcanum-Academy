@@ -17,6 +17,12 @@ describe('loadConfig', () => {
     expect(config.allowedOrigins).toEqual(['https://a.example', 'https://b.example']);
   });
 
+  it('accepts an optional diagnostics feed read key', () => {
+    expect(loadConfig({ DIAGNOSTICS_READ_KEY: 'safe-test-key-1234' }).DIAGNOSTICS_READ_KEY).toBe(
+      'safe-test-key-1234',
+    );
+  });
+
   it('fails loudly on an invalid port', () => {
     expect(() => loadConfig({ PORT: '70000' })).toThrow(/Invalid server configuration/);
   });
