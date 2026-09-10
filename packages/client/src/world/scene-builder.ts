@@ -26,6 +26,8 @@ import {
   type Object3D,
   Quaternion,
   RingGeometry,
+  Shape,
+  ShapeGeometry,
   SphereGeometry,
   TorusGeometry,
   Vector3,
@@ -106,6 +108,12 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
       opacity: 0.72,
     }),
   );
+  const coastland = track(
+    new MeshStandardMaterial({ color: 0x294f35, roughness: 1, metalness: 0 }),
+  );
+  const distantLand = track(
+    new MeshStandardMaterial({ color: 0x1f422f, roughness: 1, metalness: 0, flatShading: true }),
+  );
   const wood = track(
     new MeshStandardMaterial({ color: Palette.wood, roughness: 0.8, metalness: 0.05 }),
   );
@@ -144,6 +152,48 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   baseFloor.userData['ground'] = true;
   baseFloor.receiveShadow = quality.shadowsEnabled;
   group.add(baseFloor);
+
+  // The Courtyard is a playable clearing on a coast, not a square model placed
+  // in the void. This non-walkable apron deliberately extends beyond the
+  // collision bounds with an irregular edge, while the ocean continues under
+  // the horizon. It changes no gameplay coordinates and never catches a tap.
+  if (zone.id === 'zone.courtyard') {
+    const seaGeometry = track(new BoxGeometry(180, 0.1, 180));
+    const sea = new Mesh(seaGeometry, water);
+    sea.position.set(0, -0.34, 0);
+    sea.raycast = () => {};
+    group.add(sea);
+
+    const apron = new Mesh(track(buildCoastalApron()), coastland);
+    apron.rotation.x = Math.PI / 2;
+    apron.position.y = -0.12;
+    apron.raycast = () => {};
+    group.add(apron);
+
+    const hills = [
+      [-37, -22, 4.5],
+      [-33, 16, 5.5],
+      [-17, 35, 6.5],
+      [12, 36, 6],
+      [34, 22, 5],
+      [36, -13, 6],
+      [24, -35, 6.5],
+      [-15, -35, 5.5],
+    ] as const;
+    const hillGeometry = track(new ConeGeometry(1, 1, 7));
+    const hillMeshes = new InstancedMesh(hillGeometry, distantLand, hills.length);
+    hills.forEach(([x, z, size], index) => {
+      scratchMatrix.compose(
+        new Vector3(x, size * 0.28, z),
+        scratchQuaternion.setFromAxisAngle(UP_AXIS, index * 0.8),
+        new Vector3(size * 1.35, size * 0.9, size),
+      );
+      hillMeshes.setMatrixAt(index, scratchMatrix);
+    });
+    hillMeshes.instanceMatrix.needsUpdate = true;
+    hillMeshes.raycast = () => {};
+    group.add(hillMeshes);
+  }
 
   for (const terrace of terrain.terraces) {
     const width = terrace.maxX - terrace.minX;
@@ -404,18 +454,6 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   const environment = zone.id === 'zone.courtyard' ? buildEnvironment(zone, quality) : null;
   if (environment) {
     group.add(environment.group);
-    // Coast outside the navigable boundary; no walkable terrain is replaced.
-    const seaGeometry = track(new BoxGeometry(180, 0.12, 100));
-    const sea = new Mesh(seaGeometry, water);
-    sea.position.set(0, -0.48, 76);
-    sea.raycast = () => {};
-    group.add(sea);
-    const beachGeometry = track(new BoxGeometry(54, 0.22, 3.5));
-    const beachMaterial = track(new MeshStandardMaterial({ color: 0xdcc38e, roughness: 1 }));
-    const beach = new Mesh(beachGeometry, beachMaterial);
-    beach.position.set(0, -0.24, 27.3);
-    beach.raycast = () => {};
-    group.add(beach);
   }
 
   return {
@@ -746,6 +784,32 @@ const scratchMatrix = new Matrix4();
 const scratchQuaternion = new Quaternion();
 const unitScale = new Vector3(1, 1, 1);
 const UP_AXIS = new Vector3(0, 1, 0);
+
+/** A deliberately uneven non-playable shoreline around the Courtyard. */
+function buildCoastalApron(): ShapeGeometry {
+  const points: ReadonlyArray<readonly [number, number]> = [
+    [-42, -34],
+    [-29, -40],
+    [-9, -36],
+    [9, -41],
+    [29, -36],
+    [41, -23],
+    [37, -5],
+    [43, 16],
+    [33, 35],
+    [15, 39],
+    [-5, 35],
+    [-25, 41],
+    [-41, 27],
+    [-36, 8],
+    [-43, -12],
+  ];
+  const shape = new Shape();
+  shape.moveTo(points[0]![0], points[0]![1]);
+  for (const [x, z] of points.slice(1)) shape.lineTo(x, z);
+  shape.closePath();
+  return new ShapeGeometry(shape);
+}
 
 /** Cut terraces out of the base surface. A full rectangle at y=0 used to
  * bury the negative-height mine even though actors correctly stood at -0.8.
