@@ -23,22 +23,18 @@ import { PresenceService } from './domain/presence.js';
 import { InMemoryTradeStore, TradingService } from './domain/trading.js';
 import { registerSocialHandlers } from './net/handlers/social.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
-import { DiagnosticBuffer, diagnosticReportSchema } from './diagnostics.js';
+import {
+  DiagnosticBuffer,
+  PostgresDiagnosticStore,
+  diagnosticReportSchema,
+  type DiagnosticStore,
+} from './diagnostics.js';
 import {
   IdentityService,
   InMemoryIdentityStore,
   PostgresIdentityStore,
   type IdentityStore,
 } from './domain/identity.js';
-
-/**
- * Server entry point.
- *
- * Composition happens here and only here: every dependency is constructed at the
- * top and injected downwards, so no module reaches for a global. Fastify serves
- * the HTTP surface (health, readiness, version) and the same Node http server
- * carries the WebSocket upgrade, which keeps deployment to a single port.
- */
 
 const LEVELS = {
   debug: LogLevel.Debug,
@@ -60,11 +56,6 @@ async function main(): Promise<void> {
   });
   const router = new RegistryCommandRouter();
 
-  // Durable storage when a database is configured, memory when it is not.
-  // The fallback keeps local development and the tests free of a database
-  // dependency, but in a deployed environment it silently discards every
-  // player's progress on restart - so it is called out rather than logged as
-  // an ordinary line and scrolled past.
   let postgres: PostgresPlayerRepository | null = null;
   let repository: PlayerRepository = new InMemoryPlayerRepository();
   if (config.DATABASE_URL !== undefined) {
@@ -75,9 +66,6 @@ async function main(): Promise<void> {
     });
     const prepared = await postgres.initialise();
     if (!prepared.ok) {
-      // Refuse to start rather than fall back. A deployment that asked for a
-      // database and quietly got a memory store instead would look healthy
-      // while losing everything written to it.
       throw new Error(`Database unavailable: ${describeFailure(prepared.error)}`);
     }
     repository = postgres;
@@ -88,9 +76,6 @@ async function main(): Promise<void> {
     );
   }
 
-  // Identity is proved, never asserted. Backed by the database when there is
-  // one: an identity register that reset on restart would lock every player
-  // out of the account they had a moment ago.
   let identityStore: IdentityStore = new InMemoryIdentityStore();
   if (postgres !== null) {
     const postgresIdentities = new PostgresIdentityStore(postgres.client);
@@ -119,16 +104,6 @@ async function main(): Promise<void> {
     now: () => Date.now(),
   });
 
-  // The multiplayer layer is built, tested and switched off.
-  //
-  // Alderfell is single-player Ironman: there is no trading, so none of this is
-  // reachable in normal play. It is registered only when MULTIPLAYER_ENABLED is
-  // set, because the code is correct and expensive to rewrite, and deleting it
-  // would mean rebuilding escrow, an append-only ledger and interest-managed
-  // presence from scratch when multiplayer does arrive.
-  //
-  // Never enable trading while Ironman is the only mode: an account that can
-  // receive an item it did not make invalidates every other account.
   if (config.MULTIPLAYER_ENABLED) {
     const trading = new TradingService({
       repository,
@@ -146,8 +121,6 @@ async function main(): Promise<void> {
   const presence = new PresenceService({
     radius: DEFAULT_TUNABLES.world.presenceRadius,
     maxNeighbours: DEFAULT_TUNABLES.world.maxVisibleNeighbours,
-    // Two missed reports before a player is treated as gone, so an ordinary
-    // hitch does not make everyone flicker out of the courtyard.
     staleAfterMs: Math.ceil(2_000 / DEFAULT_TUNABLES.network.hubPresenceBroadcastHz) * 2,
     now: () => Date.now(),
   });
@@ -165,7 +138,11 @@ async function main(): Promise<void> {
   });
 
   const app = Fastify({ logger: false });
-  const diagnostics = new DiagnosticBuffer();
+  let diagnostics: DiagnosticStore = new DiagnosticBuffer();
+  if (postgres !== null) {
+    diagnostics = new PostgresDiagnosticStore(postgres.client);
+  }
+  await diagnostics.initialise();
   const diagnosticRate = new Map<string, { windowStartedMs: number; count: number }>();
   let ready = false;
 
@@ -202,7 +179,7 @@ async function main(): Promise<void> {
     }
     const parsed = diagnosticReportSchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ error: 'invalid_report' });
-    diagnostics.add({ ...parsed.data, receivedAtMs: nowMs, ip });
+    await diagnostics.add({ ...parsed.data, receivedAtMs: nowMs, ip });
     return reply.code(202).send({ accepted: true });
   });
   app.get('/diagnostics/events', async (request, reply) => {
@@ -210,7 +187,7 @@ async function main(): Promise<void> {
     if (key === undefined || request.headers['x-diagnostics-key'] !== key) {
       return reply.code(404).send({ error: 'not_found' });
     }
-    return { events: diagnostics.list() };
+    return { events: await diagnostics.list() };
   });
 
   await app.ready();
@@ -274,8 +251,6 @@ async function main(): Promise<void> {
     gateway.shutdown();
     wss.close();
     httpServer.close(() => {
-      // Drain the pool last: an in-flight save should be allowed to finish
-      // rather than be cut off mid-write by the process exiting.
       void app
         .close()
         .then(() => postgres?.close())
