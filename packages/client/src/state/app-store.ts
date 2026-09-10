@@ -42,6 +42,8 @@ export interface InteractionPromptState {
 export interface EconomyState {
   readonly stacks: readonly { definitionId: string; quantity: number }[];
   readonly slotCapacity: number;
+  readonly bankStacks: readonly { definitionId: string; quantity: number }[];
+  readonly bankSlotCapacity: number;
   readonly skills: Readonly<Record<string, { level: number; xp: number }>>;
   /** Equipped gathering tool by skill, separate from the material satchel. */
   readonly tools: Readonly<Record<string, { definitionId: string; durability: number }>>;
@@ -64,6 +66,8 @@ export interface EconomyState {
 export const EMPTY_ECONOMY: EconomyState = {
   stacks: [],
   slotCapacity: 0,
+  bankStacks: [],
+  bankSlotCapacity: 0,
   skills: {},
   tools: {},
   gatheringNodeId: null,
@@ -96,6 +100,8 @@ export interface AppState {
   readonly lastCommandError: string | null;
   /** The crafting station whose recipes are open, or null. */
   readonly openStationId: string | null;
+  /** The bank chest currently open, or null. */
+  readonly openBankId: string | null;
   /** This player's id, as the server reported it at handshake. */
   readonly playerId: string;
   /** Non-null while waiting for the ladder to pair you. */
@@ -120,6 +126,7 @@ export interface AppState {
   setEconomy(patch: Partial<EconomyState>): void;
   setLastCommandError(reason: string | null): void;
   setOpenStation(interactableId: string | null): void;
+  setOpenBank(interactableId: string | null): void;
   setPlayerId(playerId: string): void;
   setQueued(queued: { queueSize: number } | null): void;
   beginTravel(): void;
@@ -144,6 +151,7 @@ export const useAppStore = create<AppState>((set) => ({
   economy: EMPTY_ECONOMY,
   lastCommandError: null,
   openStationId: null,
+  openBankId: null,
   playerId: '',
   queued: null,
   travelRevision: 0,
@@ -169,6 +177,7 @@ export const useAppStore = create<AppState>((set) => ({
   setEconomy: (patch) => set((state) => ({ economy: { ...state.economy, ...patch } })),
   setLastCommandError: (lastCommandError) => set({ lastCommandError }),
   setOpenStation: (openStationId) => set({ openStationId }),
+  setOpenBank: (openBankId) => set({ openBankId }),
   setPlayerId: (playerId) => set({ playerId }),
   setQueued: (queued) => set({ queued }),
   beginTravel: () =>
@@ -176,6 +185,7 @@ export const useAppStore = create<AppState>((set) => ({
       travelRevision: state.travelRevision + 1,
       interactionPrompt: null,
       openStationId: null,
+      openBankId: null,
       lastCommandError: null,
     })),
 }));
