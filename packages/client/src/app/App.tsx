@@ -109,6 +109,8 @@ export function App() {
               onCollect={() => economy?.collect()}
               onStopGathering={() => economy?.stopGathering()}
               onCraft={(recipeId) => economy?.craft(recipeId)}
+              onDeposit={(itemId, quantity) => economy?.deposit(itemId, quantity)}
+              onWithdraw={(itemId, quantity) => economy?.withdraw(itemId, quantity)}
             />
           ) : (
             <Screen />
