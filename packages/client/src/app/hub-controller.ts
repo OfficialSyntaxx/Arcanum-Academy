@@ -52,8 +52,6 @@ export interface HubControllerOptions {
   readonly now?: () => number;
   /** Called before the player begins a new route, to end station-bound activity. */
   readonly onBeginTravel?: () => void;
-  /** Called before the player begins a new route, to end station-bound activity. */
-  readonly onBeginTravel?: () => void;
   /**
    * Called when the player engages a gathering node.
    *
@@ -64,6 +62,8 @@ export interface HubControllerOptions {
   readonly onEngageGatheringNode?: (interactableId: string) => void;
   /** Called when the player engages a crafting station. */
   readonly onEngageCraftingStation?: (interactableId: string) => void;
+  /** Called when the player reaches a bank chest. */
+  readonly onEngageBankChest?: (interactableId: string) => void;
   /** Called when the player engages a zone portal, with the target zone id. */
   readonly onEngageZonePortal?: (targetZoneId: string) => void;
   /**
@@ -372,6 +372,8 @@ export class HubController {
       this.options.onEngageGatheringNode?.(target.id);
     } else if (target.kind === InteractableKind.CraftingStation) {
       this.options.onEngageCraftingStation?.(target.id);
+    } else if (target.kind === InteractableKind.BankChest) {
+      this.options.onEngageBankChest?.(target.id);
     } else if (target.kind === InteractableKind.ZonePortal && target.targetZone) {
       this.options.onEngageZonePortal?.(target.targetZone);
     }
