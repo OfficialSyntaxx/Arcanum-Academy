@@ -78,6 +78,8 @@ export interface PlayerState {
   readonly inventory: Inventory;
   /** Secure resource storage, accessed only through a world bank chest. */
   readonly bank: Inventory;
+  /** Per-account soft currency, earned from sales and spent on services. */
+  readonly coins: number;
   /** Progress per skill. Absent means untouched, which reads as level one. */
   readonly skills: Readonly<Record<string, SkillProgress>>;
   /** The tool equipped for each gathering skill, keyed by skill id. */
@@ -98,6 +100,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
   return {
     inventory: createInventory(slotCapacity),
     bank: createInventory(BANK_SLOT_CAPACITY),
+    coins: 0,
     skills: {},
     tools: starterTools(nowMs),
     nodes: {},
@@ -210,6 +213,7 @@ export function parsePlayerState(
   return ok({
     inventory: readInventory(data.inventory, slotCapacity),
     bank: readInventory(data.bank, BANK_SLOT_CAPACITY),
+    coins: Math.max(0, Math.floor(readNumber(data.coins, 0))),
     skills: readSkills(data.skills),
     // Merge rather than replace so every pre-tool save receives the Academy
     // kit while preserving any future upgraded equipment it already owns.
@@ -225,6 +229,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
   return {
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     bank: { stacks: state.bank.stacks, slotCapacity: state.bank.slotCapacity },
+    coins: state.coins,
     skills: state.skills,
     tools: state.tools,
     nodes: state.nodes,
