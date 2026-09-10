@@ -118,6 +118,8 @@ export interface AppState {
   readonly openBankId: string | null;
   /** The merchant stall currently open, or null. */
   readonly openMerchantId: string | null;
+  /** The world notice or quest board currently being read, or null. */
+  readonly openNoticeId: string | null;
   /** This player's id, as the server reported it at handshake. */
   readonly playerId: string;
   /** Non-null while waiting for the ladder to pair you. */
@@ -147,6 +149,7 @@ export interface AppState {
   setOpenStation(interactableId: string | null): void;
   setOpenBank(interactableId: string | null): void;
   setOpenMerchant(interactableId: string | null): void;
+  setOpenNotice(interactableId: string | null): void;
   setPlayerId(playerId: string): void;
   setQueued(queued: { queueSize: number } | null): void;
   beginTravel(): void;
@@ -175,6 +178,7 @@ export const useAppStore = create<AppState>((set) => ({
   openStationId: null,
   openBankId: null,
   openMerchantId: null,
+  openNoticeId: null,
   playerId: '',
   queued: null,
   travelRevision: 0,
@@ -213,6 +217,7 @@ export const useAppStore = create<AppState>((set) => ({
   setOpenStation: (openStationId) => set({ openStationId }),
   setOpenBank: (openBankId) => set({ openBankId }),
   setOpenMerchant: (openMerchantId) => set({ openMerchantId }),
+  setOpenNotice: (openNoticeId) => set({ openNoticeId }),
   setPlayerId: (playerId) => set({ playerId }),
   setQueued: (queued) => set({ queued }),
   beginTravel: () =>
@@ -222,6 +227,7 @@ export const useAppStore = create<AppState>((set) => ({
       openStationId: null,
       openBankId: null,
       openMerchantId: null,
+      openNoticeId: null,
       lastCommandError: null,
     })),
 }));
