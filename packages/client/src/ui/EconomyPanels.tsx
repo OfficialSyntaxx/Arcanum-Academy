@@ -192,6 +192,76 @@ export function EquipmentPanel({ onBack }: { onBack: () => void }) {
   );
 }
 
+/** Resource storage is opened at a bank chest in the world, never from the HUD. */
+export function BankPanel({
+  onDeposit,
+  onWithdraw,
+  onClose,
+}: {
+  onDeposit: (itemId: string, quantity: number) => void;
+  onWithdraw: (itemId: string, quantity: number) => void;
+  onClose: () => void;
+}) {
+  const economy = useAppStore((state) => state.economy);
+  const grouped = (stacks: readonly { definitionId: string; quantity: number }[]) => {
+    const totals = new Map<string, number>();
+    for (const stack of stacks)
+      totals.set(stack.definitionId, (totals.get(stack.definitionId) ?? 0) + stack.quantity);
+    return [...totals];
+  };
+  const bag = grouped(economy.stacks);
+  const bank = grouped(economy.bankStacks);
+
+  return (
+    <div className="panel bank-panel">
+      <LabelStrip
+        title="Reclaimer’s Cache"
+        serial={`${economy.bankStacks.length}/${economy.bankSlotCapacity}`}
+      />
+      <p className="bank-panel__hint">
+        Tap a bag stack to deposit it all. Tap stored resources to withdraw them all.
+      </p>
+      <section className="bank-panel__column" aria-label="Satchel resources">
+        <h3>Satchel</h3>
+        {bag.length === 0 ? (
+          <p className="inventory-panel__empty">Nothing to deposit.</p>
+        ) : (
+          <ul className="bank-panel__list">
+            {bag.map(([itemId, quantity]) => (
+              <li key={itemId}>
+                <span>{itemName(itemId)}</span>
+                <button type="button" onClick={() => onDeposit(itemId, quantity)}>
+                  Deposit {quantity}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="bank-panel__column" aria-label="Stored resources">
+        <h3>Stored</h3>
+        {bank.length === 0 ? (
+          <p className="inventory-panel__empty">The cache is empty.</p>
+        ) : (
+          <ul className="bank-panel__list">
+            {bank.map(([itemId, quantity]) => (
+              <li key={itemId}>
+                <span>{itemName(itemId)}</span>
+                <button type="button" onClick={() => onWithdraw(itemId, quantity)}>
+                  Withdraw {quantity}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <button type="button" className="prompt__button" onClick={onClose}>
+        Close
+      </button>
+    </div>
+  );
+}
+
 /**
  * The recipes craftable at a station, with what each costs and risks.
  *
