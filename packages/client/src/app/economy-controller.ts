@@ -13,7 +13,7 @@
  * `@alderfell/sim`, so adding it later is a change here and nowhere else.
  */
 
-import { ClientOpcode, ServerOpcode, type Failure } from '@alderfell/shared';
+import { ClientOpcode, ServerOpcode, type Failure, type QuestProgress } from '@alderfell/shared';
 import type { Transport } from '../net/transport.js';
 import { useAppStore, type EconomyState } from '../state/app-store.js';
 
@@ -40,6 +40,7 @@ interface HarvestPatch {
     serial: string | null;
   }[];
   readonly decks?: Readonly<Record<string, { name: string; cardDefinitionIds: readonly string[] }>>;
+  readonly quests?: Readonly<Record<string, QuestProgress>>;
 }
 
 /** Command kinds this controller owns, so unrelated patches are ignored. */
@@ -54,6 +55,8 @@ const OWNED = new Set([
   'merchant.sell',
   'merchant.repair',
   'merchant.upgrade_tool',
+  'quest.accept',
+  'quest.complete',
 ]);
 
 export class EconomyController {
@@ -112,6 +115,14 @@ export class EconomyController {
 
   upgradeTool(toolId: string): void {
     this.send('merchant.upgrade_tool', { toolId });
+  }
+
+  acceptQuest(questId: string): void {
+    this.send('quest.accept', { questId });
+  }
+
+  completeQuest(questId: string): void {
+    this.send('quest.complete', { questId });
   }
 
   dispose(): void {
@@ -189,6 +200,7 @@ export class EconomyController {
       overflowed: patch.overflowed ?? false,
       ...(patch.cards !== undefined ? { cards: patch.cards } : {}),
       ...(patch.decks !== undefined ? { decks: patch.decks } : {}),
+      ...(patch.quests !== undefined ? { quests: patch.quests } : {}),
     };
 
     const store = useAppStore.getState();
