@@ -199,7 +199,19 @@ export class HubController {
   /** Starts the available activity through its normal in-world prompt. */
   engagePrompt(): void {
     const prompt = useAppStore.getState().interactionPrompt;
-    if (prompt === null) return;
+    if (prompt === null) {
+      useAppStore.getState().recordDiagnostic({
+        level: 'warn',
+        source: 'world',
+        message: 'Interact pressed with no active prompt',
+      });
+      return;
+    }
+    useAppStore.getState().recordDiagnostic({
+      level: 'info',
+      source: 'world',
+      message: `${prompt.verb} → ${prompt.label} (${prompt.id})`,
+    });
     this.player.approach(prompt.approach);
     // The prompt only appears inside the interaction radius, so the player is
     // already in range: the walk is presentational and the command need not
