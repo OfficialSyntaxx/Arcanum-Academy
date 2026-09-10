@@ -77,25 +77,32 @@ export function GatheringHud({ onCollect, onStop }: { onCollect: () => void; onS
 export function CollectionToast() {
   const yields = useAppStore((state) => state.economy.lastYields);
   const xp = useAppStore((state) => state.economy.lastXpGained);
-  const [visible, setVisible] = useState(false);
+  const [toast, setToast] = useState<{ readonly message: string; readonly xp: number } | null>(
+    null,
+  );
   const previous = useRef('');
   const signature = `${yields.map((entry) => `${entry.itemId}:${entry.quantity}`).join(',')}|${xp}`;
 
   useEffect(() => {
-    if (yields.length === 0 || signature === previous.current) return;
+    if (yields.length === 0) {
+      setToast(null);
+      return;
+    }
+    if (signature === previous.current) return;
     previous.current = signature;
-    setVisible(true);
-    const timer = window.setTimeout(() => setVisible(false), 2_600);
+    setToast({
+      message: yields.map((entry) => `+${entry.quantity} ${itemName(entry.itemId)}`).join(' · '),
+      xp,
+    });
+    const timer = window.setTimeout(() => setToast(null), 2_200);
     return () => window.clearTimeout(timer);
-  }, [signature, yields.length]);
+  }, [signature, xp, yields]);
 
-  if (!visible) return null;
+  if (toast === null) return null;
   return (
     <div className="collection-toast" role="status" aria-live="polite">
-      <span>
-        {yields.map((entry) => `+${entry.quantity} ${itemName(entry.itemId)}`).join(' · ')}
-      </span>
-      {xp > 0 && <span>+{xp} XP</span>}
+      <span>{toast.message}</span>
+      {toast.xp > 0 && <span>+{toast.xp} XP</span>}
     </div>
   );
 }
