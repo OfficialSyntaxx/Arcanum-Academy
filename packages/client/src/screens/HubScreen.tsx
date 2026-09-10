@@ -39,6 +39,7 @@ export interface HubScreenProps {
   readonly onWithdraw: (itemId: string, quantity: number) => void;
   readonly onSell: (itemId: string, quantity: number) => void;
   readonly onRepair: (skillId: string) => void;
+  readonly onUpgradeTool: (toolId: string) => void;
 }
 
 /**
@@ -60,6 +61,7 @@ export function HubScreen({
   onWithdraw,
   onSell,
   onRepair,
+  onUpgradeTool,
   onNavigate,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
@@ -131,7 +133,12 @@ export function HubScreen({
         />
       )}
       {openMerchantId !== null && (
-        <MerchantPanel onSell={onSell} onRepair={onRepair} onClose={() => setOpenMerchant(null)} />
+        <MerchantPanel
+          onSell={onSell}
+          onRepair={onRepair}
+          onUpgradeTool={onUpgradeTool}
+          onClose={() => setOpenMerchant(null)}
+        />
       )}
     </div>
   );
