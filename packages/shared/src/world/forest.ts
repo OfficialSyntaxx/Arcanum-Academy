@@ -212,7 +212,7 @@ export const FOREST: Zone = {
       verb: 'Trade',
     },
     {
-      id: ix('int.mushroom.node1'),
+      id: ix('int.node.mushroom'),
       kind: InteractableKind.GatheringNode,
       position: { x: -30, z: 2.4 },
       approach: wp('wp.mushroom.bog'),
@@ -221,7 +221,7 @@ export const FOREST: Zone = {
       verb: 'Forage',
     },
     {
-      id: ix('int.mushroom.node2'),
+      id: ix('int.node.mushroom'),
       kind: InteractableKind.GatheringNode,
       position: { x: -44.4, z: -9 },
       approach: wp('wp.mushroom.deep'),
