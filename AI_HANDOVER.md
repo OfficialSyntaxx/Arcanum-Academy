@@ -102,9 +102,10 @@ HUD collection feed are live.
 
 Quest-facing UI (2026-09-10): the Library Notice Board is a real in-world interaction and presents
 the first objective, **The First Kindling**. It reads actual mushroom counts from the confirmed
-satchel projection and closes automatically on travel. This is deliberately a presentation slice:
-acceptance, turn-in, rewards and quest completion must wait for the server-authoritative quest
-ledger rather than being faked in browser storage.
+satchel projection and closes automatically on travel. It is now server-authoritative and durable:
+players accept it through the board, turn in three mushroom variants exactly once for 40 coins,
+and retain the completed state through refreshes and reconnects. Quest state lives in the normal
+player record and is therefore persisted by the production Postgres repository.
 
 Reliability and operations: production uses Render Postgres for player and identity persistence.
 The client submits low-volume diagnostic events; a protected server diagnostic feed persists them
