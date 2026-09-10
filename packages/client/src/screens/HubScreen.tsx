@@ -4,6 +4,7 @@ import { HubHud, InteractionPrompt } from '../ui/HubOverlay.js';
 import {
   CommandError,
   BankPanel,
+  MerchantPanel,
   CraftingPanel,
   EquipmentPanel,
   GatheringHud,
@@ -35,6 +36,8 @@ export interface HubScreenProps {
   readonly onCraft: (recipeId: string) => void;
   readonly onDeposit: (itemId: string, quantity: number) => void;
   readonly onWithdraw: (itemId: string, quantity: number) => void;
+  readonly onSell: (itemId: string, quantity: number) => void;
+  readonly onRepair: (skillId: string) => void;
 }
 
 /**
@@ -54,14 +57,18 @@ export function HubScreen({
   onCraft,
   onDeposit,
   onWithdraw,
+  onSell,
+  onRepair,
   onNavigate,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
   const openBankId = useAppStore((state) => state.openBankId);
+  const openMerchantId = useAppStore((state) => state.openMerchantId);
   const travelRevision = useAppStore((state) => state.travelRevision);
   const setOpenStation = useAppStore((state) => state.setOpenStation);
   const setOpenBank = useAppStore((state) => state.setOpenBank);
+  const setOpenMerchant = useAppStore((state) => state.setOpenMerchant);
 
   // Satchel and map are local presentation state, while crafting and prompts
   // live in the app store. They all subscribe to the same travel boundary.
@@ -120,6 +127,9 @@ export function HubScreen({
           onWithdraw={onWithdraw}
           onClose={() => setOpenBank(null)}
         />
+      )}
+      {openMerchantId !== null && (
+        <MerchantPanel onSell={onSell} onRepair={onRepair} onClose={() => setOpenMerchant(null)} />
       )}
     </div>
   );
