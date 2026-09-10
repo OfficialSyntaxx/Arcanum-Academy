@@ -391,6 +391,18 @@ export class HubController {
     this.pendingInteractionId = null;
     const target = this.world.zone.interactables.find((interactable) => interactable.id === id);
     if (!target) return;
+    const reached = this.world.nearestInteractable(
+      this.player.position,
+      this.options.tunables.world.interactionRadius,
+    );
+    if (reached?.interactable.id !== target.id) {
+      useAppStore.getState().recordDiagnostic({
+        level: 'warn',
+        source: 'world',
+        message: `Interaction cancelled before arrival: ${target.label}`,
+      });
+      return;
+    }
     if (target.kind === InteractableKind.GatheringNode) {
       this.options.onEngageGatheringNode?.(target.id);
     } else if (target.kind === InteractableKind.CraftingStation) {
