@@ -17,6 +17,7 @@ export const GatheringNodeKind = {
   Crystal: 'CRYSTAL',
   Mushroom: 'MUSHROOM',
   Emberwood: 'EMBERWOOD',
+  Tidefish: 'TIDEFISH',
 } as const;
 export type GatheringNodeKind = (typeof GatheringNodeKind)[keyof typeof GatheringNodeKind];
 
