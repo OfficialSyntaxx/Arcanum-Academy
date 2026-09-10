@@ -6,6 +6,7 @@ import {
   BankPanel,
   MerchantPanel,
   CraftingPanel,
+  CollectionToast,
   EquipmentPanel,
   GatheringHud,
   InventoryPanel,
@@ -48,7 +49,7 @@ export interface HubScreenProps {
  * went quiet while gathering earns nothing for the silence beyond the grace
  * window.
  */
-const COLLECTION_POLL_MS = 10_000;
+const COLLECTION_POLL_MS = 3_000;
 
 export function HubScreen({
   onEngage,
@@ -99,6 +100,7 @@ export function HubScreen({
       <div className="hub-help">Tap to walk · Drag to look · Pinch to zoom</div>
       <InteractionPrompt onEngage={onEngage} />
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
+      <CollectionToast />
       <CommandError />
       <button
         type="button"
