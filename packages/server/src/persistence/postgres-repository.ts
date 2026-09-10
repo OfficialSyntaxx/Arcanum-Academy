@@ -74,6 +74,20 @@ export interface PostgresPlayerRepositoryOptions {
 }
 
 /**
+ * Render's private Postgres hostnames resolve only inside its network and use
+ * a managed self-signed certificate. Keep that exception constrained to the
+ * internal `dpg-*` hostname shape; every other remote database stays verified.
+ */
+export function postgresSslConfiguration(connectionString: string): pg.PoolConfig['ssl'] {
+  const hostname = new URL(connectionString).hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
+
+  return /^dpg-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(hostname)
+    ? { rejectUnauthorized: false }
+    : { rejectUnauthorized: true };
+}
+
+/**
  * The queries, bound to whichever connection is executing them.
  *
  * A transaction must run every statement on the *same* checked-out client:
@@ -179,11 +193,7 @@ export class PostgresPlayerRepository implements PlayerRepository {
     this.client = new pg.Pool({
       connectionString: options.connectionString,
       max: options.poolMax,
-      // Managed Postgres requires TLS and presents a valid certificate, so it
-      // is verified rather than waved through. A local database does not.
-      ssl: /localhost|127\.0\.0\.1/.test(options.connectionString)
-        ? false
-        : { rejectUnauthorized: true },
+      ssl: postgresSslConfiguration(options.connectionString),
     });
 
     // An idle client erroring is normal - managed providers recycle
