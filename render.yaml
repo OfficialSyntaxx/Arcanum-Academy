@@ -59,3 +59,7 @@ services:
       # rather than falling back and looking healthy while losing every write.
       - key: DATABASE_URL
         sync: false
+      # Read credential for the protected diagnostics feed. Set this in the
+      # Render dashboard; it is deliberately never checked into this file.
+      - key: DIAGNOSTICS_READ_KEY
+        sync: false
