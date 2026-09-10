@@ -115,6 +115,11 @@ export class EconomyController {
 
   private send(kind: string, payload: Record<string, unknown> = {}): void {
     if (this.disposed) return;
+    useAppStore.getState().recordDiagnostic({
+      level: 'info',
+      source: 'economy',
+      message: `Command sent: ${kind}${Object.keys(payload).length ? ` ${JSON.stringify(payload)}` : ''}`,
+    });
     this.transport.send(ClientOpcode.Command, { kind, ...payload });
   }
 
@@ -128,6 +133,11 @@ export class EconomyController {
     // This also covers a resumed session, whose state may have moved on while
     // the client was away.
     if (frame.op === ServerOpcode.HandshakeAccepted) {
+      useAppStore.getState().recordDiagnostic({
+        level: 'info',
+        source: 'network',
+        message: 'Gateway handshake accepted',
+      });
       this.sync();
       return;
     }
@@ -138,6 +148,11 @@ export class EconomyController {
       // Only surface refusals of commands this controller sent; a rejection
       // belonging to another subsystem is not this panel's to report.
       useAppStore.getState().setLastCommandError(reason);
+      useAppStore.getState().recordDiagnostic({
+        level: 'error',
+        source: 'economy',
+        message: `Command rejected: ${reason}`,
+      });
       return;
     }
 
@@ -174,5 +189,10 @@ export class EconomyController {
     const store = useAppStore.getState();
     store.setEconomy(next);
     store.setLastCommandError(null);
+    store.recordDiagnostic({
+      level: 'info',
+      source: 'economy',
+      message: `Server patch received: ${envelope.kind}`,
+    });
   }
 }
