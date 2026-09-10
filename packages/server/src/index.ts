@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import Fastify from 'fastify';
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { WebSocketServer, type WebSocket } from 'ws';
 import {
   createLogger,
@@ -36,6 +36,15 @@ import {
   type IdentityStore,
 } from './domain/identity.js';
 
+/**
+ * Server entry point.
+ *
+ * Composition happens here and only here: every dependency is constructed at the
+ * top and injected downwards, so no module reaches for a global. Fastify serves
+ * the HTTP surface (health, readiness, version) and the same Node http server
+ * carries the WebSocket upgrade, which keeps deployment to a single port.
+ */
+
 const LEVELS = {
   debug: LogLevel.Debug,
   info: LogLevel.Info,
@@ -56,6 +65,11 @@ async function main(): Promise<void> {
   });
   const router = new RegistryCommandRouter();
 
+  // Durable storage when a database is configured, memory when it is not.
+  // The fallback keeps local development and the tests free of a database
+  // dependency, but in a deployed environment it silently discards every
+  // player's progress on restart - so it is called out rather than logged as
+  // an ordinary line and scrolled past.
   let postgres: PostgresPlayerRepository | null = null;
   let repository: PlayerRepository = new InMemoryPlayerRepository();
   if (config.DATABASE_URL !== undefined) {
@@ -66,6 +80,9 @@ async function main(): Promise<void> {
     });
     const prepared = await postgres.initialise();
     if (!prepared.ok) {
+      // Refuse to start rather than fall back. A deployment that asked for a
+      // database and quietly got a memory store instead would look healthy
+      // while losing everything written to it.
       throw new Error(`Database unavailable: ${describeFailure(prepared.error)}`);
     }
     repository = postgres;
@@ -76,6 +93,9 @@ async function main(): Promise<void> {
     );
   }
 
+  // Identity is proved, never asserted. Backed by the database when there is
+  // one: an identity register that reset on restart would lock every player
+  // out of the account they had a moment ago.
   let identityStore: IdentityStore = new InMemoryIdentityStore();
   if (postgres !== null) {
     const postgresIdentities = new PostgresIdentityStore(postgres.client);
@@ -104,6 +124,16 @@ async function main(): Promise<void> {
     now: () => Date.now(),
   });
 
+  // The multiplayer layer is built, tested and switched off.
+  //
+  // Alderfell is single-player Ironman: there is no trading, so none of this is
+  // reachable in normal play. It is registered only when MULTIPLAYER_ENABLED is
+  // set, because the code is correct and expensive to rewrite, and deleting it
+  // would mean rebuilding escrow, an append-only ledger and interest-managed
+  // presence from scratch when multiplayer does arrive.
+  //
+  // Never enable trading while Ironman is the only mode: an account that can
+  // receive an item it did not make invalidates every other account.
   if (config.MULTIPLAYER_ENABLED) {
     const trading = new TradingService({
       repository,
@@ -121,6 +151,8 @@ async function main(): Promise<void> {
   const presence = new PresenceService({
     radius: DEFAULT_TUNABLES.world.presenceRadius,
     maxNeighbours: DEFAULT_TUNABLES.world.maxVisibleNeighbours,
+    // Two missed reports before a player is treated as gone, so an ordinary
+    // hitch does not make everyone flicker out of the courtyard.
     staleAfterMs: Math.ceil(2_000 / DEFAULT_TUNABLES.network.hubPresenceBroadcastHz) * 2,
     now: () => Date.now(),
   });
@@ -162,9 +194,23 @@ async function main(): Promise<void> {
     uptimeSeconds: Math.floor(process.uptime()),
     rss: process.memoryUsage().rss,
   }));
+  const allowDiagnosticOrigin = (request: FastifyRequest, reply: FastifyReply) => {
+    const origin = typeof request.headers.origin === 'string' ? request.headers.origin : '';
+    if (config.NODE_ENV === 'production' && !config.allowedOrigins.includes(origin)) return false;
+    reply.header('access-control-allow-origin', origin);
+    reply.header('vary', 'Origin');
+    return true;
+  };
+  app.options('/diagnostics/events', async (request, reply) => {
+    if (!allowDiagnosticOrigin(request, reply)) {
+      return reply.code(403).send({ error: 'origin_not_allowed' });
+    }
+    reply.header('access-control-allow-methods', 'POST, OPTIONS');
+    reply.header('access-control-allow-headers', 'content-type');
+    return reply.code(204).send();
+  });
   app.post('/diagnostics/events', async (request, reply) => {
-    const origin = request.headers.origin ?? '';
-    if (config.NODE_ENV === 'production' && !config.allowedOrigins.includes(origin)) {
+    if (!allowDiagnosticOrigin(request, reply)) {
       return reply.code(403).send({ error: 'origin_not_allowed' });
     }
     const ip = request.ip;
@@ -251,6 +297,8 @@ async function main(): Promise<void> {
     gateway.shutdown();
     wss.close();
     httpServer.close(() => {
+      // Drain the pool last: an in-flight save should be allowed to finish
+      // rather than be cut off mid-write by the process exiting.
       void app
         .close()
         .then(() => postgres?.close())
