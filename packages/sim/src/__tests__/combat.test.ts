@@ -39,7 +39,7 @@ describe('encounter combat', () => {
     });
   });
 
-  it('rejects browser-supplied invalid damage', () => {
+  it('rejects invalid damage input', () => {
     expect(resolveSparringAttack(target, 0, 600, 4_000, 0)).toMatchObject({
       kind: 'rejected',
       reason: 'invalid_damage',
