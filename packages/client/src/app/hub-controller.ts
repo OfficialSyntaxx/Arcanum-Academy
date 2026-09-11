@@ -38,6 +38,7 @@ import type { QualitySettings } from '../core/device.js';
 import type { InputService } from '../input/input-service.js';
 import { NpcDirector } from '../npc/npc-director.js';
 import { PlayerController } from '../player/player-controller.js';
+import { PlayerAvatar } from '../player/player-avatar.js';
 import type { RenderService } from '../render/renderer.js';
 import { useAppStore, type InteractionPromptState } from '../state/app-store.js';
 import { WorldService } from '../world/world-service.js';
@@ -88,6 +89,7 @@ export interface HubControllerOptions {
 export class HubController {
   private world: WorldService;
   private player: PlayerController;
+  private playerAvatar: PlayerAvatar;
   private readonly camera: CameraRig;
   private npcs: NpcDirector;
   private readonly raycaster = new Raycaster();
@@ -131,6 +133,7 @@ export class HubController {
     });
 
     this.playerSlot = world.actors.acquire('player');
+    this.playerAvatar = this.createPlayerAvatar();
     this.npcs = new NpcDirector(world, options.tunables, this.now());
 
     // The renderer owns the canvas and its resize observer; the rig owns the
@@ -173,17 +176,21 @@ export class HubController {
     // Under reduced motion the camera resolves immediately instead of easing.
     this.camera.update(focus, this.accessibility.reducedMotion ? 1 : dtSeconds);
 
-    this.world.actors.setTransform(
-      this.playerSlot,
-      focus.x,
-      focus.y,
-      focus.z,
-      this.player.facing,
-      this.player.gait,
-      this.now(),
-      this.playerTool(),
-      useAppStore.getState().economy.gatheringNodeId !== null,
-    );
+    const gathering = useAppStore.getState().economy.gatheringNodeId !== null;
+    this.playerAvatar.update(dtSeconds, focus, this.player.facing, this.player.gait, gathering);
+    if (!this.playerAvatar.ready) {
+      this.world.actors.setTransform(
+        this.playerSlot,
+        focus.x,
+        focus.y,
+        focus.z,
+        this.player.facing,
+        this.player.gait,
+        this.now(),
+        this.playerTool(),
+        gathering,
+      );
+    }
     this.npcs.update(this.now(), dtSeconds * 1000);
     this.world.actors.flush();
 
@@ -259,6 +266,7 @@ export class HubController {
     const newWorld = loaded.value;
 
     this.npcs.dispose();
+    this.playerAvatar.dispose();
     this.world.actors.release(this.playerSlot);
     this.options.render.scene.remove(this.world.root);
     this.world.dispose();
@@ -273,6 +281,7 @@ export class HubController {
       arrivalRadius: worldTunables.waypointArrivalRadius,
     });
     this.playerSlot = newWorld.actors.acquire('player');
+    this.playerAvatar = this.createPlayerAvatar();
     this.npcs = new NpcDirector(newWorld, this.options.tunables, this.now());
 
     newWorld.attach(this.options.render.scene);
@@ -303,6 +312,7 @@ export class HubController {
     if (this.disposed) return;
     this.disposed = true;
     this.npcs.dispose();
+    this.playerAvatar.dispose();
     this.world.actors.release(this.playerSlot);
     this.options.render.scene.remove(this.world.root);
     this.world.dispose();
@@ -363,6 +373,16 @@ export class HubController {
     if (skill === 'skill.foraging') return 'sickle';
     if (skill === 'skill.fishing') return 'net';
     return 'none';
+  }
+
+  private createPlayerAvatar(): PlayerAvatar {
+    const avatar = new PlayerAvatar(this.options.quality.shadowsEnabled, () => {
+      // The low-poly actor was only a cold-load fallback; release it once the
+      // animated GLB is visible so there is never a duplicate player.
+      this.world.actors.release(this.playerSlot);
+    });
+    this.world.root.add(avatar.root);
+    return avatar;
   }
 
   /** Screen point to a world position on the courtyard floor. */
