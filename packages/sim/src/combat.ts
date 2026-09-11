@@ -26,7 +26,7 @@ export type SparringAttackResult = AttackOutcome | AttackRejected;
 /** Creates a live encounter with one source of truth for its initial state. */
 export function createSparringState(maxHitpoints: number, nowMs = 0): SparringState {
   if (!Number.isInteger(maxHitpoints) || maxHitpoints < 1) {
-    throw new Error('Encounter maxHitpoints must be a positive integer.');
+    throw new Error('Sparring maxHitpoints must be a positive integer.');
   }
   return {
     hitpoints: maxHitpoints,
