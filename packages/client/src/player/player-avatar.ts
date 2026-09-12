@@ -1,15 +1,19 @@
 import {
   AnimationMixer,
   Box3,
+  BoxGeometry,
   Group,
   LoadingManager,
   Mesh,
+  MeshStandardMaterial,
   Texture,
+  TorusGeometry,
   type AnimationAction,
   type Material,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import archerUrl from '../../../../assets/kenney/mini-forest/character-archer.glb?url';
+import type { ActorTool } from '../world/actor-pool.js';
 
 // Mini Forest stores a shared external palette. This compressed copy retains
 // the model's intended colours while keeping the client package self-contained.
@@ -31,6 +35,8 @@ export class PlayerAvatar {
   private readonly actions = new Map<string, AnimationAction>();
   private mixer: AnimationMixer | null = null;
   private current: AnimationAction | null = null;
+  private toolAnchor: Group | null = null;
+  private heldTool: ActorTool = 'none';
   private loaded = false;
   private disposed = false;
 
@@ -59,6 +65,12 @@ export class PlayerAvatar {
           node.castShadow = shadowsEnabled;
           node.receiveShadow = shadowsEnabled;
         });
+        const rightArm = model.getObjectByName('arm-right');
+        if (rightArm) {
+          this.toolAnchor = new Group();
+          this.toolAnchor.name = 'held-skill-tool';
+          rightArm.add(this.toolAnchor);
+        }
         this.root.add(model);
         this.mixer = new AnimationMixer(model);
         for (const clip of gltf.animations)
@@ -82,10 +94,12 @@ export class PlayerAvatar {
     facing: number,
     gait: number,
     gathering: boolean,
+    tool: ActorTool,
   ): void {
     if (!this.loaded || this.disposed) return;
     this.root.position.set(position.x, position.y, position.z);
     this.root.rotation.y = facing;
+    this.setHeldTool(tool);
     this.play(gathering ? 'interact-right' : gait > 0.08 ? 'walk' : 'idle');
     this.mixer?.update(Math.min(dtSeconds, 0.05));
   }
@@ -100,6 +114,7 @@ export class PlayerAvatar {
       for (const material of materials) disposeMaterial(material);
     });
     this.root.clear();
+    this.toolAnchor = null;
     this.actions.clear();
     this.mixer = null;
   }
@@ -111,6 +126,45 @@ export class PlayerAvatar {
     this.current?.crossFadeTo(next, 0.14, false);
     this.current = next;
   }
+
+  /** Keeps the visual tool attached to the animated hand, never the world. */
+  private setHeldTool(tool: ActorTool): void {
+    if (tool === this.heldTool || this.toolAnchor === null) return;
+    this.heldTool = tool;
+    disposeChildren(this.toolAnchor);
+    if (tool === 'none') return;
+
+    const wood = new MeshStandardMaterial({ color: 0x70472c, roughness: 0.86 });
+    const steel = new MeshStandardMaterial({ color: 0x8397a0, roughness: 0.54, metalness: 0.16 });
+    const teal = new MeshStandardMaterial({ color: 0x1d9b91, roughness: 0.68 });
+    const toolRoot = new Group();
+    toolRoot.rotation.z = -0.44;
+    toolRoot.position.set(-0.018, -0.018, 0.026);
+
+    const handle = new Mesh(new BoxGeometry(0.035, 0.32, 0.035), wood);
+    handle.position.y = -0.16;
+    toolRoot.add(handle);
+
+    if (tool === 'axe' || tool === 'pick') {
+      const head = new Mesh(
+        new BoxGeometry(tool === 'axe' ? 0.14 : 0.18, 0.06, tool === 'axe' ? 0.07 : 0.045),
+        steel,
+      );
+      head.position.y = -0.3;
+      toolRoot.add(head);
+    } else if (tool === 'sickle') {
+      const blade = new Mesh(new TorusGeometry(0.09, 0.018, 5, 8, Math.PI * 1.3), steel);
+      blade.rotation.x = Math.PI / 2;
+      blade.position.y = -0.29;
+      toolRoot.add(blade);
+    } else if (tool === 'net') {
+      const hoop = new Mesh(new TorusGeometry(0.11, 0.016, 5, 8), teal);
+      hoop.rotation.x = Math.PI / 2;
+      hoop.position.y = -0.32;
+      toolRoot.add(hoop);
+    }
+    this.toolAnchor.add(toolRoot);
+  }
 }
 
 function disposeMaterial(material: Material): void {
@@ -118,4 +172,14 @@ function disposeMaterial(material: Material): void {
     if (value instanceof Texture) value.dispose();
   }
   material.dispose();
+}
+
+function disposeChildren(parent: Group): void {
+  parent.traverse((node) => {
+    if (!(node instanceof Mesh)) return;
+    node.geometry.dispose();
+    const materials = Array.isArray(node.material) ? node.material : [node.material];
+    for (const material of materials) disposeMaterial(material);
+  });
+  parent.clear();
 }
