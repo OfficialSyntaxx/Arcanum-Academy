@@ -36,6 +36,7 @@ import { CameraRig } from '../camera/camera-rig.js';
 import type { QualitySettings } from '../core/device.js';
 import type { InputService } from '../input/input-service.js';
 import { NpcDirector } from '../npc/npc-director.js';
+import { NpcAvatarGroup } from '../npc/npc-avatar-group.js';
 import { PlayerController } from '../player/player-controller.js';
 import { PlayerAvatar } from '../player/player-avatar.js';
 import type { RenderService } from '../render/renderer.js';
@@ -90,6 +91,7 @@ export class HubController {
   private playerAvatar: PlayerAvatar;
   private readonly camera: CameraRig;
   private npcs: NpcDirector;
+  private npcAvatars: NpcAvatarGroup;
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
   private readonly now: () => number;
@@ -133,6 +135,7 @@ export class HubController {
     this.playerSlot = world.actors.acquire('player');
     this.playerAvatar = this.createPlayerAvatar();
     this.npcs = new NpcDirector(world, options.tunables, this.now());
+    this.npcAvatars = this.createNpcAvatars();
 
     // The renderer owns the canvas and its resize observer; the rig owns the
     // frustum. Hooking them here keeps the renderer ignorant of the camera's
@@ -196,6 +199,7 @@ export class HubController {
       );
     }
     this.npcs.update(this.now(), dtSeconds * 1000);
+    this.npcAvatars.update(dtSeconds, this.npcs.namedPresentations());
     this.world.actors.flush();
 
     const dayFraction =
@@ -270,6 +274,7 @@ export class HubController {
     const newWorld = loaded.value;
 
     this.npcs.dispose();
+    this.npcAvatars.dispose();
     this.playerAvatar.dispose();
     this.world.actors.release(this.playerSlot);
     this.options.render.scene.remove(this.world.root);
@@ -287,6 +292,7 @@ export class HubController {
     this.playerSlot = newWorld.actors.acquire('player');
     this.playerAvatar = this.createPlayerAvatar();
     this.npcs = new NpcDirector(newWorld, this.options.tunables, this.now());
+    this.npcAvatars = this.createNpcAvatars();
 
     newWorld.attach(this.options.render.scene);
     this.camera.snapTo({
@@ -316,6 +322,7 @@ export class HubController {
     if (this.disposed) return;
     this.disposed = true;
     this.npcs.dispose();
+    this.npcAvatars.dispose();
     this.playerAvatar.dispose();
     this.world.actors.release(this.playerSlot);
     this.options.render.scene.remove(this.world.root);
@@ -375,6 +382,16 @@ export class HubController {
     });
     this.world.root.add(avatar.root);
     return avatar;
+  }
+
+  private createNpcAvatars(): NpcAvatarGroup {
+    const avatars = new NpcAvatarGroup(
+      this.world,
+      this.options.quality.shadowsEnabled,
+      this.npcs.namedPresentations(),
+    );
+    this.world.root.add(avatars.root);
+    return avatars;
   }
 
   /** Screen point to a world position on the courtyard floor. */
