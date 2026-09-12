@@ -61,6 +61,8 @@ const OWNED = new Set([
 
 export class EconomyController {
   private disposed = false;
+  /** Kept only for an actionable diagnostic if the gateway rejects it. */
+  private pendingCommand: string | null = null;
 
   constructor(private readonly transport: Transport) {
     this.transport.events.on('frame', (frame) => this.onFrame(frame));
@@ -131,6 +133,7 @@ export class EconomyController {
 
   private send(kind: string, payload: Record<string, unknown> = {}): void {
     if (this.disposed) return;
+    this.pendingCommand = `${kind}${Object.keys(payload).length ? ` ${JSON.stringify(payload)}` : ''}`;
     useAppStore.getState().recordDiagnostic({
       level: 'info',
       source: 'economy',
@@ -161,13 +164,15 @@ export class EconomyController {
     if (frame.op === ServerOpcode.CommandRejected) {
       const failure = frame.p as Failure | null;
       const reason = failure?.reason ?? 'command.failed';
+      const attempted = this.pendingCommand ?? 'unknown command';
+      this.pendingCommand = null;
       // Only surface refusals of commands this controller sent; a rejection
       // belonging to another subsystem is not this panel's to report.
       useAppStore.getState().setLastCommandError(reason);
       useAppStore.getState().recordDiagnostic({
         level: 'error',
         source: 'economy',
-        message: `Command rejected: ${reason}`,
+        message: `Command rejected: ${attempted} → ${reason}`,
       });
       return;
     }
@@ -204,6 +209,7 @@ export class EconomyController {
     };
 
     const store = useAppStore.getState();
+    this.pendingCommand = null;
     store.setEconomy(next);
     store.setLastCommandError(null);
     store.recordDiagnostic({
