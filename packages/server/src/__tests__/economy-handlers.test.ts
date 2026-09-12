@@ -114,6 +114,16 @@ describe('player.sync', () => {
     expect(stored.value.schemaVersion).toBe(PLAYER_SCHEMA_VERSION);
     expect(parsePlayerState(stored.value, SLOTS).ok).toBe(true);
   });
+
+  it('ends a gathering session when a browser session returns', async () => {
+    const h = harness();
+    await h.dispatch('gathering.start', { interactableId: CRYSTAL.interactableId });
+    h.advance(5_000);
+    const result = await h.dispatch('player.sync');
+    expect(result.ok).toBe(true);
+    const state = await h.state();
+    expect(state.gathering).toBeNull();
+  });
 });
 
 describe('banking', () => {
@@ -213,6 +223,16 @@ describe('gathering.start', () => {
     const state = await h.state();
     expect(state.gathering).not.toBeNull();
     expect(state.gathering!.nodeId).toBe(CRYSTAL.id);
+  });
+
+  it('starts every shipped gathering node, including Emberwood', async () => {
+    for (const node of NODE_CATALOG.nodes) {
+      const h = harness();
+      const result = await h.dispatch('gathering.start', { interactableId: node.interactableId });
+      expect(result.ok, node.id).toBe(true);
+      const state = await h.state();
+      expect(state.gathering?.nodeId, node.id).toBe(node.id);
+    }
   });
 
   it('refuses a node the player has not levelled for', async () => {
