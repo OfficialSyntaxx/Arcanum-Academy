@@ -490,9 +490,34 @@ export function registerEconomyHandlers(
     });
   };
   const sync: CommandHandler = async (session: Session) => {
-    const loaded = await players.load(session.playerId);
-    if (!loaded.ok) return err(loaded.error);
-    return ok(project(loaded.value));
+    // Gathering is an attended activity. A fresh browser session must not show
+    // an old pick/sickle animation or silently keep working while the player
+    // was away. Settle only the attended grace window, then end the session.
+    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      if (state.gathering === null) return ok({ state, value: project(state) });
+      const nowMs = now();
+      const presentUntilMs = Math.min(
+        nowMs,
+        state.lastSeenAtMs + tunables.gathering.presenceGraceMs,
+      );
+      const resolved = resolveActive(state, catalogs, tunables, presentUntilMs);
+      if (!resolved.ok) {
+        // Content can change while a tab is closed. Never let an obsolete
+        // session block loading the player; clear it and deliver the live state.
+        const next = { ...state, gathering: null, lastSeenAtMs: nowMs };
+        return ok({ state: next, value: project(next) });
+      }
+      const settled = applyHarvest(
+        state,
+        resolved.value.node,
+        resolved.value.outcome,
+        catalogs,
+        tunables,
+        nowMs,
+      );
+      const next = { ...settled, gathering: null, lastSeenAtMs: nowMs };
+      return ok({ state: next, value: project(next) });
+    });
   };
 
   router
