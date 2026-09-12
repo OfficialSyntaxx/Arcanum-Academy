@@ -1,19 +1,15 @@
 import {
   AnimationMixer,
   Box3,
-  BoxGeometry,
   Group,
   LoadingManager,
   Mesh,
-  MeshStandardMaterial,
   Texture,
-  TorusGeometry,
   type AnimationAction,
   type Material,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import archerUrl from '../../../../assets/kenney/mini-forest/character-archer.glb?url';
-import type { ActorTool } from '../world/actor-pool.js';
 
 // Mini Forest stores a shared external palette. This compressed copy retains
 // the model's intended colours while keeping the client package self-contained.
@@ -35,9 +31,6 @@ export class PlayerAvatar {
   private readonly actions = new Map<string, AnimationAction>();
   private mixer: AnimationMixer | null = null;
   private current: AnimationAction | null = null;
-  private toolAnchor: Group | null = null;
-  private heldTool: ActorTool = 'none';
-  private toolPhase = 0;
   private loaded = false;
   private disposed = false;
 
@@ -66,14 +59,6 @@ export class PlayerAvatar {
           node.castShadow = shadowsEnabled;
           node.receiveShadow = shadowsEnabled;
         });
-        // Attach to the actual right-arm joint. The offset reaches the hand
-        // rather than the shoulder, while the explicit swing keeps it visible
-        // from an overhead camera.
-        this.toolAnchor = new Group();
-        this.toolAnchor.name = 'held-skill-tool';
-        this.toolAnchor.position.set(-0.105, -0.12, 0.035);
-        const rightArm = model.getObjectByName('arm-right');
-        (rightArm ?? model).add(this.toolAnchor);
         this.root.add(model);
         this.mixer = new AnimationMixer(model);
         for (const clip of gltf.animations)
@@ -97,13 +82,10 @@ export class PlayerAvatar {
     facing: number,
     gait: number,
     gathering: boolean,
-    tool: ActorTool,
   ): void {
     if (!this.loaded || this.disposed) return;
     this.root.position.set(position.x, position.y, position.z);
     this.root.rotation.y = facing;
-    this.setHeldTool(tool);
-    this.updateToolMotion(dtSeconds, gathering);
     this.play(gathering ? 'interact-right' : gait > 0.08 ? 'walk' : 'idle');
     this.mixer?.update(Math.min(dtSeconds, 0.05));
   }
@@ -118,7 +100,6 @@ export class PlayerAvatar {
       for (const material of materials) disposeMaterial(material);
     });
     this.root.clear();
-    this.toolAnchor = null;
     this.actions.clear();
     this.mixer = null;
   }
@@ -131,52 +112,6 @@ export class PlayerAvatar {
     this.current = next;
   }
 
-  /** Keeps a deliberately readable tool silhouette beside the animated model. */
-  private setHeldTool(tool: ActorTool): void {
-    if (tool === this.heldTool || this.toolAnchor === null) return;
-    this.heldTool = tool;
-    disposeChildren(this.toolAnchor);
-    if (tool === 'none') return;
-
-    const wood = new MeshStandardMaterial({ color: 0x70472c, roughness: 0.86 });
-    const steel = new MeshStandardMaterial({ color: 0x8397a0, roughness: 0.54, metalness: 0.16 });
-    const teal = new MeshStandardMaterial({ color: 0x1d9b91, roughness: 0.68 });
-    const toolRoot = new Group();
-    toolRoot.rotation.z = -0.66;
-
-    const handle = new Mesh(new BoxGeometry(0.052, 0.52, 0.052), wood);
-    handle.position.y = -0.26;
-    toolRoot.add(handle);
-
-    if (tool === 'axe' || tool === 'pick') {
-      const head = new Mesh(
-        new BoxGeometry(tool === 'axe' ? 0.22 : 0.28, 0.09, tool === 'axe' ? 0.1 : 0.065),
-        steel,
-      );
-      head.position.y = -0.49;
-      toolRoot.add(head);
-    } else if (tool === 'sickle') {
-      const blade = new Mesh(new TorusGeometry(0.14, 0.026, 5, 8, Math.PI * 1.3), steel);
-      blade.rotation.x = Math.PI / 2;
-      blade.position.y = -0.48;
-      toolRoot.add(blade);
-    } else if (tool === 'net') {
-      const hoop = new Mesh(new TorusGeometry(0.17, 0.024, 5, 8), teal);
-      hoop.rotation.x = Math.PI / 2;
-      hoop.position.y = -0.52;
-      toolRoot.add(hoop);
-    }
-    this.toolAnchor.add(toolRoot);
-  }
-
-  private updateToolMotion(dtSeconds: number, gathering: boolean): void {
-    const anchor = this.toolAnchor;
-    if (anchor === null || this.heldTool === 'none') return;
-    this.toolPhase += Math.min(dtSeconds, 0.05);
-    const swing = gathering ? Math.sin(this.toolPhase * 9) * 0.64 - 0.28 : 0;
-    anchor.rotation.z = swing;
-    anchor.rotation.x = gathering ? Math.cos(this.toolPhase * 9) * 0.12 : 0;
-  }
 }
 
 function disposeMaterial(material: Material): void {
@@ -184,14 +119,4 @@ function disposeMaterial(material: Material): void {
     if (value instanceof Texture) value.dispose();
   }
   material.dispose();
-}
-
-function disposeChildren(parent: Group): void {
-  parent.traverse((node) => {
-    if (!(node instanceof Mesh)) return;
-    node.geometry.dispose();
-    const materials = Array.isArray(node.material) ? node.material : [node.material];
-    for (const material of materials) disposeMaterial(material);
-  });
-  parent.clear();
 }
