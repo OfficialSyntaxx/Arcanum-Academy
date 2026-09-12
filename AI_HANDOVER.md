@@ -2,13 +2,13 @@
 
 ### Game design document and engineering handover — everything needed to build it from nothing
 
-**Written:** 2026-09-09 · **Updated:** 2026-09-10 · **Author:** Claude Code, with Codex implementation updates
+**Written:** 2026-09-09 · **Updated:** 2026-09-12 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G1 is implemented and deployed. The project is in the post-G1 vertical-slice
-phase: reliable skilling/economy, persistence, observability, character visuals, and the first
-quest-facing interactions are in place; the next major gameplay gate is server-authoritative
-combat followed by a durable quest ledger.
+**Code state:** G2 is in active vertical-slice development. Reliable skilling/economy,
+persistence, observability, quests, starter combat, and the first production GLB character
+presentation are live. The current focus is replacing temporary presentation with a coherent
+world art pass, beginning with named NPCs, then real tool sockets and creature visuals.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -50,8 +50,8 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of the 2026-09-10 movement/character work it reports **376 tests across
-35 files**.
+afterwards is yours. As of the 2026-09-12 named-NPC visual work it reports **385 tests across
+37 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -120,17 +120,22 @@ Academy Shore Net, a level-10 Starglass Net merchant upgrade, Tidefin/Moonray/St
 and the Starlit Tide Pool in the Courtyard at the Library-side bank. Existing saves receive the
 starter net through the same forward-compatible tool backfill used by the other gathering skills.
 
-Visual state: Courtyard has low-poly environment GLB upgrades with primitive fallbacks, a
-continuous sea plane, irregular coastal apron and distant landform silhouettes so the playable
-zone does not read as a floating square tile. Characters are a low-poly instanced model made
-from robe, head, hair, arms and legs, including a procedural walk cycle, appearance palettes,
-and skill-aware held equipment (pick, axe, sickle and net) with a gathering animation. It is
-intentionally asset-light and mobile-safe; authored GLB character assets are the later art step,
-not a prerequisite for iterating on tool placement and action timing.
+Visual state (2026-09-12): Courtyard has low-poly environment GLB upgrades with primitive
+fallbacks, a continuous sea plane, irregular coastal apron and distant landform silhouettes so
+the playable zone does not read as a floating square tile. The player is now the verified Kenney
+Mini Forest archer GLB with its embedded palette workaround, normalized display height and real
+idle/walk/interact animation clips. Named professors, merchants and quest NPCs now use cloned,
+animated instances of that same CC0 rig once loaded; only anonymous students stay in the compact
+instanced crowd pool. This has a procedural fallback during a cold load and is mobile-safe.
 
-**Still not built:** combat, quests/dialogue, the hold, wiki, account recovery,
-achievement/collection-log screens, and authored character GLB assets. §11.1 lists the deliberate
-deferrals, which are not oversights.
+**Do not reintroduce the temporary primitive hand tools.** They were deliberately removed because
+they swung wildly and did not attach to the GLB hand. The next art task must use a proper bone/socket
+attachment against the finalized rig and verified tool models. Gathering currently uses the rig's
+`interact-right` animation with no fake overlay.
+
+**Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
+achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
+the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
 
 ---
 
