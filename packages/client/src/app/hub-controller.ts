@@ -18,7 +18,6 @@
 import {
   COURTYARD,
   InteractableKind,
-  NODE_CATALOG,
   type Failure,
   type Result,
   type Tunables,
@@ -42,7 +41,6 @@ import { PlayerAvatar } from '../player/player-avatar.js';
 import type { RenderService } from '../render/renderer.js';
 import { useAppStore, type InteractionPromptState } from '../state/app-store.js';
 import { WorldService } from '../world/world-service.js';
-import type { ActorTool } from '../world/actor-pool.js';
 
 const STORE_UPDATE_INTERVAL_MS = 250;
 
@@ -183,7 +181,6 @@ export class HubController {
       this.player.facing,
       this.player.gait,
       gathering,
-      this.playerTool(),
     );
     if (!this.playerAvatar.ready) {
       this.world.actors.setTransform(
@@ -194,7 +191,7 @@ export class HubController {
         this.player.facing,
         this.player.gait,
         this.now(),
-        this.playerTool(),
+        'none',
         gathering,
       );
     }
@@ -368,18 +365,6 @@ export class HubController {
         interactableId: nearest?.interactable.id ?? null,
       });
     });
-  }
-
-  /** Maps the authoritative gathering projection to a purely visual held tool. */
-  private playerTool(): ActorTool {
-    const nodeId = useAppStore.getState().economy.gatheringNodeId;
-    if (nodeId === null) return 'none';
-    const skill = NODE_CATALOG.get(nodeId as never)?.requiredSkillId;
-    if (skill === 'skill.mining') return 'pick';
-    if (skill === 'skill.forestry') return 'axe';
-    if (skill === 'skill.foraging') return 'sickle';
-    if (skill === 'skill.fishing') return 'net';
-    return 'none';
   }
 
   private createPlayerAvatar(): PlayerAvatar {
