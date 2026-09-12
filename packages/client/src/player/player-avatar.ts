@@ -37,6 +37,7 @@ export class PlayerAvatar {
   private current: AnimationAction | null = null;
   private toolAnchor: Group | null = null;
   private heldTool: ActorTool = 'none';
+  private toolPhase = 0;
   private loaded = false;
   private disposed = false;
 
@@ -65,12 +66,13 @@ export class PlayerAvatar {
           node.castShadow = shadowsEnabled;
           node.receiveShadow = shadowsEnabled;
         });
-        const rightArm = model.getObjectByName('arm-right');
-        if (rightArm) {
-          this.toolAnchor = new Group();
-          this.toolAnchor.name = 'held-skill-tool';
-          rightArm.add(this.toolAnchor);
-        }
+        // The character's chibi hands are often hidden by its body from the
+        // overhead camera. Mount the tool beside the hand on the model root so
+        // its silhouette stays readable; update() supplies the visible swing.
+        this.toolAnchor = new Group();
+        this.toolAnchor.name = 'held-skill-tool';
+        this.toolAnchor.position.set(-0.17, 0.31, 0.12);
+        model.add(this.toolAnchor);
         this.root.add(model);
         this.mixer = new AnimationMixer(model);
         for (const clip of gltf.animations)
@@ -100,6 +102,7 @@ export class PlayerAvatar {
     this.root.position.set(position.x, position.y, position.z);
     this.root.rotation.y = facing;
     this.setHeldTool(tool);
+    this.updateToolMotion(dtSeconds, gathering);
     this.play(gathering ? 'interact-right' : gait > 0.08 ? 'walk' : 'idle');
     this.mixer?.update(Math.min(dtSeconds, 0.05));
   }
@@ -127,7 +130,7 @@ export class PlayerAvatar {
     this.current = next;
   }
 
-  /** Keeps the visual tool attached to the animated hand, never the world. */
+  /** Keeps a deliberately readable tool silhouette beside the animated model. */
   private setHeldTool(tool: ActorTool): void {
     if (tool === this.heldTool || this.toolAnchor === null) return;
     this.heldTool = tool;
@@ -138,32 +141,40 @@ export class PlayerAvatar {
     const steel = new MeshStandardMaterial({ color: 0x8397a0, roughness: 0.54, metalness: 0.16 });
     const teal = new MeshStandardMaterial({ color: 0x1d9b91, roughness: 0.68 });
     const toolRoot = new Group();
-    toolRoot.rotation.z = -0.44;
-    toolRoot.position.set(-0.018, -0.018, 0.026);
+    toolRoot.rotation.z = -0.66;
 
-    const handle = new Mesh(new BoxGeometry(0.035, 0.32, 0.035), wood);
-    handle.position.y = -0.16;
+    const handle = new Mesh(new BoxGeometry(0.052, 0.52, 0.052), wood);
+    handle.position.y = -0.26;
     toolRoot.add(handle);
 
     if (tool === 'axe' || tool === 'pick') {
       const head = new Mesh(
-        new BoxGeometry(tool === 'axe' ? 0.14 : 0.18, 0.06, tool === 'axe' ? 0.07 : 0.045),
+        new BoxGeometry(tool === 'axe' ? 0.22 : 0.28, 0.09, tool === 'axe' ? 0.1 : 0.065),
         steel,
       );
-      head.position.y = -0.3;
+      head.position.y = -0.49;
       toolRoot.add(head);
     } else if (tool === 'sickle') {
-      const blade = new Mesh(new TorusGeometry(0.09, 0.018, 5, 8, Math.PI * 1.3), steel);
+      const blade = new Mesh(new TorusGeometry(0.14, 0.026, 5, 8, Math.PI * 1.3), steel);
       blade.rotation.x = Math.PI / 2;
-      blade.position.y = -0.29;
+      blade.position.y = -0.48;
       toolRoot.add(blade);
     } else if (tool === 'net') {
-      const hoop = new Mesh(new TorusGeometry(0.11, 0.016, 5, 8), teal);
+      const hoop = new Mesh(new TorusGeometry(0.17, 0.024, 5, 8), teal);
       hoop.rotation.x = Math.PI / 2;
-      hoop.position.y = -0.32;
+      hoop.position.y = -0.52;
       toolRoot.add(hoop);
     }
     this.toolAnchor.add(toolRoot);
+  }
+
+  private updateToolMotion(dtSeconds: number, gathering: boolean): void {
+    const anchor = this.toolAnchor;
+    if (anchor === null || this.heldTool === 'none') return;
+    this.toolPhase += Math.min(dtSeconds, 0.05);
+    const swing = gathering ? Math.sin(this.toolPhase * 9) * 0.64 - 0.28 : 0;
+    anchor.rotation.z = swing;
+    anchor.rotation.x = gathering ? Math.cos(this.toolPhase * 9) * 0.12 : 0;
   }
 }
 
