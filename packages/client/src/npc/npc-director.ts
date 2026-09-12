@@ -38,6 +38,18 @@ interface DirectedActor {
   readonly slot: number;
 }
 
+/** Frame-ready state for the richer presentation of authored NPCs. */
+export interface NamedNpcPresentation {
+  readonly id: string;
+  readonly role: NpcRole;
+  readonly appearance: string;
+  readonly slot: number;
+  readonly position: { readonly x: number; readonly z: number };
+  readonly elevation: number;
+  readonly facing: number;
+  readonly gait: number;
+}
+
 const AMBIENT_APPEARANCES = ['student.a', 'student.b', 'student.c'] as const;
 
 export class NpcDirector {
@@ -70,6 +82,24 @@ export class NpcDirector {
 
   get population(): number {
     return this.actors.length;
+  }
+
+  namedPresentations(): readonly NamedNpcPresentation[] {
+    return this.actors
+      .filter((actor) => actor.agent.definition.role !== NpcRole.Student)
+      .map((actor) => {
+        const { position, facing, velocity } = actor.agent.mover;
+        return {
+          id: actor.agent.definition.id,
+          role: actor.agent.definition.role,
+          appearance: actor.agent.definition.appearance,
+          slot: actor.slot,
+          position,
+          elevation: this.world.heightAt(position),
+          facing,
+          gait: Math.min(1, velocity / this.locomotion.speed),
+        };
+      });
   }
 
   /** Steps every agent and writes their transforms into the actor pool. */
