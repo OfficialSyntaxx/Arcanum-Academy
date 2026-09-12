@@ -66,13 +66,14 @@ export class PlayerAvatar {
           node.castShadow = shadowsEnabled;
           node.receiveShadow = shadowsEnabled;
         });
-        // The character's chibi hands are often hidden by its body from the
-        // overhead camera. Mount the tool beside the hand on the model root so
-        // its silhouette stays readable; update() supplies the visible swing.
+        // Attach to the actual right-arm joint. The offset reaches the hand
+        // rather than the shoulder, while the explicit swing keeps it visible
+        // from an overhead camera.
         this.toolAnchor = new Group();
         this.toolAnchor.name = 'held-skill-tool';
-        this.toolAnchor.position.set(-0.17, 0.31, 0.12);
-        model.add(this.toolAnchor);
+        this.toolAnchor.position.set(-0.105, -0.12, 0.035);
+        const rightArm = model.getObjectByName('arm-right');
+        (rightArm ?? model).add(this.toolAnchor);
         this.root.add(model);
         this.mixer = new AnimationMixer(model);
         for (const clip of gltf.animations)
