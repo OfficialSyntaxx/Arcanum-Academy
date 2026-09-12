@@ -2,6 +2,7 @@ import {
   AnimationMixer,
   Box3,
   Group,
+  LoadingManager,
   Mesh,
   Texture,
   type AnimationAction,
@@ -9,6 +10,10 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import archerUrl from '../../../../assets/kenney/mini-forest/character-archer.glb?url';
+
+// Mini Forest stores a shared external palette. This compressed copy retains
+// the model's intended colours while keeping the client package self-contained.
+const avatarPaletteUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAC5ElEQVR42u1ZPYsUQRDtXtcLbpU70MhARIMLBBE0FREuVTQzuwONTPRXiGBoJEYXG2ikYGYiaHQ/wMBwuewCwe2PauOqgXk0Nb3Xs9Od1TY90/v6vVfVNdYYk8yEx8xMfDQAGgANgAZAA6AB0ABoADQAGgANgAZAA2CKY3685O2AEHn8+90JiyMRix/Ntvm8eMHum926AZA/rFzsXeCDmN8S8yPrr3QAcJ6UAJhxA7DymQwQI2w6AwIAYPQSWDlSMWD0EnBCAueyARg7A4QEtqfGAAxA6Acgjd0EnTYLbBgDZLW88R7gOnXAbGJp0E89DarrgNEzoJngpBhgPx8+YDuWf3//4CmLSfQDLu7d5gsSn3++/MH7BaLfcPTvG19/6RqPP/7h8VUeHn9dsPjWlVMWv9h7L7aX+hkQwQESKIQSRdVlyoDnG7A8ku3fXyAdAFEJgJcSk/tFAFFhAEgJgEmAARKArYEZkAozQCsBHwAAvrQEkAeYshIIIMtACdTuAUgCvrQJ1i4ByABfOwMiOKFcD8hlQOksgDygOAM6z7d1SQCaYMqsA6AJztebBdR1AAVdJdhJg/O6PICGrgSHToO1SyDUb4JWKQElA3zll6FsCcxyGbBeCdjXb49S33359M6SX9cv8PlPr76weGfnMovv7z8WAPEN/Pr5nZ/IeX45ePjkGYuv37jJ4nt3F6JO4c//++GlYAhgQAJpAB2gbJh0KUqAQaAj5Z34ZZHFsACvw2ADiKEpEbCIqALQ+5UqzQbx/i4Doo4BCXwaI2CSlHIZ0A+AzQWAkASiVTFAajRbAs4BgCLotyAPABvEDDhrCVA/AFoGRNSyI50E0sASQPMFPEDLgKQCwHtkgsWzQFKlQSgBlyeB4RmgNEHEgPw6YOA0SIULISiB0h4QM7OArU0CIAv4zG+bsBS2azZBbR2gl4DwgNmaPaC4BGAhRNpCKOk84qzvAgSzgPI2WFgCyAMkAP8B3GAcT1B6x5AAAAAASUVORK5CYII=';
 
 /**
  * A progressive replacement for the procedural player silhouette.
@@ -29,7 +34,11 @@ export class PlayerAvatar {
     private readonly onReady: () => void,
   ) {
     this.root.name = 'player-avatar';
-    void new GLTFLoader()
+    const manager = new LoadingManager();
+    manager.setURLModifier((url) =>
+      url.endsWith('Textures/colormap.png') ? avatarPaletteUrl : url,
+    );
+    void new GLTFLoader(manager)
       .loadAsync(archerUrl)
       .then((gltf) => {
         if (this.disposed) return;
