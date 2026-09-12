@@ -177,7 +177,14 @@ export class HubController {
     this.camera.update(focus, this.accessibility.reducedMotion ? 1 : dtSeconds);
 
     const gathering = useAppStore.getState().economy.gatheringNodeId !== null;
-    this.playerAvatar.update(dtSeconds, focus, this.player.facing, this.player.gait, gathering);
+    this.playerAvatar.update(
+      dtSeconds,
+      focus,
+      this.player.facing,
+      this.player.gait,
+      gathering,
+      this.playerTool(),
+    );
     if (!this.playerAvatar.ready) {
       this.world.actors.setTransform(
         this.playerSlot,
