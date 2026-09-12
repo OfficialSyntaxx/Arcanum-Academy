@@ -230,7 +230,10 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     // hid the paths, trees and landmarks that make the zone readable. Start
     // high enough to show a living district on a portrait phone.
     cameraViewSize: 13,
-    cameraMinViewSize: 7,
+    // Portrait phones need one closer inspection step. It keeps the player
+    // readable when a player deliberately pinches all the way in, while the
+    // default view remains wide enough to navigate the Shorelands.
+    cameraMinViewSize: 6,
     cameraMaxViewSize: 26,
     cameraBoomLength: 120,
     cameraHeight: 5.5,
