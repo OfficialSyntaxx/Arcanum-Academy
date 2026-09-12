@@ -72,6 +72,8 @@ export class ActorPool {
   private readonly nets: InstancedMesh;
   private readonly free: number[];
   private readonly active: Uint8Array;
+  /** Slots temporarily represented by a full animated character model. */
+  private readonly visuallyHidden: Uint8Array;
   private readonly matrix = new Matrix4();
   private readonly quaternion = new Quaternion();
   private readonly limbQuaternion = new Quaternion();
@@ -128,6 +130,7 @@ export class ActorPool {
 
     this.free = Array.from({ length: capacity }, (_, i) => capacity - 1 - i);
     this.active = new Uint8Array(capacity);
+    this.visuallyHidden = new Uint8Array(capacity);
 
     // Park every slot below the floor so an unacquired instance is never a
     // figure standing at the world origin.
@@ -180,8 +183,20 @@ export class ActorPool {
   release(slot: number): void {
     if (slot < 0 || slot >= this.capacity || this.active[slot] === 0) return;
     this.active[slot] = 0;
+    this.visuallyHidden[slot] = 0;
     this.park(slot);
     this.free.push(slot);
+  }
+
+  /**
+   * Lets a richer presentation layer replace one pooled silhouette without
+   * changing the simulation allocation. The slot remains active, which keeps
+   * the crowd capacity accounting deterministic.
+   */
+  setVisualVisible(slot: number, visible: boolean): void {
+    if (slot < 0 || slot >= this.capacity || this.active[slot] === 0) return;
+    this.visuallyHidden[slot] = visible ? 0 : 1;
+    if (!visible) this.park(slot);
   }
 
   /** Places an actor. `facing` is radians, matching the simulation convention. */
@@ -197,6 +212,10 @@ export class ActorPool {
     gathering = false,
   ): void {
     if (slot < 0 || slot >= this.capacity || this.active[slot] === 0) return;
+    if (this.visuallyHidden[slot] !== 0) {
+      this.park(slot);
+      return;
+    }
     this.quaternion.setFromAxisAngle(this.axisY, facing);
 
     this.setPart(this.bodies, slot, x, y + BODY_HEIGHT, z, this.quaternion);
