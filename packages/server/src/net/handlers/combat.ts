@@ -70,6 +70,11 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
       if (state.hitpoints.respawnAtMs !== null) {
         return err(failure(FailureCode.Conflict, 'combat.player_recovering', { detail: 'recover before returning to combat' }));
       }
+      if (skillProgress(state, COMBAT_SKILL_ID).level < definition.requiredCombatLevel) {
+        return err(failure(FailureCode.Conflict, 'combat.level_required', {
+          detail: `Combat level ${definition.requiredCombatLevel} is required`,
+        }));
+      }
       const current = respawnSparringTarget(
         encounters.get(interactableId) ?? createSparringState(definition.maxHitpoints, nowMs),
         nowMs,
