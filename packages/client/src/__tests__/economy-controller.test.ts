@@ -74,4 +74,29 @@ describe('EconomyController activity cleanup', () => {
       'skill.foraging': { definitionId: 'item.tool.sickle', durability: 487 },
     });
   });
+
+  it('sends combat commands and accepts only server-confirmed combat state', () => {
+    const { transport, send } = transportHarness();
+    const economy = new EconomyController(transport);
+
+    economy.attackEncounter('int.duel.training_wisp', 'DEFENSIVE');
+    economy.recoverCombat();
+    expect(send).toHaveBeenNthCalledWith(1, ClientOpcode.Command, {
+      kind: 'combat.attack', interactableId: 'int.duel.training_wisp', style: 'DEFENSIVE',
+    });
+    expect(send).toHaveBeenNthCalledWith(2, ClientOpcode.Command, { kind: 'combat.recover' });
+
+    transport.events.emit('frame', {
+      v: 1, op: ServerOpcode.Patch, seq: 1, t: 0,
+      p: { kind: 'combat.attack', state: { hitpoints: { current: 9, max: 10, respawnAtMs: null }, combat: {
+        interactableId: 'int.duel.training_wisp', label: 'Practice Wisp', hitpoints: 7, maxHitpoints: 8,
+        defeated: false, respawnAtMs: null, damage: 1, enemyDamage: 0, coinsGained: 0,
+        combatXpGained: 4, style: 'DEFENSIVE',
+      } } },
+    });
+
+    expect(useAppStore.getState().economy).toMatchObject({
+      hitpoints: { current: 9 }, combat: { style: 'DEFENSIVE', hitpoints: 7 },
+    });
+  });
 });
