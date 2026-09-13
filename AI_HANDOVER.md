@@ -113,6 +113,12 @@ single hard-coded handler. The board surfaces the active or next unlocked entry.
 two Crystal Shards. Preconditions, objective counts, exact inventory turn-ins and coin rewards are
 all enforced server-side; adding the next resource quest is a catalog entry, not a new handler.
 
+Named NPC interaction update (2026-09-13): proximity to an authored professor, merchant,
+groundskeeper, archivist, referee or rival now gives the player a **Talk** contextual action. It
+opens a concise mobile dialogue panel using that character's authored bark set, logs the exchange
+to the local diagnostic trace, and closes automatically when travel begins. Anonymous crowd
+students deliberately remain non-interactable.
+
 Reliability and operations: production uses Render Postgres for player and identity persistence.
 The client submits low-volume diagnostic events; a protected server diagnostic feed persists them
 in Postgres; the in-game **Logs** panel exposes a local session trace. `/healthz`, `/readyz`,
