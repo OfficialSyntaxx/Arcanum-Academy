@@ -26,12 +26,17 @@ export class CombatAvatarGroup {
   private readonly avatars = new Map<string, Avatar>();
   private disposed = false;
 
-  constructor(private readonly zone: Zone, private readonly shadowsEnabled: boolean) {
+  constructor(
+    private readonly zone: Zone,
+    private readonly shadowsEnabled: boolean,
+  ) {
     this.root.name = 'combat-encounter-avatars';
     for (const encounter of zone.interactables.filter(
       (entry) => entry.kind === InteractableKind.CombatEncounter,
     )) {
-      void modelPromise.then((gltf) => this.create(encounter.id, encounter.position.x, encounter.position.z, gltf));
+      void modelPromise.then((gltf) =>
+        this.create(encounter.id, encounter.position.x, encounter.position.z, gltf),
+      );
     }
   }
 
@@ -55,7 +60,11 @@ export class CombatAvatarGroup {
         avatar.lastStrikeAtMs = lastStrikeAtMs;
         this.play(avatar, 'hit');
       }
-      if (!defeated && avatar.current === avatar.actions.get('characterarmature|hitreact') && Date.now() - avatar.lastStrikeAtMs > 380) {
+      if (
+        !defeated &&
+        avatar.current === avatar.actions.get('characterarmature|hitreact') &&
+        Date.now() - avatar.lastStrikeAtMs > 380
+      ) {
         this.play(avatar, 'idle');
       }
       avatar.mixer.update(Math.min(dtSeconds, 0.05));
@@ -90,19 +99,30 @@ export class CombatAvatarGroup {
     root.add(model);
     const mixer = new AnimationMixer(model);
     const actions = new Map<string, AnimationAction>();
-    for (const clip of gltf.animations) actions.set(clip.name.toLowerCase(), mixer.clipAction(clip));
-    const avatar: Avatar = { id, root, mixer, actions, current: null, defeated: false, lastStrikeAtMs: 0 };
+    for (const clip of gltf.animations)
+      actions.set(clip.name.toLowerCase(), mixer.clipAction(clip));
+    const avatar: Avatar = {
+      id,
+      root,
+      mixer,
+      actions,
+      current: null,
+      defeated: false,
+      lastStrikeAtMs: 0,
+    };
     this.avatars.set(id, avatar);
     this.root.add(root);
     this.play(avatar, 'idle');
   }
 
   private play(avatar: Avatar, intent: 'idle' | 'hit' | 'death'): void {
-    const next = intent === 'death'
-      ? avatar.actions.get('characterarmature|death')
-      : intent === 'hit'
-        ? avatar.actions.get('characterarmature|hitreact')
-      : avatar.actions.get('characterarmature|flying_idle') ?? avatar.actions.get('characterarmature|fast_flying');
+    const next =
+      intent === 'death'
+        ? avatar.actions.get('characterarmature|death')
+        : intent === 'hit'
+          ? avatar.actions.get('characterarmature|hitreact')
+          : (avatar.actions.get('characterarmature|flying_idle') ??
+            avatar.actions.get('characterarmature|fast_flying'));
     if (!next || next === avatar.current) return;
     next.reset().play();
     avatar.current?.crossFadeTo(next, 0.16, false);
