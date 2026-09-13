@@ -125,7 +125,11 @@ async function main(): Promise<void> {
     tunables: DEFAULT_TUNABLES,
     now: () => Date.now(),
   });
-  registerCombatHandlers(router, { now: () => Date.now(), tickMs: DEFAULT_TUNABLES.combat.tickMs });
+  registerCombatHandlers(router, {
+    players,
+    now: () => Date.now(),
+    tickMs: DEFAULT_TUNABLES.combat.tickMs,
+  });
   registerQuestHandlers(router, { players, now: () => Date.now() });
 
   // The multiplayer layer is built, tested and switched off.
