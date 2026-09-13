@@ -51,7 +51,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of the 2026-09-12 named-NPC visual work it reports **385 tests across
+afterwards is yours. As of the 2026-09-13 combat vitality work it reports **387 tests across
 38 files**.
 
 Combat vertical slice update (2026-09-13): the Courtyard now has `Practice Wisp` on the duelling
@@ -66,6 +66,13 @@ Practice Wisp's compact animated visual. It adds 184 KiB to the PWA precache (no
 uses Flying Idle while alive and Death when the server confirms a defeat. It is strictly a visual
 layer: a failed GLB fetch cannot change combat state. The next combat phase is player hitpoints,
 hostile timing, rewards and death/recovery—not more client-only combat logic.
+
+Combat vitality update (2026-09-13): player hitpoints are persisted in the PlayerState schema
+(v3; legacy saves migrate to 10/10). Each non-lethal Practice Wisp hit counterattacks for one
+server-calculated point. Reaching zero begins a five-second recovery; reconnecting cannot erase
+the loss. The HUD displays both target and player HP. Combat is still deliberately a contained
+practice loop: add movement-range validation, player respawn placement, loot, food, equipment
+stats and hostile AI together in the following phase.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
