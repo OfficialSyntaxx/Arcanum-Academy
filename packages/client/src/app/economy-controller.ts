@@ -41,6 +41,7 @@ interface HarvestPatch {
   }[];
   readonly decks?: Readonly<Record<string, { name: string; cardDefinitionIds: readonly string[] }>>;
   readonly quests?: Readonly<Record<string, QuestProgress>>;
+  readonly combat?: EconomyState['combat'];
 }
 
 /** Command kinds this controller owns, so unrelated patches are ignored. */
@@ -57,6 +58,7 @@ const OWNED = new Set([
   'merchant.upgrade_tool',
   'quest.accept',
   'quest.complete',
+  'combat.attack',
 ]);
 
 export class EconomyController {
@@ -125,6 +127,10 @@ export class EconomyController {
 
   completeQuest(questId: string): void {
     this.send('quest.complete', { questId });
+  }
+
+  attackEncounter(interactableId: string): void {
+    this.send('combat.attack', { interactableId });
   }
 
   dispose(): void {
@@ -206,6 +212,7 @@ export class EconomyController {
       ...(patch.cards !== undefined ? { cards: patch.cards } : {}),
       ...(patch.decks !== undefined ? { decks: patch.decks } : {}),
       ...(patch.quests !== undefined ? { quests: patch.quests } : {}),
+      ...(patch.combat !== undefined ? { combat: patch.combat } : {}),
     };
 
     const store = useAppStore.getState();
