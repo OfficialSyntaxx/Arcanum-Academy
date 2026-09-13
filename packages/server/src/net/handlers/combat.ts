@@ -24,11 +24,14 @@ import {
   type SkillTable,
 } from '@alderfell/shared';
 import type { PlayerService, Mutation } from '../../domain/player-service.js';
-import { skillProgress } from '../../domain/player-state.js';
+import { maximumHitpoints, skillProgress } from '../../domain/player-state.js';
 import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import type { SessionId } from '@alderfell/shared';
 
-const COMBAT_SKILL = asId<SkillId>('skill.combat');
+const ATTACK_SKILL = asId<SkillId>('skill.attack');
+const STRENGTH_SKILL = asId<SkillId>('skill.strength');
+const DEFENCE_SKILL = asId<SkillId>('skill.defence');
+const HITPOINTS_SKILL = asId<SkillId>('skill.hitpoints');
 type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
 export interface CombatHandlerOptions {
   readonly players: PlayerService;
@@ -40,6 +43,7 @@ export interface CombatHandlerOptions {
   readonly interactionRadius: number;
   readonly currencyCap: number;
   readonly combatXpPerDamage: number;
+  readonly hitpointsXpPerDamage: number;
   readonly positionFor: (sessionId: SessionId) => { readonly x: number; readonly z: number } | null;
 }
 function interactableId(payload: unknown): string | null {
@@ -83,18 +87,23 @@ export function registerCombatHandlers(
     return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
       if (state.hitpoints.respawnAtMs !== null)
         return err(failure(FailureCode.Conflict, 'combat.player_recovering'));
-      if (skillProgress(state, COMBAT_SKILL).level < encounter.requiredCombatLevel)
+      const attackProgress = skillProgress(state, ATTACK_SKILL);
+      const strengthProgress = skillProgress(state, STRENGTH_SKILL);
+      const defenceProgress = skillProgress(state, DEFENCE_SKILL);
+      if (
+        Math.max(attackProgress.level, strengthProgress.level, defenceProgress.level) <
+        encounter.requiredCombatLevel
+      )
         return err(failure(FailureCode.Conflict, 'combat.level_required'));
       const target = respawnSparringTarget(
         state.combatTargets[id!] ?? createSparringState(encounter.maxHitpoints, now),
         now,
       );
-      const combatLevel = skillProgress(state, COMBAT_SKILL).level;
       const roll = resolveMeleeRoll(
         {
-          attackLevel: combatLevel,
-          strengthLevel: combatLevel,
-          defenceLevel: 0,
+          attackLevel: attackProgress.level,
+          strengthLevel: strengthProgress.level,
+          defenceLevel: defenceProgress.level,
           attackBonus: style === 'ACCURATE' ? 3 : 0,
           strengthBonus: style === 'AGGRESSIVE' ? 3 : 0,
           defenceBonus: 0,
@@ -124,18 +133,44 @@ export function registerCombatHandlers(
           inventory = awardedDrop.value;
         }
       }
+      const styleSkillId =
+        style === 'ACCURATE'
+          ? ATTACK_SKILL
+          : style === 'AGGRESSIVE'
+            ? STRENGTH_SKILL
+            : DEFENCE_SKILL;
+      const styleXp = playerDamage * options.combatXpPerDamage;
+      const hitpointsXp = playerDamage * options.hitpointsXpPerDamage;
+      const styleSkill = options.skills.get(styleSkillId);
+      const hitpointsSkill = options.skills.get(HITPOINTS_SKILL);
+      if (styleSkill === undefined || hitpointsSkill === undefined)
+        return err(failure(FailureCode.NotFound, 'combat.skill_missing'));
+      const awardedStyle = awardXp(
+        skillProgress(state, styleSkillId),
+        styleXp,
+        options.progression,
+        styleSkill,
+      );
+      const awardedHitpoints = awardXp(
+        skillProgress(state, HITPOINTS_SKILL),
+        hitpointsXp,
+        options.progression,
+        hitpointsSkill,
+      );
+      const skills = {
+        ...state.skills,
+        [styleSkillId]: awardedStyle.progress,
+        [HITPOINTS_SKILL]: awardedHitpoints.progress,
+      };
+      const maximum = maximumHitpoints(skills);
       const nextHp = defeated
-        ? state.hitpoints
+        ? { ...state.hitpoints, max: maximum, current: Math.min(state.hitpoints.current, maximum) }
         : {
-            current: Math.max(0, state.hitpoints.current - enemyDamage),
-            max: state.hitpoints.max,
+            current: Math.max(0, Math.min(maximum, state.hitpoints.current - enemyDamage)),
+            max: maximum,
             respawnAtMs:
               state.hitpoints.current - enemyDamage <= 0 ? now + encounter.playerRecoveryMs : null,
           };
-      const xp = playerDamage * options.combatXpPerDamage + (style === 'ACCURATE' ? 1 : 0);
-      const skill = options.skills.get(COMBAT_SKILL);
-      if (skill === undefined) return err(failure(FailureCode.NotFound, 'combat.skill_missing'));
-      const awarded = awardXp(skillProgress(state, COMBAT_SKILL), xp, options.progression, skill);
       const coins = defeated
         ? Math.min(encounter.rewardCoins, options.currencyCap - state.coins)
         : 0;
@@ -145,7 +180,7 @@ export function registerCombatHandlers(
         combatTargets: { ...state.combatTargets, [id!]: nextTarget },
         hitpoints: nextHp,
         coins: state.coins + coins,
-        skills: { ...state.skills, [COMBAT_SKILL]: awarded.progress },
+        skills,
         lastSeenAtMs: now,
       };
       return ok({
@@ -169,7 +204,9 @@ export function registerCombatHandlers(
             enemyDamage: defeated ? 0 : enemyDamage,
             coinsGained: coins,
             drops: defeated ? encounter.drops : [],
-            combatXpGained: xp,
+            combatXpGained: styleXp,
+            hitpointsXpGained: hitpointsXp,
+            styleSkillId,
             style,
           },
         },
