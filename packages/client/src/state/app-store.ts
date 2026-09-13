@@ -104,6 +104,7 @@ export interface EconomyState {
     readonly drops: readonly { readonly itemId: string; readonly quantity: number }[];
     readonly combatXpGained: number;
     readonly style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
+    readonly foodConsumed?: { readonly itemId: string; readonly healAmount: number };
   } | null;
   /** Local receipt time of the latest server-confirmed combat hit. Presentation only. */
   readonly lastCombatStrikeAtMs: number;
