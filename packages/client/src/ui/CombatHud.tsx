@@ -6,7 +6,10 @@ export function CombatHud({
   onAttack,
   onRecover,
 }: {
-  readonly onAttack: (interactableId: string, style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE') => void;
+  readonly onAttack: (
+    interactableId: string,
+    style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE',
+  ) => void;
   readonly onRecover: () => void;
 }) {
   const combat = useAppStore((state) => state.economy.combat);
@@ -24,23 +27,58 @@ export function CombatHud({
     <section className="combat-hud" aria-label={`${combat.label} combat`}>
       <div className="combat-hud__title">
         <span>{combat.label}</span>
-        <span>{combat.hitpoints}/{combat.maxHitpoints}</span>
+        <span>
+          {combat.hitpoints}/{combat.maxHitpoints}
+        </span>
       </div>
-      <div className="combat-hud__track"><span style={{ width: `${pct}%` }} /></div>
+      <div className="combat-hud__track">
+        <span style={{ width: `${pct}%` }} />
+      </div>
       <div className="combat-hud__title combat-hud__player">
-        <span>You</span><span>{player.current}/{player.max} HP</span>
+        <span>You</span>
+        <span>
+          {player.current}/{player.max} HP
+        </span>
       </div>
-      <div className="combat-hud__styles" aria-label="Combat style">{(['ACCURATE', 'AGGRESSIVE', 'DEFENSIVE'] as const).map((option) => (<button key={option} type="button" aria-pressed={style === option} onClick={() => setStyle(option)}>{option === 'ACCURATE' ? 'Accurate +XP' : option === 'AGGRESSIVE' ? 'Aggressive +DMG' : 'Defensive -DMG'}</button>))}</div>
+      <div className="combat-hud__styles" aria-label="Combat style">
+        {(['ACCURATE', 'AGGRESSIVE', 'DEFENSIVE'] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={style === option}
+            onClick={() => setStyle(option)}
+          >
+            {option === 'ACCURATE'
+              ? 'Accurate +XP'
+              : option === 'AGGRESSIVE'
+                ? 'Aggressive +DMG'
+                : 'Defensive -DMG'}
+          </button>
+        ))}
+      </div>
       {player.current === 0 ? (
         player.respawnAtMs !== null && now < player.respawnAtMs ? (
           <p>Recovering… {Math.ceil((player.respawnAtMs - now) / 1_000)}s</p>
         ) : (
-          <button type="button" onClick={onRecover}>Recover</button>
+          <button type="button" onClick={onRecover}>
+            Recover
+          </button>
         )
       ) : combat.defeated ? (
-        <p>Defeated · +{combat.coinsGained} coins · +{combat.combatXpGained} Combat XP · Reforming…</p>
+        <p>
+          Defeated · +{combat.coinsGained} coins ·{' '}
+          {combat.drops
+            .map(
+              (drop) =>
+                `${drop.quantity} ${drop.itemId === 'item.meat.raw_shore_wolf' ? 'Raw Shore Wolf Meat' : drop.itemId}`,
+            )
+            .join(', ')}{' '}
+          · +{combat.combatXpGained} Combat XP · Reforming…
+        </p>
       ) : (
-        <button type="button" onClick={() => onAttack(combat.interactableId, style)}>Attack</button>
+        <button type="button" onClick={() => onAttack(combat.interactableId, style)}>
+          Attack
+        </button>
       )}
     </section>
   );
