@@ -17,12 +17,16 @@ export function CombatHud({
   const [now, setNow] = useState(Date.now());
   const [style, setStyle] = useState<'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE'>('ACCURATE');
   useEffect(() => {
-    if (player.respawnAtMs === null) return;
+    if (player.respawnAtMs === null && combat?.nextAttackAtMs === undefined) return;
     const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
-  }, [player.respawnAtMs]);
+  }, [player.respawnAtMs, combat?.nextAttackAtMs]);
   if (combat === null) return null;
   const pct = Math.max(0, Math.min(100, (combat.hitpoints / combat.maxHitpoints) * 100));
+  const attackReadyInMs = Math.max(0, combat.nextAttackAtMs - now);
+  const strikeMessage = combat.rolledHit
+    ? `You hit for ${combat.damage}.`
+    : `Your swing glanced, but the starter strike still deals ${combat.damage}.`;
   return (
     <section className="combat-hud" aria-label={`${combat.label} combat`}>
       <div className="combat-hud__title">
@@ -56,6 +60,11 @@ export function CombatHud({
           </button>
         ))}
       </div>
+      <p className="combat-hud__log" aria-live="polite">
+        {combat.defeated
+          ? 'The Shore Wolf is defeated.'
+          : `${strikeMessage}${combat.enemyDamage > 0 ? ` The Shore Wolf hits you for ${combat.enemyDamage}.` : ''}`}
+      </p>
       {player.current === 0 ? (
         player.respawnAtMs !== null && now < player.respawnAtMs ? (
           <p>Recovering… {Math.ceil((player.respawnAtMs - now) / 1_000)}s</p>
@@ -76,8 +85,12 @@ export function CombatHud({
           · +{combat.combatXpGained} Combat XP · Reforming…
         </p>
       ) : (
-        <button type="button" onClick={() => onAttack(combat.interactableId, style)}>
-          Attack
+        <button
+          type="button"
+          disabled={attackReadyInMs > 0}
+          onClick={() => onAttack(combat.interactableId, style)}
+        >
+          {attackReadyInMs > 0 ? `Ready in ${Math.ceil(attackReadyInMs / 1_000)}s` : 'Attack'}
         </button>
       )}
     </section>
