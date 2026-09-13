@@ -125,8 +125,10 @@ fallbacks, a continuous sea plane, irregular coastal apron and distant landform 
 the playable zone does not read as a floating square tile. The player is now the verified Kenney
 Mini Forest archer GLB with its embedded palette workaround, normalized display height and real
 idle/walk/interact animation clips. Named professors, merchants and quest NPCs now use cloned,
-animated instances of that same CC0 rig once loaded; only anonymous students stay in the compact
-instanced crowd pool. This has a procedural fallback during a cold load and is mobile-safe.
+animated CC0 instances once loaded; merchants and groundskeepers use the Kenney human, referees
+and rivals use the warden/orc, and scholar roles retain the archer silhouette with independent
+role tinting. Only anonymous students stay in the compact instanced crowd pool. This has a
+procedural fallback during a cold load and is mobile-safe.
 
 **Do not reintroduce the temporary primitive hand tools.** They were deliberately removed because
 they swung wildly and did not attach to the GLB hand. The next art task must use a proper bone/socket
