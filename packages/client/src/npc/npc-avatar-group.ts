@@ -26,6 +26,8 @@ import {
 } from '../player/player-avatar.js';
 import type { WorldService } from '../world/world-service.js';
 import type { NamedNpcPresentation } from './npc-director.js';
+import dungeonHumanUrl from '../../../../assets/kenney/mini-dungeon/character-human.glb?url';
+import dungeonOrcUrl from '../../../../assets/kenney/mini-dungeon/character-orc.glb?url';
 
 const NAMED_NPC_HEIGHT = 2.05;
 const COLOURS: Readonly<Record<string, number>> = {
@@ -46,11 +48,32 @@ interface Avatar {
   current: AnimationAction | null;
 }
 
-let modelPromise: Promise<GLTF> | null = null;
+type CharacterVariant = 'scholar' | 'townsfolk' | 'warden';
 
-function loadCharacter(): Promise<GLTF> {
-  modelPromise ??= createMiniForestCharacterLoader().loadAsync(miniForestArcherUrl);
-  return modelPromise;
+const VARIANT_URL: Readonly<Record<CharacterVariant, string>> = {
+  scholar: miniForestArcherUrl,
+  townsfolk: dungeonHumanUrl,
+  warden: dungeonOrcUrl,
+};
+
+const modelPromises = new Map<CharacterVariant, Promise<GLTF>>();
+
+function loadCharacter(variant: CharacterVariant): Promise<GLTF> {
+  let promise = modelPromises.get(variant);
+  if (!promise) {
+    // Every Kenney mini-kit character uses a compatible palette layout. The
+    // loader supplies the embedded palette rather than relying on a texture
+    // directory that Vite does not serve in production.
+    promise = createMiniForestCharacterLoader().loadAsync(VARIANT_URL[variant]);
+    modelPromises.set(variant, promise);
+  }
+  return promise;
+}
+
+function variantFor(role: NpcRole): CharacterVariant {
+  if (role === NpcRole.Merchant || role === NpcRole.Groundskeeper) return 'townsfolk';
+  if (role === NpcRole.Referee || role === NpcRole.Rival) return 'warden';
+  return 'scholar';
 }
 
 export class NpcAvatarGroup {
@@ -64,14 +87,15 @@ export class NpcAvatarGroup {
     named: readonly NamedNpcPresentation[],
   ) {
     this.root.name = 'named-npc-avatars';
-    void loadCharacter()
-      .then((gltf) => {
-        if (this.disposed) return;
-        for (const presentation of named) this.createAvatar(gltf, presentation);
-      })
-      .catch(() => {
-        // Keep the existing procedural named NPCs if an optional GLB fails.
-      });
+    for (const presentation of named) {
+      void loadCharacter(variantFor(presentation.role))
+        .then((gltf) => {
+          if (!this.disposed) this.createAvatar(gltf, presentation);
+        })
+        .catch(() => {
+          // Keep the existing procedural named NPC if an optional GLB fails.
+        });
+    }
   }
 
   update(dtSeconds: number, named: readonly NamedNpcPresentation[]): void {
@@ -112,7 +136,7 @@ export class NpcAvatarGroup {
     this.tintAndShadow(model, presentation.appearance);
 
     const root = new Group();
-    root.name = `npc-avatar:${presentation.id}`;
+    root.name = `npc-avatar:${presentation.id}:${variantFor(presentation.role)}`;
     root.add(model);
     const mixer = new AnimationMixer(model);
     const actions = new Map<string, AnimationAction>();
@@ -145,9 +169,14 @@ export class NpcAvatarGroup {
       if (!(node instanceof Mesh)) return;
       node.castShadow = this.shadowsEnabled;
       node.receiveShadow = this.shadowsEnabled;
-      if (tint === undefined) return;
       const materials = Array.isArray(node.material) ? node.material : [node.material];
-      for (const material of materials) {
+      // SkeletonUtils deliberately shares source materials. NPCs need their
+      // own copy or a later role's colour would silently repaint everyone
+      // already in the scene (and potentially the source model cache).
+      const uniqueMaterials = materials.map((material) => material.clone());
+      node.material = Array.isArray(node.material) ? uniqueMaterials : uniqueMaterials[0]!;
+      if (tint === undefined) return;
+      for (const material of uniqueMaterials) {
         // The model is texture-led. A light tint keeps faces and equipment
         // legible while allowing named roles to be distinguished at a glance.
         material.color = material.color.clone().lerp(new Color(tint), 0.16);
