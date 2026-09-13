@@ -38,6 +38,9 @@ export interface CombatHandlerOptions {
 }
 
 const COMBAT_SKILL_ID = asId<SkillId>('skill.combat');
+type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
+
+function readStyle(payload: unknown): CombatStyle { if (typeof payload !== 'object' || payload === null) return 'ACCURATE'; const style = (payload as Record<string, unknown>)['style']; return style === 'AGGRESSIVE' || style === 'DEFENSIVE' || style === 'ACCURATE' ? style : 'ACCURATE'; }
 
 function readInteractableId(payload: unknown): string | null {
   if (typeof payload !== 'object' || payload === null) return null;
@@ -49,6 +52,7 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
   const encounters = new Map<string, SparringState>();
   const attack: CommandHandler = async (session, payload) => {
     const interactableId = readInteractableId(payload);
+    const style = readStyle(payload);
     if (interactableId === null) {
       return err(failure(FailureCode.Validation, 'combat.interactable_missing', { detail: 'interactableId is required' }));
     }
@@ -84,7 +88,7 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
         nowMs,
         options.tickMs,
         definition.respawnMs,
-        definition.playerDamage,
+        definition.playerDamage + (style === 'AGGRESSIVE' ? 1 : 0),
       );
       encounters.set(interactableId, outcome.state);
       if (outcome.kind === 'rejected') {
@@ -92,7 +96,7 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
       }
       const nextHp = outcome.defeated
         ? state.hitpoints
-        : damagePlayer(state.hitpoints, definition.enemyDamage, definition.playerRecoveryMs, nowMs);
+        : damagePlayer(state.hitpoints, Math.max(0, definition.enemyDamage - (style === 'DEFENSIVE' ? 1 : 0)), definition.playerRecoveryMs, nowMs);
       const coinsGained = outcome.defeated
         ? Math.max(0, Math.min(definition.rewardCoins, options.currencyCap - state.coins))
         : 0;
@@ -100,7 +104,7 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
       if (combatSkill === undefined) {
         return err(failure(FailureCode.NotFound, 'combat.skill_missing', { detail: 'combat progression is unavailable' }));
       }
-      const combatXpGained = outcome.damage * options.combatXpPerDamage;
+      const combatXpGained = outcome.damage * options.combatXpPerDamage + (style === 'ACCURATE' ? 1 : 0);
       const combatProgress = awardXp(skillProgress(state, COMBAT_SKILL_ID), combatXpGained, options.progression, combatSkill);
       const next = {
         ...state,
@@ -120,9 +124,10 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
             defeated: outcome.defeated,
             respawnAtMs: outcome.state.respawnAtMs,
             damage: outcome.damage,
-            enemyDamage: outcome.defeated ? 0 : definition.enemyDamage,
+            enemyDamage: outcome.defeated ? 0 : Math.max(0, definition.enemyDamage - (style === 'DEFENSIVE' ? 1 : 0)),
             coinsGained,
             combatXpGained,
+            style,
           },
           hitpoints: next.hitpoints,
           coins: next.coins,
