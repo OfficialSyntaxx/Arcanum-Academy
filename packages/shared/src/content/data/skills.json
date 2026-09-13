@@ -121,6 +121,21 @@
           "description": "Slabbed results become routine"
         }
       ]
+    },
+    {
+      "id": "skill.combat",
+      "name": "Combat",
+      "category": "COMBAT",
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Challenge practice wisps"
+        },
+        {
+          "atLevel": 10,
+          "description": "Ready for academy sparring techniques"
+        }
+      ]
     }
   ]
 }
