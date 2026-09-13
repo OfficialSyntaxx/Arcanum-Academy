@@ -73,6 +73,8 @@ export interface HubControllerOptions {
   readonly onEngageQuestBoard?: (interactableId: string) => void;
   /** Called when the player attacks an in-world combat encounter. */
   readonly onEngageCombatEncounter?: (interactableId: string) => void;
+  /** Reports movement to the gateway for authoritative interaction range checks. */
+  readonly onPresence?: (position: { readonly x: number; readonly z: number; readonly facing: number }) => void;
   /** Called when the player speaks to a nearby named character. */
   readonly onEngageNpc?: (npc: {
     readonly id: string;
@@ -522,6 +524,11 @@ export class HubController {
     this.storeAccumulatorMs += dtMs;
     if (this.storeAccumulatorMs < STORE_UPDATE_INTERVAL_MS) return;
     this.storeAccumulatorMs = 0;
+    this.options.onPresence?.({
+      x: this.player.position.x,
+      z: this.player.position.z,
+      facing: this.player.facing,
+    });
 
     const store = useAppStore.getState();
     const nearest = this.player.isTravelling
