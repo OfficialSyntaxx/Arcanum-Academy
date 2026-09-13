@@ -122,6 +122,16 @@
       "iconKey": "fish-stargill"
     },
     {
+      "id": "item.meat.raw_shore_wolf",
+      "name": "Raw Shore Wolf Meat",
+      "description": "Fresh coastal game. Cook it before relying on it for a long walk.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 4,
+      "iconKey": "raw-shore-wolf-meat"
+    },
+    {
       "id": "item.dust.resonant",
       "name": "Resonant Dust",
       "description": "Ground crystal, fine enough to suspend in ink without clouding it.",
