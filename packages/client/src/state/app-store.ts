@@ -95,6 +95,8 @@ export interface EconomyState {
     readonly enemyDamage: number;
     readonly coinsGained: number;
   } | null;
+  /** Local receipt time of the latest server-confirmed combat hit. Presentation only. */
+  readonly lastCombatStrikeAtMs: number;
 }
 
 export const EMPTY_ECONOMY: EconomyState = {
@@ -113,6 +115,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   cards: [],
   quests: {},
   combat: null,
+  lastCombatStrikeAtMs: 0,
 };
 
 export interface AppState {
