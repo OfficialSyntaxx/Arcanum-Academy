@@ -703,6 +703,21 @@
   width: 100%;
 }
 
+.npc-dialogue {
+  pointer-events: auto;
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--inset-bottom) + var(--space-4));
+  transform: translateX(-50%);
+  width: min(24rem, calc(100vw - var(--space-6)));
+}
+
+.npc-dialogue__line {
+  margin: var(--space-4) 0;
+  color: var(--haze);
+  line-height: 1.6;
+}
+
 .bank-panel {
   pointer-events: auto;
   position: absolute;
