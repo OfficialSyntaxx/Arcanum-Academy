@@ -26,6 +26,8 @@ export interface CombatTunables {
   readonly defensiveDefenceBonus: number;
   /** Hitpoints XP earned per point of damage dealt, on top of the style skill. */
   readonly hitpointsXpPerDamage: number;
+  /** Combat XP earned per confirmed point of damage. */
+  readonly combatXpPerDamage: number;
   /** Items kept on death; everything else goes to the gravestone. */
   readonly itemsKeptOnDeath: number;
   /**
@@ -179,13 +181,14 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
   // were removed and combat became tick-based. Per ADR-0002 the version travels
   // with every replay, so a result produced under one version is never silently
   // compared against another version's numbers.
-  version: 5,
+  version: 6,
   combat: Object.freeze({
     tickMs: 600,
     accurateAccuracyBonus: 3,
     aggressiveMaxHitBonus: 3,
     defensiveDefenceBonus: 3,
     hitpointsXpPerDamage: 1,
+    combatXpPerDamage: 4,
     itemsKeptOnDeath: 3,
     // Never expires at launch. See CombatTunables.graveExpiryMs.
     graveExpiryMs: null,
