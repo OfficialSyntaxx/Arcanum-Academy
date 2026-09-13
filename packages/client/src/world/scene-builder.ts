@@ -430,12 +430,21 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   const markerRing = track(new RingGeometry(0.85, 1.15, 24));
   const markerPost = track(new BoxGeometry(0.5, 1.4, 0.5));
   const markerHalo = track(new TorusGeometry(0.55, 0.05, 6, 20));
+  const campfireStoneRing = track(new TorusGeometry(0.58, 0.12, 6, 8));
+  const campfireLog = track(new BoxGeometry(1.05, 0.13, 0.16));
+  const campfireFlame = track(new ConeGeometry(0.24, 0.76, 6));
 
   for (const interactable of zone.interactables) {
     const marker = buildMarker(interactable, {
       ring: markerRing,
       post: markerPost,
       halo: markerHalo,
+      campfireStoneRing,
+      campfireLog,
+      campfireFlame,
+      campfireStone: stoneRaised,
+      campfireWood: wood,
+      campfireFlameMaterial: flame,
       material: track(
         new MeshStandardMaterial({
           color: MARKER_COLOURS[interactable.kind] ?? Palette.haze,
@@ -477,6 +486,12 @@ interface MarkerParts {
   readonly post: BufferGeometry;
   readonly halo: BufferGeometry;
   readonly material: Material;
+  readonly campfireStoneRing: BufferGeometry;
+  readonly campfireLog: BufferGeometry;
+  readonly campfireFlame: BufferGeometry;
+  readonly campfireStone: Material;
+  readonly campfireWood: Material;
+  readonly campfireFlameMaterial: Material;
 }
 
 function buildMarker(interactable: Interactable, parts: MarkerParts): Object3D {
@@ -490,6 +505,22 @@ function buildMarker(interactable: Interactable, parts: MarkerParts): Object3D {
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.03;
   marker.add(ring);
+
+  if (interactable.id === 'int.station.shorelands_campfire') {
+    const stones = new Mesh(parts.campfireStoneRing, parts.campfireStone);
+    stones.position.y = 0.13;
+    marker.add(stones);
+    for (const yaw of [-0.72, 0.72]) {
+      const log = new Mesh(parts.campfireLog, parts.campfireWood);
+      log.position.y = 0.19;
+      log.rotation.y = yaw;
+      marker.add(log);
+    }
+    const ember = new Mesh(parts.campfireFlame, parts.campfireFlameMaterial);
+    ember.position.y = 0.52;
+    marker.add(ember);
+    return marker;
+  }
 
   // Gathering nodes are read at a glance by silhouette, not by colour alone —
   // colour-blind players get the same information as everyone else.
