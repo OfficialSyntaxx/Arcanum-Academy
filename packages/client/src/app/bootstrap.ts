@@ -234,6 +234,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     canvas: options.canvas,
     onBeginTravel: () => {
       economy.stopGathering();
+      economy.disengageCombat();
     },
     onEngageGatheringNode: (interactableId) => economy.startGathering(interactableId),
     onEngageCraftingStation: (interactableId) => store.setOpenStation(interactableId),
