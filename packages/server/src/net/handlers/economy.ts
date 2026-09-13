@@ -95,6 +95,7 @@ function project(state: PlayerState) {
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     bank: { stacks: state.bank.stacks, slotCapacity: state.bank.slotCapacity },
     coins: state.coins,
+    hitpoints: state.hitpoints,
     skills: state.skills,
     tools: state.tools,
     quests: state.quests,
