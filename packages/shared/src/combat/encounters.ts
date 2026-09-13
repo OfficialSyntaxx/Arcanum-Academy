@@ -33,7 +33,24 @@ export const SHORE_WOLF: CombatEncounterDefinition = Object.freeze({
   requiredCombatLevel: 1,
 });
 
-export const COMBAT_ENCOUNTERS = Object.freeze([SHORE_WOLF]);
+/** A second, small encounter that teaches target variety without a level wall. */
+export const EMBERWING_ARMABEE: CombatEncounterDefinition = Object.freeze({
+  interactableId: asId<InteractableId>('int.combat.emberwing_armabee'),
+  label: 'Emberwing Armabee',
+  position: { x: -7, z: 19 },
+  maxHitpoints: 5,
+  playerDamage: 1,
+  enemyDamage: 1,
+  rewardCoins: 8,
+  drops: Object.freeze([
+    { itemId: asId<ItemDefinitionId>('item.material.armabee_wax'), quantity: 1 },
+  ]),
+  respawnMs: 5_000,
+  playerRecoveryMs: 5_000,
+  requiredCombatLevel: 1,
+});
+
+export const COMBAT_ENCOUNTERS = Object.freeze([SHORE_WOLF, EMBERWING_ARMABEE]);
 
 export function combatEncounterByInteractable(id: string): CombatEncounterDefinition | undefined {
   return COMBAT_ENCOUNTERS.find((encounter) => encounter.interactableId === id);
