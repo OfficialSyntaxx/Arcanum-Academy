@@ -408,6 +408,15 @@ export const COURTYARD: Zone = {
       label: 'Shore Wolf',
       verb: 'Attack',
     },
+    {
+      id: ix('int.station.shorelands_campfire'),
+      kind: InteractableKind.CraftingStation,
+      position: { x: 5, z: 16.5 },
+      approach: wp('wp.duel.circle.south'),
+      facing: Math.PI,
+      label: 'Shorelands Campfire',
+      verb: 'Cook',
+    },
 
     // --- World gates -------------------------------------------------------
     {
