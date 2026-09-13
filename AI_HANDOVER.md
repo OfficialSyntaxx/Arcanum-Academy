@@ -2,13 +2,14 @@
 
 ### Game design document and engineering handover — everything needed to build it from nothing
 
-**Written:** 2026-09-09 · **Updated:** 2026-09-12 · **Author:** Claude Code, with Codex implementation updates
+**Written:** 2026-09-09 · **Updated:** 2026-09-13 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
 **Code state:** G2 is in active vertical-slice development. Reliable skilling/economy,
-persistence, observability, quests, starter combat, and the first production GLB character
-presentation are live. The current focus is replacing temporary presentation with a coherent
-world art pass, beginning with named NPCs, then real tool sockets and creature visuals.
+persistence, observability, quests, a server-authoritative practice-combat slice, and the first
+production GLB character presentation are live. The current focus is replacing temporary
+presentation with a coherent world art pass, beginning with named NPCs, then real tool sockets
+and creature visuals.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -51,7 +52,14 @@ npm run verify              # format + lint + boundaries + typecheck + test
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
 afterwards is yours. As of the 2026-09-12 named-NPC visual work it reports **385 tests across
-37 files**.
+38 files**.
+
+Combat vertical slice update (2026-09-13): the Courtyard now has `Practice Wisp` on the duelling
+terrace. `combat.attack` accepts only an authored interactable id; the server calculates damage,
+enforces the 600 ms tick and owns defeat/respawn. The client receives only the confirmed target
+state and displays a compact HP/Attack HUD that clears when the player travels away. This is a
+practice target—there is deliberately no player health, equipment damage, creature AI, loot or
+death system yet. Add those as a complete next combat phase, not as client-side shortcuts.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
