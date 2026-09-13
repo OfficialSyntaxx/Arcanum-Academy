@@ -63,6 +63,7 @@ export interface EconomyState {
   readonly bankStacks: readonly { definitionId: string; quantity: number }[];
   readonly bankSlotCapacity: number;
   readonly coins: number;
+  readonly hitpoints: { readonly current: number; readonly max: number; readonly respawnAtMs: number | null };
   readonly skills: Readonly<Record<string, { level: number; xp: number }>>;
   /** Equipped gathering tool by skill, separate from the material satchel. */
   readonly tools: Readonly<Record<string, { definitionId: string; durability: number }>>;
@@ -91,6 +92,7 @@ export interface EconomyState {
     readonly defeated: boolean;
     readonly respawnAtMs: number | null;
     readonly damage: number;
+    readonly enemyDamage: number;
   } | null;
 }
 
@@ -100,6 +102,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   bankStacks: [],
   bankSlotCapacity: 0,
   coins: 0,
+  hitpoints: { current: 10, max: 10, respawnAtMs: null },
   skills: {},
   tools: {},
   gatheringNodeId: null,
