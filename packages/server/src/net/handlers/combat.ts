@@ -1,12 +1,4 @@
-/** Server-authoritative practice combat. Browser commands select a target only;
- * target stats, damage, ticks and respawn are owned here. */
-import {
-  awardXp,
-  createSparringState,
-  resolveSparringAttack,
-  respawnSparringTarget,
-  type SparringState,
-} from '@alderfell/sim';
+import { awardXp } from '@alderfell/sim';
 import {
   asId,
   combatEncounterByInteractable,
@@ -20,149 +12,55 @@ import {
   type SkillId,
   type SkillTable,
 } from '@alderfell/shared';
-import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import type { PlayerService, Mutation } from '../../domain/player-service.js';
-import { skillProgress, type PlayerState } from '../../domain/player-state.js';
+import { skillProgress } from '../../domain/player-state.js';
+import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import type { SessionId } from '@alderfell/shared';
 
+const COMBAT_SKILL = asId<SkillId>('skill.combat');
+interface Target { hp: number; nextAttackAtMs: number; respawnAtMs: number | null; }
 export interface CombatHandlerOptions {
   readonly players: PlayerService;
+  readonly skills: SkillTable;
+  readonly progression: ProgressionTunables;
   readonly now: () => number;
   readonly tickMs: number;
   readonly interactionRadius: number;
   readonly currencyCap: number;
-  readonly skills: SkillTable;
-  readonly progression: ProgressionTunables;
   readonly combatXpPerDamage: number;
   readonly positionFor: (sessionId: SessionId) => { readonly x: number; readonly z: number } | null;
 }
-
-const COMBAT_SKILL_ID = asId<SkillId>('skill.combat');
-type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
-
-function readStyle(payload: unknown): CombatStyle { if (typeof payload !== 'object' || payload === null) return 'ACCURATE'; const style = (payload as Record<string, unknown>)['style']; return style === 'AGGRESSIVE' || style === 'DEFENSIVE' || style === 'ACCURATE' ? style : 'ACCURATE'; }
-
-function readInteractableId(payload: unknown): string | null {
-  if (typeof payload !== 'object' || payload === null) return null;
-  const value = (payload as Record<string, unknown>)['interactableId'];
-  return typeof value === 'string' && value.length > 0 ? value : null;
+function interactableId(payload: unknown): string | null {
+  return typeof payload === 'object' && payload !== null && typeof (payload as Record<string, unknown>).interactableId === 'string'
+    ? (payload as Record<string, unknown>).interactableId as string : null;
 }
-
 export function registerCombatHandlers(router: RegistryCommandRouter, options: CombatHandlerOptions): void {
-  const encounters = new Map<string, SparringState>();
+  const targets = new Map<string, Target>();
   const attack: CommandHandler = async (session, payload) => {
-    const interactableId = readInteractableId(payload);
-    const style = readStyle(payload);
-    if (interactableId === null) {
-      return err(failure(FailureCode.Validation, 'combat.interactable_missing', { detail: 'interactableId is required' }));
-    }
-    const definition = combatEncounterByInteractable(interactableId);
-    if (definition === undefined) {
-      return err(failure(FailureCode.NotFound, 'combat.not_an_encounter', { detail: 'nothing hostile is at that interactable' }));
-    }
+    const id = interactableId(payload); const encounter = id === null ? undefined : combatEncounterByInteractable(id);
+    if (encounter === undefined) return err(failure(FailureCode.NotFound, 'combat.not_an_encounter'));
     const position = options.positionFor(session.id);
-    if (position === null) {
-      return err(failure(FailureCode.Conflict, 'combat.position_unknown', { detail: 'move near the encounter before attacking' }));
-    }
-    const dx = position.x - definition.position.x;
-    const dz = position.z - definition.position.z;
-    if (dx * dx + dz * dz > options.interactionRadius * options.interactionRadius) {
-      return err(failure(FailureCode.Conflict, 'combat.out_of_range', { detail: 'move closer to the encounter before attacking' }));
-    }
-    const nowMs = options.now();
+    if (position === null) return err(failure(FailureCode.Conflict, 'combat.position_unknown'));
+    const dx = position.x - encounter.position.x, dz = position.z - encounter.position.z;
+    if (dx * dx + dz * dz > options.interactionRadius ** 2) return err(failure(FailureCode.Conflict, 'combat.out_of_range'));
+    const now = options.now();
     return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      if (state.hitpoints.respawnAtMs !== null) {
-        return err(failure(FailureCode.Conflict, 'combat.player_recovering', { detail: 'recover before returning to combat' }));
-      }
-      if (skillProgress(state, COMBAT_SKILL_ID).level < definition.requiredCombatLevel) {
-        return err(failure(FailureCode.Conflict, 'combat.level_required', {
-          detail: `Combat level ${definition.requiredCombatLevel} is required`,
-        }));
-      }
-      const current = respawnSparringTarget(
-        encounters.get(interactableId) ?? createSparringState(definition.maxHitpoints, nowMs),
-        nowMs,
-      );
-      const outcome = resolveSparringAttack(
-        current,
-        nowMs,
-        options.tickMs,
-        definition.respawnMs,
-        definition.playerDamage + (style === 'AGGRESSIVE' ? 1 : 0),
-      );
-      encounters.set(interactableId, outcome.state);
-      if (outcome.kind === 'rejected') {
-        return err(failure(FailureCode.Conflict, `combat.${outcome.reason}`, { detail: 'the practice target is not ready yet' }));
-      }
-      const nextHp = outcome.defeated
-        ? state.hitpoints
-        : damagePlayer(state.hitpoints, Math.max(0, definition.enemyDamage - (style === 'DEFENSIVE' ? 1 : 0)), definition.playerRecoveryMs, nowMs);
-      const coinsGained = outcome.defeated
-        ? Math.max(0, Math.min(definition.rewardCoins, options.currencyCap - state.coins))
-        : 0;
-      const combatSkill = options.skills.get(COMBAT_SKILL_ID);
-      if (combatSkill === undefined) {
-        return err(failure(FailureCode.NotFound, 'combat.skill_missing', { detail: 'combat progression is unavailable' }));
-      }
-      const combatXpGained = outcome.damage * options.combatXpPerDamage + (style === 'ACCURATE' ? 1 : 0);
-      const combatProgress = awardXp(skillProgress(state, COMBAT_SKILL_ID), combatXpGained, options.progression, combatSkill);
-      const next = {
-        ...state,
-        coins: state.coins + coinsGained,
-        hitpoints: nextHp,
-        skills: { ...state.skills, [COMBAT_SKILL_ID]: combatProgress.progress },
-        lastSeenAtMs: nowMs,
-      };
-      return ok({
-        state: next,
-        value: {
-          combat: {
-            interactableId,
-            label: definition.label,
-            hitpoints: outcome.state.hitpoints,
-            maxHitpoints: outcome.state.maxHitpoints,
-            defeated: outcome.defeated,
-            respawnAtMs: outcome.state.respawnAtMs,
-            damage: outcome.damage,
-            enemyDamage: outcome.defeated ? 0 : Math.max(0, definition.enemyDamage - (style === 'DEFENSIVE' ? 1 : 0)),
-            coinsGained,
-            combatXpGained,
-            style,
-          },
-          hitpoints: next.hitpoints,
-          coins: next.coins,
-          skills: next.skills,
-        },
-      });
+      if (state.hitpoints.respawnAtMs !== null) return err(failure(FailureCode.Conflict, 'combat.player_recovering'));
+      if (skillProgress(state, COMBAT_SKILL).level < encounter.requiredCombatLevel) return err(failure(FailureCode.Conflict, 'combat.level_required'));
+      const previous = targets.get(id!) ?? { hp: encounter.maxHitpoints, nextAttackAtMs: now, respawnAtMs: null };
+      const target = previous.respawnAtMs !== null && now >= previous.respawnAtMs ? { hp: encounter.maxHitpoints, nextAttackAtMs: now, respawnAtMs: null } : previous;
+      if (target.respawnAtMs !== null) return err(failure(FailureCode.Conflict, 'combat.defeated'));
+      if (now < target.nextAttackAtMs) return err(failure(FailureCode.Conflict, 'combat.cooldown'));
+      const hp = Math.max(0, target.hp - encounter.playerDamage), defeated = hp === 0;
+      const nextTarget = { hp, nextAttackAtMs: now + options.tickMs, respawnAtMs: defeated ? now + encounter.respawnMs : null }; targets.set(id!, nextTarget);
+      const nextHp = defeated ? state.hitpoints : { current: Math.max(0, state.hitpoints.current - encounter.enemyDamage), max: state.hitpoints.max, respawnAtMs: state.hitpoints.current - encounter.enemyDamage <= 0 ? now + encounter.playerRecoveryMs : null };
+      const xp = encounter.playerDamage * options.combatXpPerDamage;
+      const skill = options.skills.get(COMBAT_SKILL); if (skill === undefined) return err(failure(FailureCode.NotFound, 'combat.skill_missing'));
+      const awarded = awardXp(skillProgress(state, COMBAT_SKILL), xp, options.progression, skill);
+      const coins = defeated ? Math.min(encounter.rewardCoins, options.currencyCap - state.coins) : 0;
+      const next = { ...state, hitpoints: nextHp, coins: state.coins + coins, skills: { ...state.skills, [COMBAT_SKILL]: awarded.progress }, lastSeenAtMs: now };
+      return ok({ state: next, value: { hitpoints: next.hitpoints, coins: next.coins, skills: next.skills, combat: { interactableId: id, label: encounter.label, hitpoints: hp, maxHitpoints: encounter.maxHitpoints, defeated, respawnAtMs: nextTarget.respawnAtMs, damage: encounter.playerDamage, enemyDamage: defeated ? 0 : encounter.enemyDamage, coinsGained: coins, combatXpGained: xp } } });
     });
   };
-  const recover: CommandHandler = async (session) => {
-    const nowMs = options.now();
-    return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      const hp = state.hitpoints;
-      if (hp.current > 0 || hp.respawnAtMs === null) {
-        return err(failure(FailureCode.Conflict, 'combat.recovery_not_needed', { detail: 'you are already conscious' }));
-      }
-      if (nowMs < hp.respawnAtMs) {
-        return err(failure(FailureCode.Conflict, 'combat.player_recovering', { detail: 'the infirmary is still restoring you' }));
-      }
-      const next = { ...state, hitpoints: { current: hp.max, max: hp.max, respawnAtMs: null }, lastSeenAtMs: nowMs };
-      return ok({ state: next, value: { hitpoints: next.hitpoints } });
-    });
-  };
-  router.register('combat.attack', attack).register('combat.recover', recover);
-}
-
-function damagePlayer(
-  hp: PlayerState['hitpoints'],
-  damage: number,
-  recoveryMs: number,
-  nowMs: number,
-): PlayerState['hitpoints'] {
-  const current = Math.max(0, hp.current - damage);
-  return {
-    current,
-    max: hp.max,
-    respawnAtMs: current === 0 ? nowMs + recoveryMs : null,
-  };
+  router.register('combat.attack', attack);
 }
