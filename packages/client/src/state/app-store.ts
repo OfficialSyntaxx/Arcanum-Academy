@@ -94,6 +94,7 @@ export interface EconomyState {
     readonly damage: number;
     readonly enemyDamage: number;
     readonly coinsGained: number;
+    readonly combatXpGained: number;
   } | null;
   /** Local receipt time of the latest server-confirmed combat hit. Presentation only. */
   readonly lastCombatStrikeAtMs: number;
