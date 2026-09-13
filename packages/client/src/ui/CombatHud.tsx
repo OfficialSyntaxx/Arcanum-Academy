@@ -1,5 +1,8 @@
+import { ITEM_CATALOG } from '@alderfell/shared';
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../state/app-store.js';
+
+const COMBAT_FOODS = ITEM_CATALOG.items.filter((item) => item.consumable !== undefined);
 
 /** Compact, mobile-safe combat feedback for the initial practice encounter. */
 export function CombatHud({
@@ -12,15 +15,11 @@ export function CombatHud({
     style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE',
   ) => void;
   readonly onRecover: () => void;
-  readonly onEat: (interactableId: string) => void;
+  readonly onEat: (interactableId: string, itemId: string) => void;
 }) {
   const combat = useAppStore((state) => state.economy.combat);
   const player = useAppStore((state) => state.economy.hitpoints);
-  const cookedMeat = useAppStore(
-    (state) =>
-      state.economy.stacks.find((stack) => stack.definitionId === 'item.meat.cooked_shore_wolf')
-        ?.quantity ?? 0,
-  );
+  const stacks = useAppStore((state) => state.economy.stacks);
   const [now, setNow] = useState(Date.now());
   const [style, setStyle] = useState<'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE'>('ACCURATE');
   useEffect(() => {
@@ -31,6 +30,14 @@ export function CombatHud({
   if (combat === null) return null;
   const pct = Math.max(0, Math.min(100, (combat.hitpoints / combat.maxHitpoints) * 100));
   const attackReadyInMs = Math.max(0, combat.nextAttackAtMs - now);
+  const foods = COMBAT_FOODS.flatMap((item) => {
+    const quantity = stacks
+      .filter((stack) => stack.definitionId === item.id)
+      .reduce((total, stack) => total + stack.quantity, 0);
+    return quantity > 0 && item.consumable !== undefined
+      ? [{ id: item.id, label: item.name, healAmount: item.consumable.healAmount, quantity }]
+      : [];
+  });
   const strikeMessage = combat.rolledHit
     ? `You hit for ${combat.damage}.`
     : `Your swing glanced, but the starter strike still deals ${combat.damage}.`;
@@ -102,13 +109,16 @@ export function CombatHud({
           >
             {attackReadyInMs > 0 ? `Ready in ${Math.ceil(attackReadyInMs / 1_000)}s` : 'Attack'}
           </button>
-          <button
-            type="button"
-            disabled={cookedMeat === 0 || attackReadyInMs > 0}
-            onClick={() => onEat(combat.interactableId)}
-          >
-            Eat +3 HP ({cookedMeat})
-          </button>
+          {foods.map((food) => (
+            <button
+              key={food.id}
+              type="button"
+              disabled={attackReadyInMs > 0}
+              onClick={() => onEat(combat.interactableId, food.id)}
+            >
+              Eat {food.label} +{food.healAmount} HP ({food.quantity})
+            </button>
+          ))}
         </div>
       )}
     </section>
