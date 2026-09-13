@@ -23,6 +23,7 @@ import { PresenceService } from './domain/presence.js';
 import { InMemoryTradeStore, TradingService } from './domain/trading.js';
 import { registerSocialHandlers } from './net/handlers/social.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
+import { registerCombatHandlers } from './net/handlers/combat.js';
 import { registerQuestHandlers } from './net/handlers/quests.js';
 import {
   DiagnosticBuffer,
@@ -124,6 +125,7 @@ async function main(): Promise<void> {
     tunables: DEFAULT_TUNABLES,
     now: () => Date.now(),
   });
+  registerCombatHandlers(router, { now: () => Date.now(), tickMs: DEFAULT_TUNABLES.combat.tickMs });
   registerQuestHandlers(router, { players, now: () => Date.now() });
 
   // The multiplayer layer is built, tested and switched off.
