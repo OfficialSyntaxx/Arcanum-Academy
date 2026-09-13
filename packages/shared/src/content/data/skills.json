@@ -123,11 +123,23 @@
       ]
     },
     {
+      "id": "skill.cooking",
+      "name": "Cooking",
+      "category": "CRAFTING",
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Cook shore wolf meat at a campfire",
+          "recipeId": "recipe.meat.cooked_shore_wolf"
+        }
+      ]
+    },
+    {
       "id": "skill.combat",
       "name": "Combat",
       "category": "COMBAT",
       "unlocks": [
-        { "atLevel": 1, "description": "Challenge practice wisps" },
+        { "atLevel": 1, "description": "Hunt Shore Wolves" },
         { "atLevel": 5, "description": "Wield an Ember Focus" }
       ]
     }
