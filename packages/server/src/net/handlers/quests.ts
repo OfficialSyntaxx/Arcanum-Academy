@@ -6,6 +6,8 @@ import {
   FailureCode,
   ok,
   QuestStatus,
+  questById,
+  questIsUnlocked,
   type Failure,
   type ItemDefinitionId,
   type Result,
@@ -13,15 +15,6 @@ import {
 import type { PlayerState } from '../../domain/player-state.js';
 import type { Mutation, PlayerService } from '../../domain/player-service.js';
 import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
-
-export const FIRST_KINDLING_QUEST_ID = 'quest.first_kindling';
-const MUSHROOM_IDS = [
-  'item.mushroom.cap',
-  'item.mushroom.glowspore',
-  'item.mushroom.dreamveil',
-] as const;
-const REQUIRED_MUSHROOMS = 3;
-const REWARD_COINS = 40;
 
 function project(state: PlayerState) {
   return {
@@ -41,22 +34,23 @@ function readQuestId(payload: unknown): string | null {
   return typeof questId === 'string' ? questId : null;
 }
 
-function mushroomCount(state: PlayerState): number {
-  return MUSHROOM_IDS.reduce(
-    (total, itemId) => total + quantityOf(state.inventory, itemId as ItemDefinitionId),
-    0,
-  );
+function objectiveCount(state: PlayerState, itemIds: readonly ItemDefinitionId[]): number {
+  return itemIds.reduce((total, itemId) => total + quantityOf(state.inventory, itemId), 0);
 }
 
-function takeMushrooms(state: PlayerState): Result<PlayerState, Failure> {
+function takeObjective(
+  state: PlayerState,
+  itemIds: readonly ItemDefinitionId[],
+  requiredQuantity: number,
+): Result<PlayerState, Failure> {
   let inventory = state.inventory;
-  let remaining = REQUIRED_MUSHROOMS;
-  for (const itemId of MUSHROOM_IDS) {
+  let remaining = requiredQuantity;
+  for (const itemId of itemIds) {
     if (remaining === 0) break;
-    const count = quantityOf(inventory, itemId as ItemDefinitionId);
+    const count = quantityOf(inventory, itemId);
     const take = Math.min(count, remaining);
     if (take === 0) continue;
-    const removed = removeItems(inventory, itemId as ItemDefinitionId, take);
+    const removed = removeItems(inventory, itemId, take);
     if (!removed.ok) return err(removed.error);
     inventory = removed.value;
     remaining -= take;
@@ -66,24 +60,41 @@ function takeMushrooms(state: PlayerState): Result<PlayerState, Failure> {
     : err(failure(FailureCode.Conflict, 'quest.objective_incomplete'));
 }
 
+function takeObjectives(state: PlayerState, questId: string): Result<PlayerState, Failure> {
+  const quest = questById(questId);
+  if (!quest) return err(failure(FailureCode.NotFound, 'quest.unknown'));
+  let next = state;
+  for (const objective of quest.objectives) {
+    const consumed = takeObjective(next, objective.itemIds, objective.requiredQuantity);
+    if (!consumed.ok) return err(consumed.error);
+    next = consumed.value;
+  }
+  return ok(next);
+}
+
 export function registerQuestHandlers(
   router: RegistryCommandRouter,
   options: { readonly players: PlayerService; readonly now: () => number },
 ): void {
   const accept: CommandHandler = async (session, payload) => {
-    if (readQuestId(payload) !== FIRST_KINDLING_QUEST_ID) {
+    const questId = readQuestId(payload);
+    const quest = questId ? questById(questId) : undefined;
+    if (!quest) {
       return err(failure(FailureCode.NotFound, 'quest.unknown'));
     }
     const nowMs = options.now();
     return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      if (state.quests[FIRST_KINDLING_QUEST_ID] !== undefined) {
+      if (state.quests[quest.id] !== undefined) {
         return err(failure(FailureCode.Conflict, 'quest.already_accepted'));
+      }
+      if (!questIsUnlocked(quest, state.quests)) {
+        return err(failure(FailureCode.Conflict, 'quest.prerequisite_incomplete'));
       }
       const next: PlayerState = {
         ...state,
         quests: {
           ...state.quests,
-          [FIRST_KINDLING_QUEST_ID]: {
+          [quest.id]: {
             status: QuestStatus.Active,
             acceptedAtMs: nowMs,
             completedAtMs: null,
@@ -96,27 +107,33 @@ export function registerQuestHandlers(
   };
 
   const complete: CommandHandler = async (session, payload) => {
-    if (readQuestId(payload) !== FIRST_KINDLING_QUEST_ID) {
+    const questId = readQuestId(payload);
+    const quest = questId ? questById(questId) : undefined;
+    if (!quest) {
       return err(failure(FailureCode.NotFound, 'quest.unknown'));
     }
     const nowMs = options.now();
     return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      if (state.quests[FIRST_KINDLING_QUEST_ID]?.status !== QuestStatus.Active) {
+      if (state.quests[quest.id]?.status !== QuestStatus.Active) {
         return err(failure(FailureCode.Conflict, 'quest.not_active'));
       }
-      if (mushroomCount(state) < REQUIRED_MUSHROOMS) {
+      if (
+        quest.objectives.some(
+          (objective) => objectiveCount(state, objective.itemIds) < objective.requiredQuantity,
+        )
+      ) {
         return err(failure(FailureCode.Conflict, 'quest.objective_incomplete'));
       }
-      const consumed = takeMushrooms(state);
+      const consumed = takeObjectives(state, quest.id);
       if (!consumed.ok) return err(consumed.error);
       const next: PlayerState = {
         ...consumed.value,
-        coins: consumed.value.coins + REWARD_COINS,
+        coins: consumed.value.coins + quest.rewardCoins,
         quests: {
           ...consumed.value.quests,
-          [FIRST_KINDLING_QUEST_ID]: {
+          [quest.id]: {
             status: QuestStatus.Completed,
-            acceptedAtMs: state.quests[FIRST_KINDLING_QUEST_ID]!.acceptedAtMs,
+            acceptedAtMs: state.quests[quest.id]!.acceptedAtMs,
             completedAtMs: nowMs,
           },
         },
