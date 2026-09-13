@@ -27,6 +27,7 @@ interface HarvestPatch {
     readonly slotCapacity?: number;
   };
   readonly coins?: number;
+  readonly hitpoints?: EconomyState['hitpoints'];
   readonly skills?: Readonly<Record<string, { level: number; xp: number }>>;
   readonly tools?: Readonly<Record<string, { definitionId: string; durability: number }>>;
   readonly gathering?: { readonly nodeId?: string } | null;
@@ -201,6 +202,7 @@ export class EconomyController {
         ? { bankSlotCapacity: patch.bank.slotCapacity }
         : {}),
       ...(patch.coins !== undefined ? { coins: patch.coins } : {}),
+      ...(patch.hitpoints !== undefined ? { hitpoints: patch.hitpoints } : {}),
       ...(patch.skills !== undefined ? { skills: patch.skills } : {}),
       ...(patch.tools !== undefined ? { tools: patch.tools } : {}),
       gatheringNodeId: patch.gathering?.nodeId ?? null,
