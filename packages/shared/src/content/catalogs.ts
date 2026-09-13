@@ -219,6 +219,14 @@ export function buildItemCatalog(
     } else if (item.tool !== undefined) {
       problems.push(`item "${item.id}" is not a tool but declares tool properties`);
     }
+    if (item.consumable !== undefined) {
+      if (item.category !== ItemCategory.Material) {
+        problems.push(`item "${item.id}" is consumable but is not a material`);
+      }
+      if (!isPositiveInteger(item.consumable.healAmount)) {
+        problems.push(`item "${item.id}" has an invalid consumable heal amount`);
+      }
+    }
   }
 
   if (problems.length > 0) {
