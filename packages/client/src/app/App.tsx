@@ -117,6 +117,7 @@ export function App() {
               onAcceptQuest={(questId) => economy?.acceptQuest(questId)}
               onCompleteQuest={(questId) => economy?.completeQuest(questId)}
               onAttackEncounter={(interactableId) => economy?.attackEncounter(interactableId)}
+              onRecoverCombat={() => economy?.recoverCombat()}
             />
           ) : (
             <Screen />
