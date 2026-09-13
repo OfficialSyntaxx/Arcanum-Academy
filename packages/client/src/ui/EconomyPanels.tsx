@@ -4,6 +4,7 @@ import {
   NODE_CATALOG,
   RECIPE_BOOK,
   SKILL_TABLE,
+  SkillCategory,
   wasteRateBasisPoints,
   levelForXp,
   xpForLevel,
@@ -197,7 +198,8 @@ export function InventoryPanel({
           .filter(
             (skill) =>
               NODE_CATALOG.nodes.some((node) => node.requiredSkillId === skill.id) ||
-              RECIPE_BOOK.recipes.some((recipe) => recipe.requiredSkillId === skill.id),
+              RECIPE_BOOK.recipes.some((recipe) => recipe.requiredSkillId === skill.id) ||
+              skill.category === SkillCategory.Combat,
           )
           .map((skill) => {
             const xp = economy.skills[skill.id]?.xp ?? 0;
