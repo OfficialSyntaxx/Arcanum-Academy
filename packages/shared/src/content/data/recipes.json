@@ -23,6 +23,45 @@
       "xpPerCraft": 8
     },
     {
+      "id": "recipe.fish.cooked_tidefin",
+      "name": "Cook Tidefin",
+      "stationInteractableId": "int.station.shorelands_campfire",
+      "requiredSkillId": "skill.cooking",
+      "requiredSkillLevel": 1,
+      "inputs": [{ "itemId": "item.fish.tidefin", "quantity": 1 }],
+      "output": { "itemId": "item.fish.cooked_tidefin", "quantity": 1 },
+      "craftDurationMs": 3000,
+      "baseWasteRateBasisPoints": 0,
+      "wasteReductionPerSkillLevelBasisPoints": 0,
+      "xpPerCraft": 6
+    },
+    {
+      "id": "recipe.fish.cooked_moonray",
+      "name": "Cook Moonray",
+      "stationInteractableId": "int.station.shorelands_campfire",
+      "requiredSkillId": "skill.cooking",
+      "requiredSkillLevel": 10,
+      "inputs": [{ "itemId": "item.fish.moonray", "quantity": 1 }],
+      "output": { "itemId": "item.fish.cooked_moonray", "quantity": 1 },
+      "craftDurationMs": 4000,
+      "baseWasteRateBasisPoints": 0,
+      "wasteReductionPerSkillLevelBasisPoints": 0,
+      "xpPerCraft": 18
+    },
+    {
+      "id": "recipe.fish.cooked_stargill",
+      "name": "Cook Stargill",
+      "stationInteractableId": "int.station.shorelands_campfire",
+      "requiredSkillId": "skill.cooking",
+      "requiredSkillLevel": 25,
+      "inputs": [{ "itemId": "item.fish.stargill", "quantity": 1 }],
+      "output": { "itemId": "item.fish.cooked_stargill", "quantity": 1 },
+      "craftDurationMs": 5000,
+      "baseWasteRateBasisPoints": 0,
+      "wasteReductionPerSkillLevelBasisPoints": 0,
+      "xpPerCraft": 34
+    },
+    {
       "id": "recipe.dust.resonant",
       "name": "Grind Resonant Dust",
       "stationInteractableId": "int.station.grinder",
