@@ -138,13 +138,12 @@ describe('Shore Wolf combat handlers', () => {
     const h = harness();
     await h.dispatch();
     await h.grantCookedMeat();
-    h.advance(DEFAULT_TUNABLES.combat.tickMs);
     expect(await h.eat()).toMatchObject({
       ok: true,
       value: {
         hitpoints: { current: 10, max: 10 },
         combat: {
-          nextAttackAtMs: 1_001_200,
+          nextAttackAtMs: 1_000_600,
           foodConsumed: { itemId: 'item.meat.cooked_shore_wolf', healAmount: 3 },
         },
       },
