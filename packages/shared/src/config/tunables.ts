@@ -26,7 +26,7 @@ export interface CombatTunables {
   readonly defensiveDefenceBonus: number;
   /** Hitpoints XP earned per point of damage dealt, on top of the style skill. */
   readonly hitpointsXpPerDamage: number;
-  /** Combat XP earned per confirmed point of damage. */
+  /** Combat XP granted per server-confirmed damage. */
   readonly combatXpPerDamage: number;
   /** Items kept on death; everything else goes to the gravestone. */
   readonly itemsKeptOnDeath: number;
