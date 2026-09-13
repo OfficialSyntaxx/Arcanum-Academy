@@ -145,13 +145,28 @@
       ]
     },
     {
-      "id": "skill.combat",
-      "name": "Combat",
+      "id": "skill.attack",
+      "name": "Attack",
       "category": "COMBAT",
-      "unlocks": [
-        { "atLevel": 1, "description": "Hunt Shore Wolves" },
-        { "atLevel": 5, "description": "Wield an Ember Focus" }
-      ]
+      "unlocks": [{ "atLevel": 1, "description": "Hunt Shore Wolves" }]
+    },
+    {
+      "id": "skill.strength",
+      "name": "Strength",
+      "category": "COMBAT",
+      "unlocks": [{ "atLevel": 1, "description": "Increase melee damage" }]
+    },
+    {
+      "id": "skill.defence",
+      "name": "Defence",
+      "category": "COMBAT",
+      "unlocks": [{ "atLevel": 1, "description": "Reduce incoming melee damage" }]
+    },
+    {
+      "id": "skill.hitpoints",
+      "name": "Hitpoints",
+      "category": "COMBAT",
+      "unlocks": [{ "atLevel": 1, "description": "Increase maximum health" }]
     }
   ]
 }
