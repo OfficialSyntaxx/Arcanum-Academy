@@ -1,18 +1,28 @@
 /** Server-authoritative practice combat. Browser commands select a target only;
  * target stats, damage, ticks and respawn are owned here. */
-import { createSparringState, resolveSparringAttack, respawnSparringTarget, type SparringState } from '@alderfell/sim';
 import {
+  awardXp,
+  createSparringState,
+  resolveSparringAttack,
+  respawnSparringTarget,
+  type SparringState,
+} from '@alderfell/sim';
+import {
+  asId,
   combatEncounterByInteractable,
   err,
   failure,
   FailureCode,
   ok,
   type Failure,
+  type ProgressionTunables,
   type Result,
+  type SkillId,
+  type SkillTable,
 } from '@alderfell/shared';
 import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import type { PlayerService, Mutation } from '../../domain/player-service.js';
-import type { PlayerState } from '../../domain/player-state.js';
+import { skillProgress, type PlayerState } from '../../domain/player-state.js';
 import type { SessionId } from '@alderfell/shared';
 
 export interface CombatHandlerOptions {
@@ -21,8 +31,13 @@ export interface CombatHandlerOptions {
   readonly tickMs: number;
   readonly interactionRadius: number;
   readonly currencyCap: number;
+  readonly skills: SkillTable;
+  readonly progression: ProgressionTunables;
+  readonly combatXpPerDamage: number;
   readonly positionFor: (sessionId: SessionId) => { readonly x: number; readonly z: number } | null;
 }
+
+const COMBAT_SKILL_ID = asId<SkillId>('skill.combat');
 
 function readInteractableId(payload: unknown): string | null {
   if (typeof payload !== 'object' || payload === null) return null;
@@ -76,10 +91,17 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
       const coinsGained = outcome.defeated
         ? Math.max(0, Math.min(definition.rewardCoins, options.currencyCap - state.coins))
         : 0;
+      const combatSkill = options.skills.get(COMBAT_SKILL_ID);
+      if (combatSkill === undefined) {
+        return err(failure(FailureCode.NotFound, 'combat.skill_missing', { detail: 'combat progression is unavailable' }));
+      }
+      const combatXpGained = outcome.damage * options.combatXpPerDamage;
+      const combatProgress = awardXp(skillProgress(state, COMBAT_SKILL_ID), combatXpGained, options.progression, combatSkill);
       const next = {
         ...state,
         coins: state.coins + coinsGained,
         hitpoints: nextHp,
+        skills: { ...state.skills, [COMBAT_SKILL_ID]: combatProgress.progress },
         lastSeenAtMs: nowMs,
       };
       return ok({
@@ -95,9 +117,11 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
             damage: outcome.damage,
             enemyDamage: outcome.defeated ? 0 : definition.enemyDamage,
             coinsGained,
+            combatXpGained,
           },
           hitpoints: next.hitpoints,
           coins: next.coins,
+          skills: next.skills,
         },
       });
     });
