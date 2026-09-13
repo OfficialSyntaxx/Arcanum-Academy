@@ -53,7 +53,8 @@ function harness() {
       style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = 'ACCURATE',
     ) => router.dispatch(session(), 'combat.attack', { interactableId, style }),
     recover: () => router.dispatch(session(), 'combat.recover', {}),
-    eat: () => router.dispatch(session(), 'combat.eat', { interactableId: SHORE_WOLF }),
+    eat: (itemId = 'item.meat.cooked_shore_wolf') =>
+      router.dispatch(session(), 'combat.eat', { interactableId: SHORE_WOLF, itemId }),
     moveTo: (p: { x: number; z: number } | null) => {
       position = p;
     },
@@ -155,5 +156,12 @@ describe('Shore Wolf combat handlers', () => {
     const blocked = await h.dispatch();
     expect(blocked.ok).toBe(false);
     if (!blocked.ok) expect(blocked.error.reason).toBe('combat.cooldown');
+  });
+  it('rejects inventory materials that are not combat food', async () => {
+    const h = harness();
+    await h.dispatch();
+    const result = await h.eat('item.meat.raw_shore_wolf');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('combat.not_food');
   });
 });
