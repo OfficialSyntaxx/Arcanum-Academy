@@ -158,6 +158,11 @@ A second death merges its losses into that gravestone. Recovery is server-author
 range-checked, and atomic: a full satchel leaves the grave intact rather than losing or partly
 recovering its contents.
 
+**G3 encounter update (2026-09-13):** The Duelling Terrace now has an Emberwing Armabee: a
+five-HP, eight-coin encounter with a guaranteed Armabee Wax drop. It uses the already bundled,
+animated PolyPizza Armabee Evolved GLB (CC0 1.0), alongside the Quaternius Shore Wolf; the
+creature renderer now chooses animation clips by intent so each model can retain its own clip names.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
