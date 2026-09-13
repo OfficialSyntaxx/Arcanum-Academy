@@ -403,20 +403,10 @@ export const COURTYARD: Zone = {
       id: ix('int.duel.training_wisp'),
       kind: InteractableKind.CombatEncounter,
       position: { x: 0, z: 12.8 },
-      approach: wp('wp.duel.circle.south'),
+      approach: wp('wp.duel.entry'),
       facing: Math.PI,
       label: 'Practice Wisp',
       verb: 'Attack',
-    },
-    {
-      id: ix('int.duel.arcane_wisp'),
-      kind: InteractableKind.CombatEncounter,
-      position: { x: -4, z: 17.5 },
-      approach: wp('wp.duel.circle.north'),
-      facing: 0,
-      label: 'Arcane Wisp',
-      verb: 'Attack',
-      requiredLevel: 2,
     },
 
     // --- World gates -------------------------------------------------------
