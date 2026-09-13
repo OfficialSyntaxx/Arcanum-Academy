@@ -63,7 +63,11 @@ export interface EconomyState {
   readonly bankStacks: readonly { definitionId: string; quantity: number }[];
   readonly bankSlotCapacity: number;
   readonly coins: number;
-  readonly hitpoints: { readonly current: number; readonly max: number; readonly respawnAtMs: number | null };
+  readonly hitpoints: {
+    readonly current: number;
+    readonly max: number;
+    readonly respawnAtMs: number | null;
+  };
   readonly skills: Readonly<Record<string, { level: number; xp: number }>>;
   /** Equipped gathering tool by skill, separate from the material satchel. */
   readonly tools: Readonly<Record<string, { definitionId: string; durability: number }>>;
@@ -83,7 +87,7 @@ export interface EconomyState {
   }[];
   /** Server-confirmed quest progress. Missing means the quest is available. */
   readonly quests: Readonly<Record<string, QuestProgress>>;
-  /** The last server-confirmed practice encounter state. */
+  /** The last server-confirmed combat encounter state. */
   readonly combat: {
     readonly interactableId: string;
     readonly label: string;
@@ -94,6 +98,7 @@ export interface EconomyState {
     readonly damage: number;
     readonly enemyDamage: number;
     readonly coinsGained: number;
+    readonly drops: readonly { readonly itemId: string; readonly quantity: number }[];
     readonly combatXpGained: number;
     readonly style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
   } | null;
