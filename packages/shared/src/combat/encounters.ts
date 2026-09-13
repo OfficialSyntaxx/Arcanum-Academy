@@ -5,6 +5,7 @@ import { asId, type InteractableId } from '../ids.js';
 export interface CombatEncounterDefinition {
   readonly interactableId: InteractableId;
   readonly label: string;
+  readonly position: { readonly x: number; readonly z: number };
   readonly maxHitpoints: number;
   readonly playerDamage: number;
   readonly enemyDamage: number;
@@ -15,6 +16,7 @@ export interface CombatEncounterDefinition {
 export const PRACTICE_WISP: CombatEncounterDefinition = Object.freeze({
   interactableId: asId<InteractableId>('int.duel.training_wisp'),
   label: 'Practice Wisp',
+  position: { x: 0, z: 12.8 },
   maxHitpoints: 8,
   playerDamage: 1,
   enemyDamage: 1,
