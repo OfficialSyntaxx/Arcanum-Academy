@@ -178,6 +178,16 @@
       }
     },
     {
+      "id": "item.material.armabee_wax",
+      "name": "Armabee Wax",
+      "description": "Warm amber wax gathered from an Emberwing's fallen comb. Traders prize its clean burn.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 14,
+      "iconKey": "armabee-wax"
+    },
+    {
       "id": "item.dust.resonant",
       "name": "Resonant Dust",
       "description": "Ground crystal, fine enough to suspend in ink without clouding it.",
