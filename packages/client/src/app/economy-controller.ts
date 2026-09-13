@@ -220,6 +220,9 @@ export class EconomyController {
       ...(patch.decks !== undefined ? { decks: patch.decks } : {}),
       ...(patch.quests !== undefined ? { quests: patch.quests } : {}),
       ...(patch.combat !== undefined ? { combat: patch.combat } : {}),
+      ...(envelope.kind === 'combat.attack' && patch.combat !== undefined
+        ? { lastCombatStrikeAtMs: Date.now() }
+        : {}),
     };
 
     const store = useAppStore.getState();
