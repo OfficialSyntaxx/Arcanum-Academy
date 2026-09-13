@@ -165,7 +165,7 @@ export const COURTYARD: Zone = {
     },
     {
       id: wp('wp.duel.circle.north'),
-      position: { x: -5, z: 19 },
+      position: { x: -7, z: 19 },
       radius: 2.2,
       links: [wp('wp.duel.entry'), wp('wp.duel.circle.south')],
       tags: ['duelling'],
@@ -406,6 +406,15 @@ export const COURTYARD: Zone = {
       approach: wp('wp.duel.entry'),
       facing: Math.PI,
       label: 'Shore Wolf',
+      verb: 'Attack',
+    },
+    {
+      id: ix('int.combat.emberwing_armabee'),
+      kind: InteractableKind.CombatEncounter,
+      position: { x: -5, z: 19 },
+      approach: wp('wp.duel.circle.north'),
+      facing: Math.PI * 0.5,
+      label: 'Emberwing Armabee',
       verb: 'Attack',
     },
     {
