@@ -13,11 +13,14 @@ import {
 import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import type { PlayerService, Mutation } from '../../domain/player-service.js';
 import type { PlayerState } from '../../domain/player-state.js';
+import type { SessionId } from '@alderfell/shared';
 
 export interface CombatHandlerOptions {
   readonly players: PlayerService;
   readonly now: () => number;
   readonly tickMs: number;
+  readonly interactionRadius: number;
+  readonly positionFor: (sessionId: SessionId) => { readonly x: number; readonly z: number } | null;
 }
 
 function readInteractableId(payload: unknown): string | null {
@@ -36,6 +39,15 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
     const definition = combatEncounterByInteractable(interactableId);
     if (definition === undefined) {
       return err(failure(FailureCode.NotFound, 'combat.not_an_encounter', { detail: 'nothing hostile is at that interactable' }));
+    }
+    const position = options.positionFor(session.id);
+    if (position === null) {
+      return err(failure(FailureCode.Conflict, 'combat.position_unknown', { detail: 'move near the encounter before attacking' }));
+    }
+    const dx = position.x - definition.position.x;
+    const dz = position.z - definition.position.z;
+    if (dx * dx + dz * dz > options.interactionRadius * options.interactionRadius) {
+      return err(failure(FailureCode.Conflict, 'combat.out_of_range', { detail: 'move closer to the encounter before attacking' }));
     }
     const nowMs = options.now();
     return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
