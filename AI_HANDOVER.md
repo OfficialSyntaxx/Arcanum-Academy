@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 32331)
+Total output lines: 2084
+
 # ALDERFELL — AI HANDOVER
 
 ### Game design document and engineering handover — everything needed to build it from nothing
@@ -140,6 +143,11 @@ procedural fallback during a cold load and is mobile-safe.
 they swung wildly and did not attach to the GLB hand. The next art task must use a proper bone/socket
 attachment against the finalized rig and verified tool models. Gathering currently uses the rig's
 `interact-right` animation with no fake overlay.
+
+**Combat/cooking update (2026-09-13):** The Shore Wolf is the first live combat encounter: a
+gentle four-HP kill with guaranteed raw meat. It uses the optimized CC0 Quaternius Wolf GLB
+with idle, hit-react and death animation. The Shorelands Campfire cooks the raw meat into
+Cooked Shore Wolf Meat (3 HP); eating one in an active fight consumes a 600 ms combat tick.
 
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
@@ -955,177 +963,7 @@ Four rules that carry over from `Arcanum-Academy` and must survive:
   - An account whose history has only ever come from server-validated sessions carries a
     **`verified` flag**. Hiscores (M-1) show verified accounts only. Same mechanism as
     `adminTouched` (§9.2).
-  - **Live multiplayer (M-2+) moves the trust boundary back to the server for players in it.**
-    No system is rewritten; the same kernel is simply trusted from the other end.
-
-  **Do not hard-code either assumption.** Anything that reads "the server decides" or "the
-  client decides" outside the sync layer is a bug.
-- **ADR-0002 — balance lives in versioned data.** Every tunable number lives in one
-  `DEFAULT_TUNABLES` file. Gameplay code never hardcodes a literal. The tunables version is
-  recorded in replays.
-- **ADR-0003 — architecture boundaries are executable.** `check-boundaries.mjs` is a real
-  linter that reads imports and fails CI. It catches **type-only** imports too, because
-  `import type` compiles away and would otherwise let a rule leak with no runtime trace.
-- **ADR-0005 (new) — content is data, validated at load.** Items, recipes, nodes, monsters,
-  drop tables, quests and zones are JSON, compiled to frozen catalogs at import. Bad content
-  throws at module load, not mid-harvest. Validators gather every problem and report them
-  together with distinct reason codes.
-
-**ESLint rules that must be enforced:** `Math.random` and `Date.now` are banned inside
-`packages/sim` (use the injected `Rng` and clock); `consistent-type-imports` everywhere.
-
----
-
-## 5. Controls & camera — the spec
-
-Owner decision, 2026-09-09: **tap-to-walk, two-finger rotate, pinch to zoom. No virtual
-joystick.**
-
-### 5.1 Input contract
-
-| Gesture | Action |
-|---|---|
-| Tap ground | Walk there (path via nav graph, then a final direct metre) |
-| Tap interactable | Walk to its approach point, then perform the verb |
-| Tap monster | Walk into range, then engage |
-| One-finger drag | Rotate camera yaw (OSRS-style) |
-| Two-finger pinch | Zoom (clamped) |
-| Two-finger drag | Adjust pitch within a constrained band |
-| Long press | Context menu — the OSRS "right-click" equivalent. **Essential**; many actions have more than one verb (Chop / Examine, Attack / Examine / Pickpocket). |
-| Double tap | Reserved. Do not assign without a design reason. |
-
-`Arcanum-Academy` already has `InputService` with tap/longpress/drag/pinch recognition and a
-`PlayerController` with `moveTo()` and `approach()`. **The joystick (`input/joystick.ts`,
-`ui/JoystickPad.tsx`) is deleted, along with the stick-vs-tap arbitration in
-`player-controller.step()`.**
-
-### 5.2 The camera
-
-**Decision, 2026-09-09: a free camera. The locked isometric look is abandoned.**
-
-An earlier draft of this plan argued for a camera locked at a fixed isometric angle, on the
-grounds that it is a *budget* decision — models only ever look right from one angle, so
-backfaces never show and buildings need no backs. The owner chose free rotation instead, and
-that is the right call for an OSRS-style game: you rotate constantly to see round terrain and
-line up a click. Record the cost honestly, because it is real:
-
-> Every asset must now read correctly from **360° of yaw**. Nothing gets a missing back.
-
-**What limits the damage: pitch stays constrained** (roughly 30–60° above the horizon). You
-never see the top of a roof or the underside of anything, so roofs stay simple, interiors are
-never visible from outside, and anything above eye level can be aggressively LOD'd.
-
-**The consequence for art — this is the important one.** A free camera pushes decisively
-toward **low-poly rigged 3D meshes over pre-rendered sprite sheets** for anything animated. A
-sprite sheet under free yaw needs 8–16 directions × every animation frame × every gear
-variant, which multiplies out of control on the first piece of equipment. A rigged low-poly
-mesh animates once and works from every angle, at any zoom, with gear attached to bones.
-
-**Pre-rendered sprites are not gone — they are demoted to where yaw doesn't matter:** item
-and skill icons, UI, distant billboarded foliage, and flat ground decals. See §6.
-
-#### 5.2.1 What to call this style — read this before saying "2.5D"
-
-This caused real confusion once already, so it is written down plainly.
-
-**Alderfell is low-poly 3D rendered under an orthographic camera with free yaw and a
-constrained pitch.** It is *not* 2.5D isometric, and it is not 2D.
-
-Earlier planning did recommend 2.5D isometric, and that recommendation was sound **on the
-assumption of a locked camera** — locking the angle is precisely what makes a 3D scene "2.5D",
-because models then only ever need one face. Approving the free camera (D6) removed the lock,
-and the label went with it. The label changing is not a change of ambition or a scope
-increase — it is a consequence that should have been stated at the time.
-
-**What holds, unchanged, from the original 2.5D direction:**
-
-- Low-poly, flat-shaded, chunky, stylised. Not photoreal, not a AAA pipeline.
-- **Orthographic** projection, so the world still reads flat and diorama-like rather than
-  cinematic — this is most of what makes it *look* isometric.
-- CC0 asset packs, Blender in CI, no paid tools.
-- No Unity, no App Store, still a PWA on the home screen.
-- The pitch band still means no roof tops and no undersides, so those stay cheap.
-
-**What genuinely changed:** models must read correctly through 360° of yaw.
-
-**Why that cost is modest rather than severe:** we render **3D meshes, not pre-rendered
-sprites** (§5.2). A low-poly hut modelled all the way round is barely more work than one
-modelled front-only — a mesh has a back whether the camera sees it or not. The same change
-would have been punishing with sprite sheets, which is exactly why the free camera pushed the
-art direction to meshes in the first place.
-
-**Two alternatives were considered and rejected by the owner**, recorded so they are not
-re-proposed as new ideas: *snapped rotation* to 4 or 8 fixed compass angles (cheaper art, more
-diorama-like) and *true locked isometric* (cheapest art, but you can never look behind
-anything, and it contradicts the tap-to-rotate control in D7).
-
-**Camera spec:**
-
-| Property | Value |
-|---|---|
-| Projection | Orthographic |
-| Yaw | Free, 360°, smoothed |
-| Pitch | Clamped to a band (start ~30–60°, tune on device) |
-| Zoom | Clamped ortho frustum size, pinch-driven |
-| Follow | Exponential smoothing toward the player |
-| Framing | A `frame()` call for scripted shots (boss entry, quest beats) |
-
-`camera-rig.ts` currently uses a `PerspectiveCamera` with yaw/pitch orbit. Converting it to
-orthographic and re-tuning the band is a contained change to one file.
-
----
-
-## 6. Art direction & the asset pipeline
-
-### 6.1 Direction
-
-**Warm, cosy, low-poly medieval.** Storybook rather than gritty. Think a bright autumn
-afternoon in a place people used to live.
-
-> ✅ **Correction, 2026-09-09 — inherit Oakenfall's palette after all.** An earlier draft of this
-> document said Oakenfall was "dark, desaturated and earth-tinted" and warned against copying
-> it. **That was wrong.** It came from reading Oakenfall's own `CLAUDE.md` — which still
-> describes a "dark old-school-MMORPG palette" — rather than from running the game. The built
-> game (see `docs/baseline/2026-09-09-oakenfall-*.png`) is **bright, warm and sunny**: vivid but
-> unsaturated greens, clear water, soft shadows, a spring afternoon. It is already close to
-> where Alderfell wants to be.
->
-> This is the §12 trap — *verify against a running build, not against reasoning* — and it was
-> walked into while writing the very document that records it. Left visible on purpose.
-
-**What to actually take from Oakenfall:**
-
-- **The world palette, directly.** Warm, bright, readable in daylight on a phone.
-- **The UI chrome, directly.** Amber and warm wood on near-black. It works *because* it frames a
-  bright world — a dark HUD around a sunny scene reads as cosy, not grim.
-- **The GRADE convention, correctly understood.** It exists to pull incoming assets *into the
-  set* so a new sprite doesn't sit too bright or too blue beside existing ones. That is
-  **normalisation, not darkening** — and it is precisely the mechanism the bestiary coherence
-  rule needs (§3.4.0).
-
-The palette:
-
-- **Warm neutrals** for stone and timber — honey, oatmeal, weathered terracotta, not grey.
-- **Rich but not neon greens** for foliage, with yellow in the mix rather than blue.
-- **Golden key light.** Sun low enough to be warm, high enough to read the ground.
-- **Soft, coloured shadows** — never black. Shadow is where a scene reads as cheap.
-- **Glowing windows, lanterns and fires** as the signature — the single strongest cue that a
-  place is safe and inhabited, and worth spending real effort on.
-- Contrast stays gentle. Readability on a phone in daylight comes from **value separation and
-  silhouette**, not from cranking saturation or darkness.
-
-Silhouettes are **rounded and chunky** rather than jagged. Nothing spiky, nothing skeletal.
-
-**This makes the free-asset story easier, not harder.** KayKit, Kenney and Quaternius are all
-naturally warm and stylised — Oakenfall had to fight them darker. Alderfell mostly gets to use
-them as authored, which removes a whole processing step and a whole class of coherence bug.
-
-Style rules (inherited from ALA's `BLENDERTODO.md` §0, which are correct and should be
-carried over verbatim into the new repo):
-
-- 1 Blender unit = 1 metre; metric; scale 1.0. Apply all transforms before export.
-- Flat-shaded, low-poly. Hard edges. Chunky, readable silhouettes.
-- Detail below ~5 cm is invisible at play distance — delete it.
+  - **Live multiplayer (M-2+) moves the trust boundary back to the server f…2331 tokens truncated… ~5 cm is invisible at play distance — delete it.
 - No bevels below 2 cm. No subdivision surface. No microdetail geometry.
 - Colour from flat materials or a small texture atlas — never per-object 2K maps.
 - **Never bake lighting or AO into textures.** The game lights the scene.
