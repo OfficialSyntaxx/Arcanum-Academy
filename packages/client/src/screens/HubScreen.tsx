@@ -50,6 +50,7 @@ export interface HubScreenProps {
     style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE',
   ) => void;
   readonly onRecoverCombat: () => void;
+  readonly onEatCombatFood: (interactableId: string) => void;
 }
 
 /**
@@ -77,6 +78,7 @@ export function HubScreen({
   onNavigate,
   onAttackEncounter,
   onRecoverCombat,
+  onEatCombatFood,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
@@ -122,7 +124,7 @@ export function HubScreen({
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
       <CollectionToast />
       <CommandError />
-      <CombatHud onAttack={onAttackEncounter} onRecover={onRecoverCombat} />
+      <CombatHud onAttack={onAttackEncounter} onRecover={onRecoverCombat} onEat={onEatCombatFood} />
       <button
         type="button"
         className="satchel-toggle"
