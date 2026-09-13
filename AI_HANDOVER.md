@@ -107,6 +107,12 @@ players accept it through the board, turn in three mushroom variants exactly onc
 and retain the completed state through refreshes and reconnects. Quest state lives in the normal
 player record and is therefore persisted by the production Postgres repository.
 
+Quest progression update (2026-09-13): resource quests are now a shared catalog rather than a
+single hard-coded handler. The board surfaces the active or next unlocked entry. After completing
+**The First Kindling**, **Embers for the Archive** unlocks and requires four Emberwood Branches plus
+two Crystal Shards. Preconditions, objective counts, exact inventory turn-ins and coin rewards are
+all enforced server-side; adding the next resource quest is a catalog entry, not a new handler.
+
 Reliability and operations: production uses Render Postgres for player and identity persistence.
 The client submits low-volume diagnostic events; a protected server diagnostic feed persists them
 in Postgres; the in-game **Logs** panel exposes a local session trace. `/healthz`, `/readyz`,
