@@ -102,6 +102,17 @@
       "iconKey": "fish-tidefin"
     },
     {
+      "id": "item.fish.cooked_tidefin",
+      "name": "Cooked Tidefin",
+      "description": "A simple shore fish, cooked until its skin crisps. Restores 2 HP in combat.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 8,
+      "iconKey": "cooked-tidefin",
+      "consumable": { "healAmount": 2 }
+    },
+    {
       "id": "item.fish.moonray",
       "name": "Moonray",
       "description": "Its fins catch the light even under an overcast sky.",
@@ -112,6 +123,17 @@
       "iconKey": "fish-moonray"
     },
     {
+      "id": "item.fish.cooked_moonray",
+      "name": "Cooked Moonray",
+      "description": "Rich, bright-finned fish from the academy pool. Restores 5 HP in combat.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 38,
+      "iconKey": "cooked-moonray",
+      "consumable": { "healAmount": 5 }
+    },
+    {
       "id": "item.fish.stargill",
       "name": "Stargill",
       "description": "A rare, cold-water catch with a constellation across its scales.",
@@ -120,6 +142,17 @@
       "stackCap": 999,
       "baseValue": 125,
       "iconKey": "fish-stargill"
+    },
+    {
+      "id": "item.fish.cooked_stargill",
+      "name": "Cooked Stargill",
+      "description": "Cold-water fish with a smoky, clean finish. Restores 8 HP in combat.",
+      "category": "MATERIAL",
+      "rarity": "RARE",
+      "stackCap": 999,
+      "baseValue": 190,
+      "iconKey": "cooked-stargill",
+      "consumable": { "healAmount": 8 }
     },
     {
       "id": "item.meat.raw_shore_wolf",
