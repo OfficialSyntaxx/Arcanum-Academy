@@ -14,19 +14,39 @@ function scripted(...draws: number[]): CombatRng & { calls: readonly [number, nu
   };
 }
 
-const equalStats = { attackLevel: 10, strengthLevel: 10, defenceLevel: 10, attackBonus: 0, strengthBonus: 0, defenceBonus: 0 };
+const equalStats = {
+  attackLevel: 10,
+  strengthLevel: 10,
+  defenceLevel: 10,
+  attackBonus: 0,
+  strengthBonus: 0,
+  defenceBonus: 0,
+};
 
 describe('OSRS-shaped combat rolls', () => {
   it('uses only accuracy and defence draws for a miss', () => {
     const rng = scripted(100, 100);
-    expect(resolveMeleeRoll(equalStats, rng)).toMatchObject({ hit: false, damage: 0, attackRoll: 640, defenceRoll: 640, maxHit: 1 });
-    expect(rng.calls).toEqual([[0, 640], [0, 640]]);
+    expect(resolveMeleeRoll(equalStats, rng)).toMatchObject({
+      hit: false,
+      damage: 0,
+      attackRoll: 640,
+      defenceRoll: 640,
+      maxHit: 1,
+    });
+    expect(rng.calls).toEqual([
+      [0, 640],
+      [0, 640],
+    ]);
   });
 
   it('draws max hit only after a confirmed hit', () => {
     const rng = scripted(640, 0, 1);
     expect(resolveMeleeRoll(equalStats, rng)).toMatchObject({ hit: true, damage: 1 });
-    expect(rng.calls).toEqual([[0, 640], [0, 640], [0, 1]]);
+    expect(rng.calls).toEqual([
+      [0, 640],
+      [0, 640],
+      [0, 1],
+    ]);
   });
 
   it('keeps max-hit arithmetic integer-only and validates bad content', () => {
