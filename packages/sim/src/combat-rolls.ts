@@ -27,7 +27,8 @@ export interface CombatRollResult {
 }
 
 function nonNegativeInteger(value: number, label: string): void {
-  if (!Number.isInteger(value) || value < 0) throw new Error(`${label} must be a non-negative integer.`);
+  if (!Number.isInteger(value) || value < 0)
+    throw new Error(`${label} must be a non-negative integer.`);
 }
 
 /** Calculates the maximum integer damage from an effective strength and gear bonus. */
