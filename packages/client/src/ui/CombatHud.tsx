@@ -113,7 +113,6 @@ export function CombatHud({
             <button
               key={food.id}
               type="button"
-              disabled={attackReadyInMs > 0}
               onClick={() => onEat(combat.interactableId, food.id)}
             >
               Eat {food.label} +{food.healAmount} HP ({food.quantity})
