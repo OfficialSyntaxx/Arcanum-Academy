@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 32348)
-Total output lines: 2085
+Warning: truncated output (original token count: 32439)
+Total output lines: 2090
 
 # ALDERFELL — AI HANDOVER
 
@@ -149,6 +149,11 @@ gentle four-HP kill with guaranteed raw meat. It uses the optimized CC0 Quaterni
 with idle, hit-react and death animation. The Shorelands Campfire cooks the raw meat into
 Cooked Shore Wolf Meat (3 HP), Tidefin (2 HP), Moonray (5 HP), and Stargill (8 HP); eating any
 validated food in an active fight consumes a 600 ms combat tick.
+
+**G3 progression update (2026-09-13):** The temporary Combat skill migrates on read into
+Attack, Strength, Defence and Hitpoints, retaining a legacy save's effective combat level.
+Combat styles train their matching skill and every damage point grants Hitpoints XP. Maximum
+health is now `10 + (Hitpoints level - 1)` without a free heal on migration or level-up.
 
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
@@ -959,12 +964,7 @@ Four rules that carry over from `Arcanum-Academy` and must survive:
     (§3.8) and it is why the game opens instantly.
   - The client records a command log; on reconnect it syncs, and the server replays that log
     through the same kernel and stores the result.
-  - A save that fails validation is **not destroyed** — it is flagged and kept. Deleting a
-    player's progress over a desync is worse than the desync.
-  - An account whose history has only ever come from server-validated sessions carries a
-    **`verified` flag**. Hiscores (M-1) show verified accounts only. Same mechanism as
-    `adminTouched` (§9.2).
-  - **L…2348 tokens truncated… ~5 cm is invisible at play distance — delete it.
+  -…2439 tokens truncated… ~5 cm is invisible at play distance — delete it.
 - No bevels below 2 cm. No subdivision surface. No microdetail geometry.
 - Colour from flat materials or a small texture atlas — never per-object 2K maps.
 - **Never bake lighting or AO into textures.** The game lights the scene.
