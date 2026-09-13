@@ -20,6 +20,7 @@ export interface CombatHandlerOptions {
   readonly now: () => number;
   readonly tickMs: number;
   readonly interactionRadius: number;
+  readonly currencyCap: number;
   readonly positionFor: (sessionId: SessionId) => { readonly x: number; readonly z: number } | null;
 }
 
@@ -73,7 +74,15 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
       const nextHp = outcome.defeated
         ? recovered.hitpoints
         : damagePlayer(recovered.hitpoints, definition.enemyDamage, definition.playerRecoveryMs, nowMs);
-      const next = { ...recovered, hitpoints: nextHp, lastSeenAtMs: nowMs };
+      const coinsGained = outcome.defeated
+        ? Math.max(0, Math.min(definition.rewardCoins, options.currencyCap - recovered.coins))
+        : 0;
+      const next = {
+        ...recovered,
+        coins: recovered.coins + coinsGained,
+        hitpoints: nextHp,
+        lastSeenAtMs: nowMs,
+      };
       return ok({
         state: next,
         value: {
@@ -86,8 +95,10 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
             respawnAtMs: outcome.state.respawnAtMs,
             damage: outcome.damage,
             enemyDamage: outcome.defeated ? 0 : definition.enemyDamage,
+            coinsGained,
           },
           hitpoints: next.hitpoints,
+          coins: next.coins,
         },
       });
     });
