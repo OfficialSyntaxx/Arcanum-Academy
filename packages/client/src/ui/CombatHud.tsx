@@ -1,4 +1,4 @@
-import { ITEM_CATALOG } from '@alderfell/shared';
+import { asId, ITEM_CATALOG, SKILL_TABLE, type SkillId } from '@alderfell/shared';
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../state/app-store.js';
 
@@ -41,6 +41,10 @@ export function CombatHud({
   const strikeMessage = combat.rolledHit
     ? `You hit for ${combat.damage}.`
     : `Your swing glanced, but the starter strike still deals ${combat.damage}.`;
+  const styleSkillName =
+    combat.styleSkillId === undefined
+      ? 'Combat'
+      : (SKILL_TABLE.get(asId<SkillId>(combat.styleSkillId))?.name ?? 'Combat');
   return (
     <section className="combat-hud" aria-label={`${combat.label} combat`}>
       <div className="combat-hud__title">
@@ -67,7 +71,7 @@ export function CombatHud({
             onClick={() => setStyle(option)}
           >
             {option === 'ACCURATE'
-              ? 'Accurate +XP'
+              ? 'Accurate +ACC'
               : option === 'AGGRESSIVE'
                 ? 'Aggressive +DMG'
                 : 'Defensive -DMG'}
@@ -98,7 +102,11 @@ export function CombatHud({
                 `${drop.quantity} ${drop.itemId === 'item.meat.raw_shore_wolf' ? 'Raw Shore Wolf Meat' : drop.itemId}`,
             )
             .join(', ')}{' '}
-          · +{combat.combatXpGained} Combat XP · Reforming…
+          · +{combat.combatXpGained} {styleSkillName} XP
+          {combat.hitpointsXpGained !== undefined && combat.hitpointsXpGained > 0
+            ? ` · +${combat.hitpointsXpGained} Hitpoints XP`
+            : ''}{' '}
+          · Reforming…
         </p>
       ) : (
         <div className="combat-hud__actions">
