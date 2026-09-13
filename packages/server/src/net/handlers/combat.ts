@@ -2,9 +2,9 @@ import {
   addItems,
   awardXp,
   createSparringState,
+  resolveMeleeRoll,
   resolveSparringAttack,
   respawnSparringTarget,
-  type SparringState,
 } from '@alderfell/sim';
 import {
   asId,
@@ -13,6 +13,7 @@ import {
   failure,
   FailureCode,
   ok,
+  Rng,
   type Failure,
   type ProgressionTunables,
   type ItemCatalog,
@@ -59,7 +60,6 @@ export function registerCombatHandlers(
 ): void {
   // The pure sim owns cooldown, defeat and respawn semantics. Keeping the
   // server as an adapter prevents the live rules and replayable rules drifting.
-  const targets = new Map<string, SparringState>();
   const attack: CommandHandler = async (session, payload) => {
     const id = interactableId(payload);
     const encounter = id === null ? undefined : combatEncounterByInteractable(id);
@@ -78,12 +78,27 @@ export function registerCombatHandlers(
         return err(failure(FailureCode.Conflict, 'combat.player_recovering'));
       if (skillProgress(state, COMBAT_SKILL).level < encounter.requiredCombatLevel)
         return err(failure(FailureCode.Conflict, 'combat.level_required'));
-      const playerDamage = encounter.playerDamage + (style === 'AGGRESSIVE' ? 1 : 0);
-      const enemyDamage = Math.max(0, encounter.enemyDamage - (style === 'DEFENSIVE' ? 1 : 0));
       const target = respawnSparringTarget(
-        targets.get(id!) ?? createSparringState(encounter.maxHitpoints, now),
+        state.combatTargets[id!] ?? createSparringState(encounter.maxHitpoints, now),
         now,
       );
+      const combatLevel = skillProgress(state, COMBAT_SKILL).level;
+      const roll = resolveMeleeRoll(
+        {
+          attackLevel: combatLevel,
+          strengthLevel: combatLevel,
+          defenceLevel: 0,
+          attackBonus: style === 'ACCURATE' ? 3 : 0,
+          strengthBonus: style === 'AGGRESSIVE' ? 3 : 0,
+          defenceBonus: 0,
+        },
+        Rng.fromSeed(`${session.playerId}:${id}:${target.defeats}:${target.nextAttackAtMs}`),
+      );
+      // A first encounter must always make progress. The roll remains the one
+      // source of truth for damage once equipment and levels raise max hit;
+      // this authored floor only protects the level-one Shore Wolf lesson.
+      const playerDamage = Math.max(encounter.playerDamage, roll.damage);
+      const enemyDamage = Math.max(0, encounter.enemyDamage - (style === 'DEFENSIVE' ? 1 : 0));
       const outcome = resolveSparringAttack(
         target,
         now,
@@ -102,7 +117,6 @@ export function registerCombatHandlers(
           inventory = awardedDrop.value;
         }
       }
-      targets.set(id!, nextTarget);
       const nextHp = defeated
         ? state.hitpoints
         : {
@@ -121,6 +135,7 @@ export function registerCombatHandlers(
       const next = {
         ...state,
         inventory,
+        combatTargets: { ...state.combatTargets, [id!]: nextTarget },
         hitpoints: nextHp,
         coins: state.coins + coins,
         skills: { ...state.skills, [COMBAT_SKILL]: awarded.progress },
