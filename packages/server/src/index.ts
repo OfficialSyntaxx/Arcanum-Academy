@@ -23,8 +23,8 @@ import { PresenceService } from './domain/presence.js';
 import { InMemoryTradeStore, TradingService } from './domain/trading.js';
 import { registerSocialHandlers } from './net/handlers/social.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
-import { registerCombatHandlers } from './net/handlers/combat.js';
 import { registerQuestHandlers } from './net/handlers/quests.js';
+import { registerCombatHandlers } from './net/handlers/combat.js';
 import {
   DiagnosticBuffer,
   PostgresDiagnosticStore,
@@ -161,12 +161,12 @@ async function main(): Promise<void> {
   });
   registerCombatHandlers(router, {
     players,
+    skills: SKILL_TABLE,
+    progression: DEFAULT_TUNABLES.progression,
     now: () => Date.now(),
     tickMs: DEFAULT_TUNABLES.combat.tickMs,
     interactionRadius: DEFAULT_TUNABLES.world.interactionRadius,
     currencyCap: DEFAULT_TUNABLES.economy.currencyCap,
-    skills: SKILL_TABLE,
-    progression: DEFAULT_TUNABLES.progression,
     combatXpPerDamage: DEFAULT_TUNABLES.combat.combatXpPerDamage,
     positionFor: (sessionId) => presence.positionFor(sessionId),
   });
