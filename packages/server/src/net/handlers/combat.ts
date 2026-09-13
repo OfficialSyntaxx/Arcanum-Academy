@@ -1,4 +1,10 @@
-import { awardXp } from '@alderfell/sim';
+import {
+  awardXp,
+  createSparringState,
+  resolveSparringAttack,
+  respawnSparringTarget,
+  type SparringState,
+} from '@alderfell/sim';
 import {
   asId,
   combatEncounterByInteractable,
@@ -18,7 +24,6 @@ import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import type { SessionId } from '@alderfell/shared';
 
 const COMBAT_SKILL = asId<SkillId>('skill.combat');
-interface Target { hp: number; nextAttackAtMs: number; respawnAtMs: number | null; }
 type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
 export interface CombatHandlerOptions {
   readonly players: PlayerService;
@@ -43,7 +48,9 @@ function combatStyle(payload: unknown): CombatStyle {
     : 'ACCURATE';
 }
 export function registerCombatHandlers(router: RegistryCommandRouter, options: CombatHandlerOptions): void {
-  const targets = new Map<string, Target>();
+  // The pure sim owns cooldown, defeat and respawn semantics. Keeping the
+  // server as an adapter prevents the live rules and replayable rules drifting.
+  const targets = new Map<string, SparringState>();
   const attack: CommandHandler = async (session, payload) => {
     const id = interactableId(payload); const encounter = id === null ? undefined : combatEncounterByInteractable(id);
     const style = combatStyle(payload);
@@ -56,21 +63,29 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
     return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
       if (state.hitpoints.respawnAtMs !== null) return err(failure(FailureCode.Conflict, 'combat.player_recovering'));
       if (skillProgress(state, COMBAT_SKILL).level < encounter.requiredCombatLevel) return err(failure(FailureCode.Conflict, 'combat.level_required'));
-      const previous = targets.get(id!) ?? { hp: encounter.maxHitpoints, nextAttackAtMs: now, respawnAtMs: null };
-      const target = previous.respawnAtMs !== null && now >= previous.respawnAtMs ? { hp: encounter.maxHitpoints, nextAttackAtMs: now, respawnAtMs: null } : previous;
-      if (target.respawnAtMs !== null) return err(failure(FailureCode.Conflict, 'combat.defeated'));
-      if (now < target.nextAttackAtMs) return err(failure(FailureCode.Conflict, 'combat.cooldown'));
       const playerDamage = encounter.playerDamage + (style === 'AGGRESSIVE' ? 1 : 0);
       const enemyDamage = Math.max(0, encounter.enemyDamage - (style === 'DEFENSIVE' ? 1 : 0));
-      const hp = Math.max(0, target.hp - playerDamage), defeated = hp === 0;
-      const nextTarget = { hp, nextAttackAtMs: now + options.tickMs, respawnAtMs: defeated ? now + encounter.respawnMs : null }; targets.set(id!, nextTarget);
+      const target = respawnSparringTarget(
+        targets.get(id!) ?? createSparringState(encounter.maxHitpoints, now),
+        now,
+      );
+      const outcome = resolveSparringAttack(
+        target,
+        now,
+        options.tickMs,
+        encounter.respawnMs,
+        playerDamage,
+      );
+      if (outcome.kind === 'rejected') return err(failure(FailureCode.Conflict, `combat.${outcome.reason}`));
+      const { state: nextTarget, defeated } = outcome;
+      targets.set(id!, nextTarget);
       const nextHp = defeated ? state.hitpoints : { current: Math.max(0, state.hitpoints.current - enemyDamage), max: state.hitpoints.max, respawnAtMs: state.hitpoints.current - enemyDamage <= 0 ? now + encounter.playerRecoveryMs : null };
       const xp = playerDamage * options.combatXpPerDamage + (style === 'ACCURATE' ? 1 : 0);
       const skill = options.skills.get(COMBAT_SKILL); if (skill === undefined) return err(failure(FailureCode.NotFound, 'combat.skill_missing'));
       const awarded = awardXp(skillProgress(state, COMBAT_SKILL), xp, options.progression, skill);
       const coins = defeated ? Math.min(encounter.rewardCoins, options.currencyCap - state.coins) : 0;
       const next = { ...state, hitpoints: nextHp, coins: state.coins + coins, skills: { ...state.skills, [COMBAT_SKILL]: awarded.progress }, lastSeenAtMs: now };
-      return ok({ state: next, value: { hitpoints: next.hitpoints, coins: next.coins, skills: next.skills, combat: { interactableId: id, label: encounter.label, hitpoints: hp, maxHitpoints: encounter.maxHitpoints, defeated, respawnAtMs: nextTarget.respawnAtMs, damage: playerDamage, enemyDamage: defeated ? 0 : enemyDamage, coinsGained: coins, combatXpGained: xp, style } } });
+      return ok({ state: next, value: { hitpoints: next.hitpoints, coins: next.coins, skills: next.skills, combat: { interactableId: id, label: encounter.label, hitpoints: nextTarget.hitpoints, maxHitpoints: encounter.maxHitpoints, defeated, respawnAtMs: nextTarget.respawnAtMs, damage: playerDamage, enemyDamage: defeated ? 0 : enemyDamage, coinsGained: coins, combatXpGained: xp, style } } });
     });
   };
   const recover: CommandHandler = async (session) => {
