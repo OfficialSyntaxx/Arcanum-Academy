@@ -100,6 +100,7 @@ function project(state: PlayerState) {
     tools: state.tools,
     quests: state.quests,
     gathering: state.gathering,
+    grave: state.grave,
   };
 }
 
