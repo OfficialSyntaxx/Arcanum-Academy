@@ -6,7 +6,9 @@ import {
   asId,
   type PlayerId,
   type SessionId,
+  ok,
 } from '@alderfell/shared';
+import { addItems } from '@alderfell/sim';
 import { PlayerService } from '../domain/player-service.js';
 import { RegistryCommandRouter } from '../net/gateway.js';
 import { registerCombatHandlers } from '../net/handlers/combat.js';
@@ -51,6 +53,7 @@ function harness() {
       style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = 'ACCURATE',
     ) => router.dispatch(session(), 'combat.attack', { interactableId, style }),
     recover: () => router.dispatch(session(), 'combat.recover', {}),
+    eat: () => router.dispatch(session(), 'combat.eat', { interactableId: SHORE_WOLF }),
     moveTo: (p: { x: number; z: number } | null) => {
       position = p;
     },
@@ -61,6 +64,19 @@ function harness() {
       const r = await players.load(PLAYER);
       if (!r.ok) throw Error(r.error.reason);
       return r.value;
+    },
+    async grantCookedMeat() {
+      const r = await players.update(PLAYER, (state) => {
+        const inventory = addItems(
+          state.inventory,
+          'item.meat.cooked_shore_wolf' as Parameters<typeof addItems>[1],
+          1,
+          ITEM_CATALOG,
+        );
+        if (!inventory.ok) throw Error(inventory.error.reason);
+        return ok({ state: { ...state, inventory: inventory.value }, value: undefined });
+      });
+      if (!r.ok) throw Error(r.error.reason);
     },
   };
 }
@@ -116,5 +132,28 @@ describe('Shore Wolf combat handlers', () => {
       definitionId: 'item.meat.raw_shore_wolf',
       quantity: 1,
     });
+  });
+  it('eats cooked Shore Wolf Meat for 3 HP and spends one combat tick', async () => {
+    const h = harness();
+    await h.dispatch();
+    await h.grantCookedMeat();
+    h.advance(DEFAULT_TUNABLES.combat.tickMs);
+    expect(await h.eat()).toMatchObject({
+      ok: true,
+      value: {
+        hitpoints: { current: 10, max: 10 },
+        combat: {
+          nextAttackAtMs: 1_001_200,
+          foodConsumed: { itemId: 'item.meat.cooked_shore_wolf', healAmount: 3 },
+        },
+      },
+    });
+    expect((await h.state()).inventory.stacks).not.toContainEqual({
+      definitionId: 'item.meat.cooked_shore_wolf',
+      quantity: 1,
+    });
+    const blocked = await h.dispatch();
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.error.reason).toBe('combat.cooldown');
   });
 });
