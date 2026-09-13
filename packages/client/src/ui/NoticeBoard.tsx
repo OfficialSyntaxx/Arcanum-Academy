@@ -1,7 +1,5 @@
-import { QuestStatus } from '@alderfell/shared';
+import { QUEST_CATALOG, QuestStatus, questIsUnlocked, type ItemDefinitionId } from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
-
-const FIRST_KINDLING_QUEST_ID = 'quest.first_kindling';
 
 /**
  * First content-facing quest surface. Progress comes only from the server.
@@ -16,13 +14,23 @@ export function NoticeBoard({
   readonly onComplete: (questId: string) => void;
 }) {
   const economy = useAppStore((state) => state.economy);
-  const mushroomCount = economy.stacks
-    .filter((stack) => stack.definitionId.startsWith('item.mushroom.'))
-    .reduce((total, stack) => total + stack.quantity, 0);
-  const hasMushrooms = mushroomCount >= 3;
-  const progress = economy.quests[FIRST_KINDLING_QUEST_ID];
+  const quest =
+    QUEST_CATALOG.find((candidate) => economy.quests[candidate.id]?.status === QuestStatus.Active) ??
+    QUEST_CATALOG.find(
+      (candidate) =>
+        economy.quests[candidate.id] === undefined && questIsUnlocked(candidate, economy.quests),
+    ) ??
+    QUEST_CATALOG.at(-1)!;
+  const progress = economy.quests[quest.id];
   const accepted = progress?.status === QuestStatus.Active;
   const completed = progress?.status === QuestStatus.Completed;
+  const objectives = quest.objectives.map((objective) => {
+    const count = economy.stacks
+      .filter((stack) => objective.itemIds.includes(stack.definitionId as ItemDefinitionId))
+      .reduce((total, stack) => total + stack.quantity, 0);
+    return { ...objective, count, complete: count >= objective.requiredQuantity };
+  });
+  const ready = objectives.every((objective) => objective.complete);
 
   return (
     <section
@@ -34,7 +42,7 @@ export function NoticeBoard({
       <header className="notice-board__head">
         <div>
           <p className="panel__eyebrow">Library notice board</p>
-          <h2>The First Kindling</h2>
+          <h2>{quest.title}</h2>
         </div>
         <button
           type="button"
@@ -46,46 +54,35 @@ export function NoticeBoard({
         </button>
       </header>
       <p>
-        Groundskeeper Bram is tending the garden beds. He needs three Mystic Mushrooms before the
-        evening lamps can be lit.
+        {quest.description}
       </p>
-      <div
-        className="notice-board__objective"
-        data-complete={completed || (accepted && hasMushrooms)}
-      >
-        <span>{completed || (accepted && hasMushrooms) ? '✓' : '○'}</span>
-        <span>Gather 3 Mystic Mushrooms</span>
-        <strong>
-          {completed
-            ? 'Complete'
-            : accepted && hasMushrooms
-              ? 'Ready to turn in'
-              : `${mushroomCount}/3`}
-        </strong>
-      </div>
-      <p className="notice-board__hint">
-        Find the patch in the Alchemy Gardens, west of the plaza. Bring the mushrooms back here for
-        40 coins once the objective is ready.
-      </p>
+      {objectives.map((objective) => (
+        <div className="notice-board__objective" data-complete={completed || (accepted && objective.complete)} key={objective.label}>
+          <span>{completed || (accepted && objective.complete) ? '✓' : '○'}</span>
+          <span>{objective.label}</span>
+          <strong>{completed ? 'Complete' : `${Math.min(objective.count, objective.requiredQuantity)}/${objective.requiredQuantity}`}</strong>
+        </div>
+      ))}
+      <p className="notice-board__hint">{quest.hint}</p>
       {!accepted && !completed && (
         <button
           type="button"
           className="prompt__button notice-board__close"
-          onClick={() => onAccept(FIRST_KINDLING_QUEST_ID)}
+          onClick={() => onAccept(quest.id)}
         >
           Accept quest
         </button>
       )}
-      {accepted && hasMushrooms && (
+      {accepted && ready && (
         <button
           type="button"
           className="prompt__button notice-board__close"
-          onClick={() => onComplete(FIRST_KINDLING_QUEST_ID)}
+          onClick={() => onComplete(quest.id)}
         >
-          Turn in · 40 coins
+          Turn in · {quest.rewardCoins} coins
         </button>
       )}
-      {(accepted && !hasMushrooms) || completed ? (
+      {(accepted && !ready) || completed ? (
         <button type="button" className="prompt__button notice-board__close" onClick={onClose}>
           {completed ? 'Quest complete' : 'Continue exploring'}
         </button>
