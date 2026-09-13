@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EconomyController } from '../app/economy-controller.js';
 import { EMPTY_ECONOMY, useAppStore } from '../state/app-store.js';
 import type { Transport, TransportEvents } from '../net/transport.js';
+import { craftingPresentation } from '../ui/EconomyPanels.js';
 
 function transportHarness(): {
   readonly transport: Transport;
@@ -121,6 +122,16 @@ describe('EconomyController activity cleanup', () => {
     expect(useAppStore.getState().economy).toMatchObject({
       hitpoints: { current: 9 },
       combat: { style: 'DEFENSIVE', hitpoints: 3 },
+    });
+  });
+});
+
+describe('crafting station presentation', () => {
+  it('uses campfire cooking terminology instead of the refining fallback', () => {
+    expect(craftingPresentation('int.station.shorelands_campfire')).toEqual({
+      title: 'Cooking',
+      serial: 'Shorelands Campfire · 4 recipes',
+      verb: 'Cook',
     });
   });
 });
