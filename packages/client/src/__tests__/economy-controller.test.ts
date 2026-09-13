@@ -79,24 +79,45 @@ describe('EconomyController activity cleanup', () => {
     const { transport, send } = transportHarness();
     const economy = new EconomyController(transport);
 
-    economy.attackEncounter('int.duel.training_wisp', 'DEFENSIVE');
+    economy.attackEncounter('int.combat.shore_wolf', 'DEFENSIVE');
     economy.recoverCombat();
     expect(send).toHaveBeenNthCalledWith(1, ClientOpcode.Command, {
-      kind: 'combat.attack', interactableId: 'int.duel.training_wisp', style: 'DEFENSIVE',
+      kind: 'combat.attack',
+      interactableId: 'int.combat.shore_wolf',
+      style: 'DEFENSIVE',
     });
     expect(send).toHaveBeenNthCalledWith(2, ClientOpcode.Command, { kind: 'combat.recover' });
 
     transport.events.emit('frame', {
-      v: 1, op: ServerOpcode.Patch, seq: 1, t: 0,
-      p: { kind: 'combat.attack', state: { hitpoints: { current: 9, max: 10, respawnAtMs: null }, combat: {
-        interactableId: 'int.duel.training_wisp', label: 'Practice Wisp', hitpoints: 7, maxHitpoints: 8,
-        defeated: false, respawnAtMs: null, damage: 1, enemyDamage: 0, coinsGained: 0,
-        combatXpGained: 4, style: 'DEFENSIVE',
-      } } },
+      v: 1,
+      op: ServerOpcode.Patch,
+      seq: 1,
+      t: 0,
+      p: {
+        kind: 'combat.attack',
+        state: {
+          hitpoints: { current: 9, max: 10, respawnAtMs: null },
+          combat: {
+            interactableId: 'int.combat.shore_wolf',
+            label: 'Shore Wolf',
+            hitpoints: 3,
+            maxHitpoints: 4,
+            defeated: false,
+            respawnAtMs: null,
+            damage: 1,
+            enemyDamage: 0,
+            coinsGained: 0,
+            drops: [],
+            combatXpGained: 4,
+            style: 'DEFENSIVE',
+          },
+        },
+      },
     });
 
     expect(useAppStore.getState().economy).toMatchObject({
-      hitpoints: { current: 9 }, combat: { style: 'DEFENSIVE', hitpoints: 7 },
+      hitpoints: { current: 9 },
+      combat: { style: 'DEFENSIVE', hitpoints: 3 },
     });
   });
 });
