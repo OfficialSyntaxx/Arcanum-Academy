@@ -89,3 +89,30 @@ test('phone: walk to a resource, earn XP, inspect skills, and reach a crafting s
     contentType: 'image/png',
   });
 });
+
+test('phone: travel to the Practice Wisp and receive authoritative combat HUD feedback', async ({
+  page,
+}, info) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.clock.setFixedTime(new Date('2026-09-09T12:30:00Z'));
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/');
+  await expect(page.locator('.status-bar')).toContainText('Connected');
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
+  await page.getByRole('button', { name: 'Practice Wisp', exact: true }).click();
+  await expect(page.locator('.combat-hud')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('.combat-hud')).toContainText('Practice Wisp');
+  await expect(page.locator('.combat-hud')).toContainText('7/8');
+  // Map travel auto-engages once. Give its 600 ms authoritative cooldown
+  // time to elapse before proving a second hit changes the HUD.
+  await page.waitForTimeout(700);
+  await page.getByRole('button', { name: 'Attack', exact: true }).click();
+  await expect(page.locator('.combat-hud')).toContainText('6/8');
+  await info.attach('phone-combat-hud', {
+    body: await page.screenshot(),
+    contentType: 'image/png',
+  });
+  expect(errors).toEqual([]);
+});
