@@ -18,6 +18,8 @@ interface Avatar {
   current: AnimationAction | null;
   defeated: boolean;
   lastStrikeAtMs: number;
+  retaliationAtMs: number | null;
+  attackStartedAtMs: number;
 }
 
 const modelPromise = new GLTFLoader().loadAsync(shoreWolfUrl);
@@ -43,10 +45,15 @@ export class CombatAvatarGroup {
 
   update(
     dtSeconds: number,
-    combat: { readonly interactableId: string; readonly defeated: boolean } | null,
+    combat: {
+      readonly interactableId: string;
+      readonly defeated: boolean;
+      readonly enemyDamage: number;
+    } | null,
     lastStrikeAtMs: number,
   ): void {
     if (this.disposed) return;
+    const now = Date.now();
     for (const avatar of this.avatars.values()) {
       const defeated = combat?.interactableId === avatar.id && combat.defeated;
       if (defeated !== avatar.defeated) {
@@ -60,11 +67,24 @@ export class CombatAvatarGroup {
       ) {
         avatar.lastStrikeAtMs = lastStrikeAtMs;
         this.play(avatar, 'hit');
+        avatar.retaliationAtMs = combat.enemyDamage > 0 ? now + 280 : null;
+      }
+      if (!defeated && avatar.retaliationAtMs !== null && now >= avatar.retaliationAtMs) {
+        avatar.retaliationAtMs = null;
+        avatar.attackStartedAtMs = now;
+        this.play(avatar, 'attack');
       }
       if (
         !defeated &&
         avatar.current === avatar.actions.get('animalarmature|idle_hitreact_left') &&
-        Date.now() - avatar.lastStrikeAtMs > 380
+        now - avatar.lastStrikeAtMs > 380
+      ) {
+        this.play(avatar, 'idle');
+      }
+      if (
+        !defeated &&
+        avatar.current === avatar.actions.get('animalarmature|attack') &&
+        now - avatar.attackStartedAtMs > 1_100
       ) {
         this.play(avatar, 'idle');
       }
@@ -110,19 +130,23 @@ export class CombatAvatarGroup {
       current: null,
       defeated: false,
       lastStrikeAtMs: 0,
+      retaliationAtMs: null,
+      attackStartedAtMs: 0,
     };
     this.avatars.set(id, avatar);
     this.root.add(root);
     this.play(avatar, 'idle');
   }
 
-  private play(avatar: Avatar, intent: 'idle' | 'hit' | 'death'): void {
+  private play(avatar: Avatar, intent: 'idle' | 'hit' | 'attack' | 'death'): void {
     const next =
       intent === 'death'
         ? avatar.actions.get('animalarmature|death')
         : intent === 'hit'
           ? avatar.actions.get('animalarmature|idle_hitreact_left')
-          : avatar.actions.get('animalarmature|idle');
+          : intent === 'attack'
+            ? avatar.actions.get('animalarmature|attack')
+            : avatar.actions.get('animalarmature|idle');
     if (!next || next === avatar.current) return;
     next.reset().play();
     avatar.current?.crossFadeTo(next, 0.16, false);
