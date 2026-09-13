@@ -1,4 +1,9 @@
-import { QUEST_CATALOG, QuestStatus, questIsUnlocked, type ItemDefinitionId } from '@alderfell/shared';
+import {
+  QUEST_CATALOG,
+  QuestStatus,
+  questIsUnlocked,
+  type ItemDefinitionId,
+} from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
 
 /**
@@ -15,7 +20,9 @@ export function NoticeBoard({
 }) {
   const economy = useAppStore((state) => state.economy);
   const quest =
-    QUEST_CATALOG.find((candidate) => economy.quests[candidate.id]?.status === QuestStatus.Active) ??
+    QUEST_CATALOG.find(
+      (candidate) => economy.quests[candidate.id]?.status === QuestStatus.Active,
+    ) ??
     QUEST_CATALOG.find(
       (candidate) =>
         economy.quests[candidate.id] === undefined && questIsUnlocked(candidate, economy.quests),
@@ -53,14 +60,20 @@ export function NoticeBoard({
           ×
         </button>
       </header>
-      <p>
-        {quest.description}
-      </p>
+      <p>{quest.description}</p>
       {objectives.map((objective) => (
-        <div className="notice-board__objective" data-complete={completed || (accepted && objective.complete)} key={objective.label}>
+        <div
+          className="notice-board__objective"
+          data-complete={completed || (accepted && objective.complete)}
+          key={objective.label}
+        >
           <span>{completed || (accepted && objective.complete) ? '✓' : '○'}</span>
           <span>{objective.label}</span>
-          <strong>{completed ? 'Complete' : `${Math.min(objective.count, objective.requiredQuantity)}/${objective.requiredQuantity}`}</strong>
+          <strong>
+            {completed
+              ? 'Complete'
+              : `${Math.min(objective.count, objective.requiredQuantity)}/${objective.requiredQuantity}`}
+          </strong>
         </div>
       ))}
       <p className="notice-board__hint">{quest.hint}</p>
