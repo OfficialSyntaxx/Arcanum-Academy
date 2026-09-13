@@ -124,6 +124,72 @@ describe('EconomyController activity cleanup', () => {
       combat: { style: 'DEFENSIVE', hitpoints: 3 },
     });
   });
+
+  it('keeps an eat patch distinct from a player attack animation trigger', () => {
+    const { transport } = transportHarness();
+    new EconomyController(transport);
+    useAppStore.setState({ economy: { ...EMPTY_ECONOMY, lastCombatStrikeAtMs: 123 } });
+
+    transport.events.emit('frame', {
+      v: 1,
+      op: ServerOpcode.Patch,
+      seq: 1,
+      t: 0,
+      p: {
+        kind: 'combat.eat',
+        state: {
+          combat: {
+            interactableId: 'int.combat.shore_wolf',
+            label: 'Shore Wolf',
+            hitpoints: 3,
+            maxHitpoints: 4,
+            defeated: false,
+            respawnAtMs: null,
+            nextAttackAtMs: 600,
+            damage: 0,
+            rolledDamage: 0,
+            rolledHit: false,
+            enemyDamage: 0,
+            coinsGained: 0,
+            drops: [],
+            combatXpGained: 0,
+            style: 'ACCURATE',
+          },
+        },
+      },
+    });
+
+    expect(useAppStore.getState().economy.lastCombatStrikeAtMs).toBe(123);
+  });
+
+  it('clears stale combat presentation when travel begins', () => {
+    const { transport, send } = transportHarness();
+    const economy = new EconomyController(transport);
+    useAppStore.getState().setEconomy({
+      combat: {
+        interactableId: 'int.combat.shore_wolf',
+        label: 'Shore Wolf',
+        hitpoints: 4,
+        maxHitpoints: 4,
+        defeated: false,
+        respawnAtMs: null,
+        nextAttackAtMs: 0,
+        damage: 0,
+        rolledDamage: 0,
+        rolledHit: false,
+        enemyDamage: 0,
+        coinsGained: 0,
+        drops: [],
+        combatXpGained: 0,
+        style: 'ACCURATE',
+      },
+    });
+
+    economy.disengageCombat();
+
+    expect(useAppStore.getState().economy.combat).toBeNull();
+    expect(send).not.toHaveBeenCalled();
+  });
 });
 
 describe('crafting station presentation', () => {
