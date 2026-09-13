@@ -144,6 +144,16 @@ export class NpcDirector {
     return best;
   }
 
+  /** Resolves a named NPC after a UI prompt has selected it. */
+  namedById(id: string): NpcDefinition | null {
+    return (
+      this.actors.find(
+        (actor) =>
+          actor.agent.definition.id === id && actor.agent.definition.role !== NpcRole.Student,
+      )?.agent.definition ?? null
+    );
+  }
+
   dispose(): void {
     for (const actor of this.actors) this.world.actors.release(actor.slot);
     this.actors.length = 0;
