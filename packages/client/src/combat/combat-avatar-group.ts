@@ -16,6 +16,7 @@ interface Avatar {
   readonly actions: Map<string, AnimationAction>;
   current: AnimationAction | null;
   defeated: boolean;
+  lastStrikeAtMs: number;
 }
 
 const modelPromise = new GLTFLoader().loadAsync(armabeeUrl);
@@ -34,13 +35,28 @@ export class CombatAvatarGroup {
     }
   }
 
-  update(dtSeconds: number, combat: { readonly interactableId: string; readonly defeated: boolean } | null): void {
+  update(
+    dtSeconds: number,
+    combat: { readonly interactableId: string; readonly defeated: boolean } | null,
+    lastStrikeAtMs: number,
+  ): void {
     if (this.disposed) return;
     for (const avatar of this.avatars.values()) {
       const defeated = combat?.interactableId === avatar.id && combat.defeated;
       if (defeated !== avatar.defeated) {
         avatar.defeated = defeated;
         this.play(avatar, defeated ? 'death' : 'idle');
+      }
+      if (
+        !defeated &&
+        combat?.interactableId === avatar.id &&
+        lastStrikeAtMs > avatar.lastStrikeAtMs
+      ) {
+        avatar.lastStrikeAtMs = lastStrikeAtMs;
+        this.play(avatar, 'hit');
+      }
+      if (!defeated && avatar.current === avatar.actions.get('characterarmature|hitreact') && Date.now() - avatar.lastStrikeAtMs > 380) {
+        this.play(avatar, 'idle');
       }
       avatar.mixer.update(Math.min(dtSeconds, 0.05));
     }
@@ -75,15 +91,17 @@ export class CombatAvatarGroup {
     const mixer = new AnimationMixer(model);
     const actions = new Map<string, AnimationAction>();
     for (const clip of gltf.animations) actions.set(clip.name.toLowerCase(), mixer.clipAction(clip));
-    const avatar: Avatar = { id, root, mixer, actions, current: null, defeated: false };
+    const avatar: Avatar = { id, root, mixer, actions, current: null, defeated: false, lastStrikeAtMs: 0 };
     this.avatars.set(id, avatar);
     this.root.add(root);
     this.play(avatar, 'idle');
   }
 
-  private play(avatar: Avatar, intent: 'idle' | 'death'): void {
+  private play(avatar: Avatar, intent: 'idle' | 'hit' | 'death'): void {
     const next = intent === 'death'
       ? avatar.actions.get('characterarmature|death')
+      : intent === 'hit'
+        ? avatar.actions.get('characterarmature|hitreact')
       : avatar.actions.get('characterarmature|flying_idle') ?? avatar.actions.get('characterarmature|fast_flying');
     if (!next || next === avatar.current) return;
     next.reset().play();
