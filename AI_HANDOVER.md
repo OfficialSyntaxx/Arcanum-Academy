@@ -61,6 +61,12 @@ state and displays a compact HP/Attack HUD that clears when the player travels a
 practice target—there is deliberately no player health, equipment damage, creature AI, loot or
 death system yet. Add those as a complete next combat phase, not as client-side shortcuts.
 
+Creature presentation update (2026-09-13): `assets/poly-pizza/armabee-evolved.glb` is now the
+Practice Wisp's compact animated visual. It adds 184 KiB to the PWA precache (now about 2.1 MiB),
+uses Flying Idle while alive and Death when the server confirms a defeat. It is strictly a visual
+layer: a failed GLB fetch cannot change combat state. The next combat phase is player hitpoints,
+hostile timing, rewards and death/recovery—not more client-only combat logic.
+
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
 
