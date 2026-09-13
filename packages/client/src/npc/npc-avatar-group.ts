@@ -20,10 +20,7 @@ import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { NpcRole } from '@alderfell/shared';
 
-import {
-  createMiniForestCharacterLoader,
-  miniForestArcherUrl,
-} from '../player/player-avatar.js';
+import { createMiniForestCharacterLoader, miniForestArcherUrl } from '../player/player-avatar.js';
 import type { WorldService } from '../world/world-service.js';
 import type { NamedNpcPresentation } from './npc-director.js';
 import dungeonHumanUrl from '../../../../assets/kenney/mini-dungeon/character-human.glb?url';
