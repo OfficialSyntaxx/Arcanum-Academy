@@ -29,7 +29,6 @@ import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import type { SessionId } from '@alderfell/shared';
 
 const COMBAT_SKILL = asId<SkillId>('skill.combat');
-const COOKED_SHORE_WOLF_MEAT = asId<ItemDefinitionId>('item.meat.cooked_shore_wolf');
 type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
 export interface CombatHandlerOptions {
   readonly players: PlayerService;
@@ -56,6 +55,11 @@ function combatStyle(payload: unknown): CombatStyle {
   return style === 'AGGRESSIVE' || style === 'DEFENSIVE' || style === 'ACCURATE'
     ? style
     : 'ACCURATE';
+}
+function itemId(payload: unknown): ItemDefinitionId | null {
+  if (typeof payload !== 'object' || payload === null) return null;
+  const value = (payload as Record<string, unknown>).itemId;
+  return typeof value === 'string' && value.length > 0 ? asId<ItemDefinitionId>(value) : null;
 }
 export function registerCombatHandlers(
   router: RegistryCommandRouter,
@@ -190,9 +194,17 @@ export function registerCombatHandlers(
   };
   const eat: CommandHandler = async (session, payload) => {
     const id = interactableId(payload);
+    const foodId = itemId(payload);
     const encounter = id === null ? undefined : combatEncounterByInteractable(id);
     if (encounter === undefined)
       return err(failure(FailureCode.NotFound, 'combat.not_an_encounter'));
+    if (foodId === null) return err(failure(FailureCode.Validation, 'combat.food_missing'));
+    const position = options.positionFor(session.id);
+    if (position === null) return err(failure(FailureCode.Conflict, 'combat.position_unknown'));
+    const dx = position.x - encounter.position.x,
+      dz = position.z - encounter.position.z;
+    if (dx * dx + dz * dz > options.interactionRadius ** 2)
+      return err(failure(FailureCode.Conflict, 'combat.out_of_range'));
     const now = options.now();
     return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
       if (state.hitpoints.current <= 0 || state.hitpoints.respawnAtMs !== null)
@@ -200,10 +212,10 @@ export function registerCombatHandlers(
       const target = state.combatTargets[id!];
       if (target === undefined || target.hitpoints <= 0 || target.respawnAtMs !== null)
         return err(failure(FailureCode.Conflict, 'combat.no_active_target'));
-      const food = options.items.get(COOKED_SHORE_WOLF_MEAT);
+      const food = options.items.get(foodId);
       if (food?.consumable === undefined)
-        return err(failure(FailureCode.NotFound, 'combat.food_missing'));
-      const removed = removeItems(state.inventory, COOKED_SHORE_WOLF_MEAT, 1);
+        return err(failure(FailureCode.Validation, 'combat.not_food'));
+      const removed = removeItems(state.inventory, foodId, 1);
       if (!removed.ok) return err(removed.error);
       const hitpoints = {
         current: Math.min(
@@ -243,7 +255,7 @@ export function registerCombatHandlers(
             combatXpGained: 0,
             style: 'ACCURATE' as const,
             foodConsumed: {
-              itemId: COOKED_SHORE_WOLF_MEAT,
+              itemId: foodId,
               healAmount: food.consumable.healAmount,
             },
           },
