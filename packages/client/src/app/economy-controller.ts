@@ -143,8 +143,8 @@ export class EconomyController {
     this.send('combat.recover');
   }
 
-  eatCombatFood(interactableId: string): void {
-    this.send('combat.eat', { interactableId });
+  eatCombatFood(interactableId: string, itemId: string): void {
+    this.send('combat.eat', { interactableId, itemId });
   }
 
   dispose(): void {
