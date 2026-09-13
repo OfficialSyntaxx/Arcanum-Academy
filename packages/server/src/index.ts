@@ -170,6 +170,8 @@ async function main(): Promise<void> {
     currencyCap: DEFAULT_TUNABLES.economy.currencyCap,
     combatXpPerDamage: DEFAULT_TUNABLES.combat.combatXpPerDamage,
     hitpointsXpPerDamage: DEFAULT_TUNABLES.combat.hitpointsXpPerDamage,
+    itemsKeptOnDeath: DEFAULT_TUNABLES.combat.itemsKeptOnDeath,
+    graveExpiryMs: DEFAULT_TUNABLES.combat.graveExpiryMs,
     positionFor: (sessionId) => presence.positionFor(sessionId),
   });
 
