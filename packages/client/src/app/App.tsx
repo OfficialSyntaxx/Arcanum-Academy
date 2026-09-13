@@ -116,6 +116,7 @@ export function App() {
               onUpgradeTool={(toolId) => economy?.upgradeTool(toolId)}
               onAcceptQuest={(questId) => economy?.acceptQuest(questId)}
               onCompleteQuest={(questId) => economy?.completeQuest(questId)}
+              onAttackEncounter={(interactableId) => economy?.attackEncounter(interactableId)}
             />
           ) : (
             <Screen />
