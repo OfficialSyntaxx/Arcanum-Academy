@@ -37,6 +37,7 @@ import type { QualitySettings } from '../core/device.js';
 import type { InputService } from '../input/input-service.js';
 import { NpcDirector } from '../npc/npc-director.js';
 import { NpcAvatarGroup } from '../npc/npc-avatar-group.js';
+import { CombatAvatarGroup } from '../combat/combat-avatar-group.js';
 import { PlayerController } from '../player/player-controller.js';
 import { PlayerAvatar } from '../player/player-avatar.js';
 import type { RenderService } from '../render/renderer.js';
@@ -101,6 +102,7 @@ export class HubController {
   private readonly camera: CameraRig;
   private npcs: NpcDirector;
   private npcAvatars: NpcAvatarGroup;
+  private combatAvatars: CombatAvatarGroup;
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
   private readonly now: () => number;
@@ -145,6 +147,7 @@ export class HubController {
     this.playerAvatar = this.createPlayerAvatar();
     this.npcs = new NpcDirector(world, options.tunables, this.now());
     this.npcAvatars = this.createNpcAvatars();
+    this.combatAvatars = this.createCombatAvatars();
 
     // The renderer owns the canvas and its resize observer; the rig owns the
     // frustum. Hooking them here keeps the renderer ignorant of the camera's
@@ -209,6 +212,7 @@ export class HubController {
     }
     this.npcs.update(this.now(), dtSeconds * 1000);
     this.npcAvatars.update(dtSeconds, this.npcs.namedPresentations());
+    this.combatAvatars.update(dtSeconds, useAppStore.getState().economy.combat);
     this.world.actors.flush();
 
     const dayFraction =
@@ -303,6 +307,7 @@ export class HubController {
 
     this.npcs.dispose();
     this.npcAvatars.dispose();
+    this.combatAvatars.dispose();
     this.playerAvatar.dispose();
     this.world.actors.release(this.playerSlot);
     this.options.render.scene.remove(this.world.root);
@@ -321,6 +326,7 @@ export class HubController {
     this.playerAvatar = this.createPlayerAvatar();
     this.npcs = new NpcDirector(newWorld, this.options.tunables, this.now());
     this.npcAvatars = this.createNpcAvatars();
+    this.combatAvatars = this.createCombatAvatars();
 
     newWorld.attach(this.options.render.scene);
     this.camera.snapTo({
@@ -351,6 +357,7 @@ export class HubController {
     this.disposed = true;
     this.npcs.dispose();
     this.npcAvatars.dispose();
+    this.combatAvatars.dispose();
     this.playerAvatar.dispose();
     this.world.actors.release(this.playerSlot);
     this.options.render.scene.remove(this.world.root);
@@ -418,6 +425,12 @@ export class HubController {
       this.options.quality.shadowsEnabled,
       this.npcs.namedPresentations(),
     );
+    this.world.root.add(avatars.root);
+    return avatars;
+  }
+
+  private createCombatAvatars(): CombatAvatarGroup {
+    const avatars = new CombatAvatarGroup(this.world.zone, this.options.quality.shadowsEnabled);
     this.world.root.add(avatars.root);
     return avatars;
   }
