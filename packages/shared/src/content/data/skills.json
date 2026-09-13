@@ -127,14 +127,8 @@
       "name": "Combat",
       "category": "COMBAT",
       "unlocks": [
-        {
-          "atLevel": 1,
-          "description": "Challenge practice wisps"
-        },
-        {
-          "atLevel": 10,
-          "description": "Ready for academy sparring techniques"
-        }
+        { "atLevel": 1, "description": "Challenge practice wisps" },
+        { "atLevel": 5, "description": "Wield an Ember Focus" }
       ]
     }
   ]
