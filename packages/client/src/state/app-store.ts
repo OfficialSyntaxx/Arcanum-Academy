@@ -103,6 +103,8 @@ export interface EconomyState {
     readonly coinsGained: number;
     readonly drops: readonly { readonly itemId: string; readonly quantity: number }[];
     readonly combatXpGained: number;
+    readonly hitpointsXpGained?: number;
+    readonly styleSkillId?: string;
     readonly style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
     readonly foodConsumed?: { readonly itemId: string; readonly healAmount: number };
   } | null;
