@@ -14,6 +14,7 @@ import type { ProgressionTunables } from '../config/tunables.js';
 export const SkillCategory = {
   Gathering: 'GATHERING',
   Crafting: 'CRAFTING',
+  Combat: 'COMBAT',
 } as const;
 export type SkillCategory = (typeof SkillCategory)[keyof typeof SkillCategory];
 
