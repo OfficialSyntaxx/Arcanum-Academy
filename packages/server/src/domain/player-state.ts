@@ -15,6 +15,7 @@
 import {
   createInventory,
   initialProgress,
+  type SparringState,
   type GatheringSession,
   type Inventory,
 } from '@alderfell/sim';
@@ -89,7 +90,11 @@ export interface PlayerState {
   /** Per-account soft currency, earned from sales and spent on services. */
   readonly coins: number;
   /** Durable combat vitality; reconnecting never grants a free heal. */
-  readonly hitpoints: { readonly current: number; readonly max: number; readonly respawnAtMs: number | null };
+  readonly hitpoints: {
+    readonly current: number;
+    readonly max: number;
+    readonly respawnAtMs: number | null;
+  };
   /** Progress per skill. Absent means untouched, which reads as level one. */
   readonly skills: Readonly<Record<string, SkillProgress>>;
   /** The tool equipped for each gathering skill, keyed by skill id. */
@@ -97,6 +102,8 @@ export interface PlayerState {
   /** Depletion and regrowth per node, tracked per player rather than globally. */
   readonly nodes: Readonly<Record<string, NodeState>>;
   readonly gathering: GatheringSession | null;
+  /** Per-player encounter snapshots survive reconnects and server restarts. */
+  readonly combatTargets: Readonly<Record<string, SparringState>>;
   /** Every card the player has scribed. The collection, not the deck. */
   /** Accepted/completed quests. An absent id is available but not accepted. */
   readonly quests: Readonly<Record<string, QuestProgress>>;
@@ -119,6 +126,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     nodes: {},
     quests: {},
     gathering: null,
+    combatTargets: {},
     lastSeenAtMs: nowMs,
   };
 }
@@ -146,9 +154,10 @@ function readHitpoints(value: unknown): PlayerState['hitpoints'] {
   return {
     current,
     max,
-    respawnAtMs: typeof value.respawnAtMs === 'number' && Number.isFinite(value.respawnAtMs)
-      ? Math.max(0, value.respawnAtMs)
-      : null,
+    respawnAtMs:
+      typeof value.respawnAtMs === 'number' && Number.isFinite(value.respawnAtMs)
+        ? Math.max(0, value.respawnAtMs)
+        : null,
   };
 }
 
@@ -225,6 +234,32 @@ function readGathering(value: unknown): GatheringSession | null {
   };
 }
 
+function readCombatTargets(value: unknown): Record<string, SparringState> {
+  if (!isRecord(value)) return {};
+  const targets: Record<string, SparringState> = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (!isRecord(raw)) continue;
+    const maxHitpoints = Math.max(1, Math.floor(readNumber(raw.maxHitpoints, 0)));
+    const hitpoints = Math.max(
+      0,
+      Math.min(maxHitpoints, Math.floor(readNumber(raw.hitpoints, maxHitpoints))),
+    );
+    const nextAttackAtMs = Math.max(0, readNumber(raw.nextAttackAtMs, 0));
+    const respawnAtMs =
+      typeof raw.respawnAtMs === 'number' && Number.isFinite(raw.respawnAtMs)
+        ? Math.max(0, raw.respawnAtMs)
+        : null;
+    targets[id] = {
+      hitpoints,
+      maxHitpoints,
+      nextAttackAtMs,
+      respawnAtMs,
+      defeats: Math.max(0, Math.floor(readNumber(raw.defeats, 0))),
+    };
+  }
+  return targets;
+}
+
 function readQuests(value: unknown): Record<string, QuestProgress> {
   if (!isRecord(value)) return {};
   const quests: Record<string, QuestProgress> = {};
@@ -270,6 +305,7 @@ export function parsePlayerState(
     nodes: readNodes(data.nodes),
     quests: readQuests(data.quests),
     gathering: readGathering(data.gathering),
+    combatTargets: readCombatTargets(data.combatTargets),
     lastSeenAtMs: readNumber(data.lastSeenAtMs, record.updatedAtMs),
   });
 }
@@ -286,6 +322,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     nodes: state.nodes,
     quests: state.quests,
     gathering: state.gathering,
+    combatTargets: state.combatTargets,
     lastSeenAtMs: state.lastSeenAtMs,
   };
 }
