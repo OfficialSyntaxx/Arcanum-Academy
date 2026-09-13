@@ -119,6 +119,12 @@ opens a concise mobile dialogue panel using that character's authored bark set, 
 to the local diagnostic trace, and closes automatically when travel begins. Anonymous crowd
 students deliberately remain non-interactable.
 
+Mobile asset guard (2026-09-13): `npm run asset-budget` now runs after the client build and
+enforces a 1 MiB maximum individual precached file and 3 MiB total precache. Current production
+output is 1.93 MiB with a 552 KiB largest asset. Do not loosen this casually: a Quaternius outfit
+experiment correctly failed the PWA build after adding roughly 70 MiB of texture/animation data.
+Prefer compact GLB assets, runtime loading, atlases or texture compression before increasing a cap.
+
 Reliability and operations: production uses Render Postgres for player and identity persistence.
 The client submits low-volume diagnostic events; a protected server diagnostic feed persists them
 in Postgres; the in-game **Logs** panel exposes a local session trace. `/healthz`, `/readyz`,
