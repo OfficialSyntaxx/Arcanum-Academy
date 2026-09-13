@@ -80,7 +80,7 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 2;
+export const PLAYER_SCHEMA_VERSION = 3;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
 export interface PlayerState {
@@ -135,6 +135,14 @@ export function skillProgress(state: PlayerState, skillId: SkillId): SkillProgre
   return state.skills[skillId] ?? initialProgress();
 }
 
+const HITPOINTS_SKILL = asId<SkillId>('skill.hitpoints');
+const BASE_HITPOINTS = 10;
+
+/** Every Hitpoints level adds one durable maximum-health point above the level-one baseline. */
+export function maximumHitpoints(skills: Readonly<Record<string, SkillProgress>>): number {
+  return BASE_HITPOINTS + Math.max(0, (skills[HITPOINTS_SKILL]?.level ?? 1) - 1);
+}
+
 export function nodeState(state: PlayerState, nodeId: NodeId): NodeState {
   return state.nodes[nodeId] ?? { harvestsSinceRegen: 0, dormantUntilMs: null };
 }
@@ -183,6 +191,16 @@ function readSkills(value: unknown): Record<string, SkillProgress> {
     const level = readNumber(raw.level, 1);
     const xp = readNumber(raw.xp, 0);
     skills[id] = { level: Math.max(1, Math.floor(level)), xp: Math.max(0, Math.floor(xp)) };
+  }
+  const legacyCombat = skills['skill.combat'];
+  if (legacyCombat !== undefined) {
+    // G3 replaces the temporary shared Combat skill with real combat skills.
+    // Seed each missing replacement with the existing progress so an older
+    // save keeps its effective combat level and earns no accidental reset.
+    for (const id of ['skill.attack', 'skill.strength', 'skill.defence', 'skill.hitpoints']) {
+      skills[id] ??= legacyCombat;
+    }
+    delete skills['skill.combat'];
   }
   return skills;
 }
@@ -293,12 +311,19 @@ export function parsePlayerState(
   slotCapacity: number,
 ): Result<PlayerState, Failure> {
   const data = record.data;
+  const skills = readSkills(data.skills);
+  const persistedHitpoints = readHitpoints(data.hitpoints);
+  const maxHitpoints = maximumHitpoints(skills);
   return ok({
     inventory: readInventory(data.inventory, slotCapacity),
     bank: readInventory(data.bank, BANK_SLOT_CAPACITY),
     coins: Math.max(0, Math.floor(readNumber(data.coins, 0))),
-    hitpoints: readHitpoints(data.hitpoints),
-    skills: readSkills(data.skills),
+    hitpoints: {
+      current: Math.min(persistedHitpoints.current, maxHitpoints),
+      max: maxHitpoints,
+      respawnAtMs: persistedHitpoints.respawnAtMs,
+    },
+    skills,
     // Merge rather than replace so every pre-tool save receives the Academy
     // kit while preserving any future upgraded equipment it already owns.
     tools: { ...starterTools(record.updatedAtMs), ...readTools(data.tools) },
