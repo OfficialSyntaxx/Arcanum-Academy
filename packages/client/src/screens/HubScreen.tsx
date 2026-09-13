@@ -50,7 +50,7 @@ export interface HubScreenProps {
     style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE',
   ) => void;
   readonly onRecoverCombat: () => void;
-  readonly onEatCombatFood: (interactableId: string) => void;
+  readonly onEatCombatFood: (interactableId: string, itemId: string) => void;
 }
 
 /**
