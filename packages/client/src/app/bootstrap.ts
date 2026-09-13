@@ -239,6 +239,13 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     onEngageBankChest: (interactableId) => store.setOpenBank(interactableId),
     onEngageMerchantStall: (interactableId) => store.setOpenMerchant(interactableId),
     onEngageQuestBoard: (interactableId) => store.setOpenNotice(interactableId),
+    onEngageNpc: (npc) =>
+      store.setOpenDialogue({
+        npcId: npc.id,
+        name: npc.name,
+        role: npc.role,
+        line: npc.line,
+      }),
     onEngageZonePortal: (targetZoneId) => {
       const zone = zoneById(targetZoneId as ZoneId);
       if (!zone) {
