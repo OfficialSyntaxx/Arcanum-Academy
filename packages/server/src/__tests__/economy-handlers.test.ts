@@ -16,6 +16,7 @@ import {
 import { addItems, quantityOf } from '@alderfell/sim';
 import { RegistryCommandRouter } from '../net/gateway.js';
 import { InMemoryPlayerRepository } from '../persistence/repository.js';
+import type { PlayerRecord } from '../persistence/repository.js';
 import { PlayerService } from '../domain/player-service.js';
 import { registerEconomyHandlers } from '../net/handlers/economy.js';
 import { parsePlayerState, PLAYER_SCHEMA_VERSION } from '../domain/player-state.js';
@@ -123,6 +124,32 @@ describe('player.sync', () => {
     expect(result.ok).toBe(true);
     const state = await h.state();
     expect(state.gathering).toBeNull();
+  });
+});
+
+describe('player-state migrations', () => {
+  it('splits legacy Combat progress into the G3 combat skills without a health reset', () => {
+    const legacyRecord: PlayerRecord = {
+      playerId: PLAYER,
+      schemaVersion: 2,
+      version: 1,
+      updatedAtMs: 42,
+      data: {
+        skills: { 'skill.combat': { level: 4, xp: 120 } },
+        hitpoints: { current: 8, max: 10, respawnAtMs: null },
+      },
+    };
+    const parsed = parsePlayerState(legacyRecord, SLOTS);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.value.skills).toMatchObject({
+      'skill.attack': { level: 4, xp: 120 },
+      'skill.strength': { level: 4, xp: 120 },
+      'skill.defence': { level: 4, xp: 120 },
+      'skill.hitpoints': { level: 4, xp: 120 },
+    });
+    expect(parsed.value.skills['skill.combat']).toBeUndefined();
+    expect(parsed.value.hitpoints).toEqual({ current: 8, max: 13, respawnAtMs: null });
   });
 });
 
