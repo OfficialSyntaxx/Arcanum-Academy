@@ -72,6 +72,7 @@ const MARKER_COLOURS: Readonly<Record<string, number>> = {
   [InteractableKind.MerchantStall]: Palette.hazeDim,
   [InteractableKind.ZonePortal]: Palette.verdigris,
   [InteractableKind.QuestBoard]: Palette.haze,
+  [InteractableKind.CombatEncounter]: 0xe85b45,
 };
 
 export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeometry {
@@ -501,6 +502,13 @@ function buildMarker(interactable: Interactable, parts: MarkerParts): Object3D {
     const post = new Mesh(parts.post, parts.material);
     post.position.y = 0.7;
     marker.add(post);
+    if (interactable.kind === InteractableKind.CombatEncounter) {
+      const halo = new Mesh(parts.halo, parts.material);
+      halo.position.y = 1.25;
+      halo.rotation.x = Math.PI / 2;
+      halo.scale.setScalar(0.72);
+      marker.add(halo);
+    }
   }
 
   return marker;
