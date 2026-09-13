@@ -954,9 +954,22 @@
   background: rgba(255, 255, 255, 0.12);
   border-radius: 99px;
 }
-.combat-hud__track span { display: block; height: 100%; background: #d95a45; transition: width 150ms ease; }
-.combat-hud p { margin: 0.25rem 0 0; color: var(--haze-dim); font: 0.8rem var(--font-label); }
-.combat-hud button { width: 100%; min-height: 2.35rem; font: 0.85rem var(--font-label); }
+.combat-hud__track span {
+  display: block;
+  height: 100%;
+  background: #d95a45;
+  transition: width 150ms ease;
+}
+.combat-hud p {
+  margin: 0.25rem 0 0;
+  color: var(--haze-dim);
+  font: 0.8rem var(--font-label);
+}
+.combat-hud button {
+  width: 100%;
+  min-height: 2.35rem;
+  font: 0.85rem var(--font-label);
+}
 @media (orientation: landscape) and (max-height: 500px) {
   .hub-hud {
     max-width: 21rem;
