@@ -399,6 +399,15 @@ export const COURTYARD: Zone = {
       label: 'Notice Board',
       verb: 'Read',
     },
+    {
+      id: ix('int.duel.training_wisp'),
+      kind: InteractableKind.CombatEncounter,
+      position: { x: 0, z: 12.8 },
+      approach: wp('wp.duel.circle.south'),
+      facing: Math.PI,
+      label: 'Practice Wisp',
+      verb: 'Attack',
+    },
 
     // --- World gates -------------------------------------------------------
     {
