@@ -4,6 +4,24 @@ import { useAppStore } from '../state/app-store.js';
 
 const COMBAT_FOODS = ITEM_CATALOG.items.filter((item) => item.consumable !== undefined);
 
+/** Persistent recovery affordance, separate from a transient active-target HUD. */
+export function GravestoneHud({ onReclaim }: { readonly onReclaim: () => void }) {
+  const grave = useAppStore((state) => state.economy.grave);
+  if (grave === null) return null;
+  const itemCount = grave.stacks.reduce((total, stack) => total + stack.quantity, 0);
+  return (
+    <section className="combat-hud combat-hud--grave" aria-label="Gravestone recovery">
+      <strong>
+        Gravestone · {itemCount} item{itemCount === 1 ? '' : 's'} held
+      </strong>
+      <p>Return to where you fell, then recover your items.</p>
+      <button type="button" onClick={onReclaim}>
+        Recover gravestone
+      </button>
+    </section>
+  );
+}
+
 /** Compact, mobile-safe combat feedback for the initial practice encounter. */
 export function CombatHud({
   onAttack,
