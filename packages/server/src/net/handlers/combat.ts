@@ -2,6 +2,7 @@ import {
   addItems,
   awardXp,
   createSparringState,
+  removeItems,
   resolveMeleeRoll,
   resolveSparringAttack,
   respawnSparringTarget,
@@ -17,6 +18,7 @@ import {
   type Failure,
   type ProgressionTunables,
   type ItemCatalog,
+  type ItemDefinitionId,
   type Result,
   type SkillId,
   type SkillTable,
@@ -27,6 +29,7 @@ import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import type { SessionId } from '@alderfell/shared';
 
 const COMBAT_SKILL = asId<SkillId>('skill.combat');
+const COOKED_SHORE_WOLF_MEAT = asId<ItemDefinitionId>('item.meat.cooked_shore_wolf');
 type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
 export interface CombatHandlerOptions {
   readonly players: PlayerService;
@@ -185,6 +188,70 @@ export function registerCombatHandlers(
       return ok({ state: { ...state, hitpoints, lastSeenAtMs: now }, value: { hitpoints } });
     });
   };
+  const eat: CommandHandler = async (session, payload) => {
+    const id = interactableId(payload);
+    const encounter = id === null ? undefined : combatEncounterByInteractable(id);
+    if (encounter === undefined)
+      return err(failure(FailureCode.NotFound, 'combat.not_an_encounter'));
+    const now = options.now();
+    return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      if (state.hitpoints.current <= 0 || state.hitpoints.respawnAtMs !== null)
+        return err(failure(FailureCode.Conflict, 'combat.player_recovering'));
+      const target = state.combatTargets[id!];
+      if (target === undefined || target.hitpoints <= 0 || target.respawnAtMs !== null)
+        return err(failure(FailureCode.Conflict, 'combat.no_active_target'));
+      const food = options.items.get(COOKED_SHORE_WOLF_MEAT);
+      if (food?.consumable === undefined)
+        return err(failure(FailureCode.NotFound, 'combat.food_missing'));
+      const removed = removeItems(state.inventory, COOKED_SHORE_WOLF_MEAT, 1);
+      if (!removed.ok) return err(removed.error);
+      const hitpoints = {
+        current: Math.min(
+          state.hitpoints.max,
+          state.hitpoints.current + food.consumable.healAmount,
+        ),
+        max: state.hitpoints.max,
+        respawnAtMs: null,
+      };
+      const nextTarget = { ...target, nextAttackAtMs: now + options.tickMs };
+      const next = {
+        ...state,
+        inventory: removed.value,
+        hitpoints,
+        combatTargets: { ...state.combatTargets, [id!]: nextTarget },
+        lastSeenAtMs: now,
+      };
+      return ok({
+        state: next,
+        value: {
+          inventory: { stacks: next.inventory.stacks, slotCapacity: next.inventory.slotCapacity },
+          hitpoints,
+          combat: {
+            interactableId: id,
+            label: encounter.label,
+            hitpoints: nextTarget.hitpoints,
+            maxHitpoints: encounter.maxHitpoints,
+            defeated: false,
+            respawnAtMs: nextTarget.respawnAtMs,
+            nextAttackAtMs: nextTarget.nextAttackAtMs,
+            damage: 0,
+            rolledDamage: 0,
+            rolledHit: false,
+            enemyDamage: 0,
+            coinsGained: 0,
+            drops: [],
+            combatXpGained: 0,
+            style: 'ACCURATE' as const,
+            foodConsumed: {
+              itemId: COOKED_SHORE_WOLF_MEAT,
+              healAmount: food.consumable.healAmount,
+            },
+          },
+        },
+      });
+    });
+  };
   router.register('combat.attack', attack);
   router.register('combat.recover', recover);
+  router.register('combat.eat', eat);
 }
