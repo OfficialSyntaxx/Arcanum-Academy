@@ -152,6 +152,12 @@ Attack, Strength, Defence and Hitpoints, retaining a legacy save's effective com
 Combat styles train their matching skill and every damage point grants Hitpoints XP. Maximum
 health is now `10 + (Hitpoints level - 1)` without a free heal on migration or level-up.
 
+**G3 death update (2026-09-13):** Death now keeps the three highest-value individual inventory
+items and places all other items in one persistent, no-expiry gravestone at the death location.
+A second death merges its losses into that gravestone. Recovery is server-authoritative,
+range-checked, and atomic: a full satchel leaves the grave intact rather than losing or partly
+recovering its contents.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
