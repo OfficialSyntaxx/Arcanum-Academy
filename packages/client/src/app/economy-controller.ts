@@ -131,7 +131,10 @@ export class EconomyController {
     this.send('quest.complete', { questId });
   }
 
-  attackEncounter(interactableId: string, style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = 'ACCURATE'): void {
+  attackEncounter(
+    interactableId: string,
+    style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = 'ACCURATE',
+  ): void {
     this.send('combat.attack', { interactableId, style });
   }
 
