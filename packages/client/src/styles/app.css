@@ -925,6 +925,38 @@
   pointer-events: none;
   border-radius: 3px;
 }
+.combat-hud {
+  position: absolute;
+  top: calc(var(--inset-top) + 6.5rem);
+  left: 50%;
+  width: min(17rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--amber);
+  border-radius: 0.65rem;
+  background: rgba(19, 15, 11, 0.92);
+  color: var(--haze);
+  box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+}
+.combat-hud__title {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font: 0.8rem var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.combat-hud__track {
+  height: 0.4rem;
+  margin: 0.45rem 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+}
+.combat-hud__track span { display: block; height: 100%; background: #d95a45; transition: width 150ms ease; }
+.combat-hud p { margin: 0.25rem 0 0; color: var(--haze-dim); font: 0.8rem var(--font-label); }
+.combat-hud button { width: 100%; min-height: 2.35rem; font: 0.85rem var(--font-label); }
 @media (orientation: landscape) and (max-height: 500px) {
   .hub-hud {
     max-width: 21rem;
