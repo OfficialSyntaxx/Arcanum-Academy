@@ -80,9 +80,16 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 3;
+export const PLAYER_SCHEMA_VERSION = 4;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
+export interface GravestoneState {
+  readonly position: { readonly x: number; readonly z: number };
+  readonly stacks: readonly ItemStack[];
+  readonly createdAtMs: number;
+  /** Null means permanent, the launch rule. */
+  readonly expiresAtMs: number | null;
+}
 export interface PlayerState {
   readonly inventory: Inventory;
   /** Secure resource storage, accessed only through a world bank chest. */
@@ -104,6 +111,8 @@ export interface PlayerState {
   readonly gathering: GatheringSession | null;
   /** Per-player encounter snapshots survive reconnects and server restarts. */
   readonly combatTargets: Readonly<Record<string, SparringState>>;
+  /** One durable grave holds every unprotected stack from the player's deaths. */
+  readonly grave: GravestoneState | null;
   /** Every card the player has scribed. The collection, not the deck. */
   /** Accepted/completed quests. An absent id is available but not accepted. */
   readonly quests: Readonly<Record<string, QuestProgress>>;
@@ -127,6 +136,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     quests: {},
     gathering: null,
     combatTargets: {},
+    grave: null,
     lastSeenAtMs: nowMs,
   };
 }
@@ -278,6 +288,30 @@ function readCombatTargets(value: unknown): Record<string, SparringState> {
   return targets;
 }
 
+function readGrave(value: unknown): GravestoneState | null {
+  if (!isRecord(value) || !isRecord(value.position) || !Array.isArray(value.stacks)) return null;
+  const x = readNumber(value.position.x, Number.NaN);
+  const z = readNumber(value.position.z, Number.NaN);
+  if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+  const stacks: ItemStack[] = [];
+  for (const entry of value.stacks) {
+    if (!isRecord(entry) || typeof entry.definitionId !== 'string') continue;
+    const quantity = entry.quantity;
+    if (typeof quantity !== 'number' || !Number.isInteger(quantity) || quantity <= 0) continue;
+    stacks.push({ definitionId: entry.definitionId as ItemDefinitionId, quantity });
+  }
+  if (stacks.length === 0) return null;
+  return {
+    position: { x, z },
+    stacks,
+    createdAtMs: Math.max(0, readNumber(value.createdAtMs, 0)),
+    expiresAtMs:
+      typeof value.expiresAtMs === 'number' && Number.isFinite(value.expiresAtMs)
+        ? Math.max(0, value.expiresAtMs)
+        : null,
+  };
+}
+
 function readQuests(value: unknown): Record<string, QuestProgress> {
   if (!isRecord(value)) return {};
   const quests: Record<string, QuestProgress> = {};
@@ -331,6 +365,7 @@ export function parsePlayerState(
     quests: readQuests(data.quests),
     gathering: readGathering(data.gathering),
     combatTargets: readCombatTargets(data.combatTargets),
+    grave: readGrave(data.grave),
     lastSeenAtMs: readNumber(data.lastSeenAtMs, record.updatedAtMs),
   });
 }
@@ -348,6 +383,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     quests: state.quests,
     gathering: state.gathering,
     combatTargets: state.combatTargets,
+    grave: state.grave,
     lastSeenAtMs: state.lastSeenAtMs,
   };
 }
