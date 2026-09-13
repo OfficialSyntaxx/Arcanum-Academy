@@ -70,6 +70,8 @@ export interface HubControllerOptions {
   readonly onEngageMerchantStall?: (interactableId: string) => void;
   /** Called when the player reads an in-world notice or quest board. */
   readonly onEngageQuestBoard?: (interactableId: string) => void;
+  /** Called when the player attacks an in-world combat encounter. */
+  readonly onEngageCombatEncounter?: (interactableId: string) => void;
   /** Called when the player speaks to a nearby named character. */
   readonly onEngageNpc?: (npc: {
     readonly id: string;
@@ -279,6 +281,8 @@ export class HubController {
       this.options.onEngageMerchantStall?.(prompt.id);
     } else if (prompt.kind === InteractableKind.QuestBoard) {
       this.options.onEngageQuestBoard?.(prompt.id);
+    } else if (prompt.kind === InteractableKind.CombatEncounter) {
+      this.options.onEngageCombatEncounter?.(prompt.id);
     } else if (prompt.kind === InteractableKind.ZonePortal && prompt.targetZone) {
       this.options.onEngageZonePortal?.(prompt.targetZone);
     }
@@ -486,6 +490,8 @@ export class HubController {
       this.options.onEngageMerchantStall?.(target.id);
     } else if (target.kind === InteractableKind.QuestBoard) {
       this.options.onEngageQuestBoard?.(target.id);
+    } else if (target.kind === InteractableKind.CombatEncounter) {
+      this.options.onEngageCombatEncounter?.(target.id);
     } else if (target.kind === InteractableKind.ZonePortal && target.targetZone) {
       this.options.onEngageZonePortal?.(target.targetZone);
     }
