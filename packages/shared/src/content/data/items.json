@@ -132,6 +132,19 @@
       "iconKey": "raw-shore-wolf-meat"
     },
     {
+      "id": "item.meat.cooked_shore_wolf",
+      "name": "Cooked Shore Wolf Meat",
+      "description": "Charred at the edges and warm through the middle. Restores 3 HP in combat.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 8,
+      "iconKey": "cooked-shore-wolf-meat",
+      "consumable": {
+        "healAmount": 3
+      }
+    },
+    {
       "id": "item.dust.resonant",
       "name": "Resonant Dust",
       "description": "Ground crystal, fine enough to suspend in ink without clouding it.",
