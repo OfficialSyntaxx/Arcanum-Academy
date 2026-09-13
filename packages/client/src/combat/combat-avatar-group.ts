@@ -7,7 +7,8 @@ import { AnimationMixer, Box3, Group, Mesh, type AnimationAction } from 'three';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { heightAt, InteractableKind, type Zone } from '@alderfell/shared';
-import armabeeUrl from '../../../../assets/poly-pizza/armabee-evolved.glb?url';
+// Quaternius, "Wolf", CC0 1.0: https://poly.pizza/m/P1gU3Qkr9r
+import shoreWolfUrl from '../../../../assets/quaternius/low-poly-animated-animals/wolf.glb?url';
 
 interface Avatar {
   readonly id: string;
@@ -19,7 +20,7 @@ interface Avatar {
   lastStrikeAtMs: number;
 }
 
-const modelPromise = new GLTFLoader().loadAsync(armabeeUrl);
+const modelPromise = new GLTFLoader().loadAsync(shoreWolfUrl);
 
 export class CombatAvatarGroup {
   readonly root = new Group();
@@ -62,7 +63,7 @@ export class CombatAvatarGroup {
       }
       if (
         !defeated &&
-        avatar.current === avatar.actions.get('characterarmature|hitreact') &&
+        avatar.current === avatar.actions.get('animalarmature|idle_hitreact_left') &&
         Date.now() - avatar.lastStrikeAtMs > 380
       ) {
         this.play(avatar, 'idle');
@@ -118,11 +119,10 @@ export class CombatAvatarGroup {
   private play(avatar: Avatar, intent: 'idle' | 'hit' | 'death'): void {
     const next =
       intent === 'death'
-        ? avatar.actions.get('characterarmature|death')
+        ? avatar.actions.get('animalarmature|death')
         : intent === 'hit'
-          ? avatar.actions.get('characterarmature|hitreact')
-          : (avatar.actions.get('characterarmature|flying_idle') ??
-            avatar.actions.get('characterarmature|fast_flying'));
+          ? avatar.actions.get('animalarmature|idle_hitreact_left')
+          : avatar.actions.get('animalarmature|idle');
     if (!next || next === avatar.current) return;
     next.reset().play();
     avatar.current?.crossFadeTo(next, 0.16, false);
