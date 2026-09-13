@@ -45,7 +45,7 @@ export interface HubScreenProps {
   readonly onUpgradeTool: (toolId: string) => void;
   readonly onAcceptQuest: (questId: string) => void;
   readonly onCompleteQuest: (questId: string) => void;
-  readonly onAttackEncounter: (interactableId: string) => void;
+  readonly onAttackEncounter: (interactableId: string, style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE') => void;
   readonly onRecoverCombat: () => void;
 }
 
