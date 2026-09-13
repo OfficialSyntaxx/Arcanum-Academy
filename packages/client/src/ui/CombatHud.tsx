@@ -17,7 +17,7 @@ export function CombatHud({ onAttack }: { readonly onAttack: (interactableId: st
         <span>You</span><span>{player.current}/{player.max} HP</span>
       </div>
       {combat.defeated ? (
-        <p>Reforming…</p>
+        <p>Defeated · +{combat.coinsGained} coins · Reforming…</p>
       ) : (
         <button type="button" onClick={() => onAttack(combat.interactableId)}>Attack</button>
       )}
