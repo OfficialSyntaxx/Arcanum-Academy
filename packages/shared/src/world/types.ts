@@ -47,6 +47,8 @@ export const InteractableKind = {
   MerchantStall: 'MERCHANT_STALL',
   ZonePortal: 'ZONE_PORTAL',
   QuestBoard: 'QUEST_BOARD',
+  /** A server-authoritative practice or hostile encounter. */
+  CombatEncounter: 'COMBAT_ENCOUNTER',
 } as const;
 
 export type InteractableKind = (typeof InteractableKind)[keyof typeof InteractableKind];
