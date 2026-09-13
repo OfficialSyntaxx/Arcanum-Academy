@@ -125,11 +125,6 @@ async function main(): Promise<void> {
     tunables: DEFAULT_TUNABLES,
     now: () => Date.now(),
   });
-  registerCombatHandlers(router, {
-    players,
-    now: () => Date.now(),
-    tickMs: DEFAULT_TUNABLES.combat.tickMs,
-  });
   registerQuestHandlers(router, { players, now: () => Date.now() });
 
   // The multiplayer layer is built, tested and switched off.
@@ -163,6 +158,13 @@ async function main(): Promise<void> {
     // hitch does not make everyone flicker out of the courtyard.
     staleAfterMs: Math.ceil(2_000 / DEFAULT_TUNABLES.network.hubPresenceBroadcastHz) * 2,
     now: () => Date.now(),
+  });
+  registerCombatHandlers(router, {
+    players,
+    now: () => Date.now(),
+    tickMs: DEFAULT_TUNABLES.combat.tickMs,
+    interactionRadius: DEFAULT_TUNABLES.world.interactionRadius,
+    positionFor: (sessionId) => presence.positionFor(sessionId),
   });
 
   const gateway = new Gateway({
