@@ -239,6 +239,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     onEngageBankChest: (interactableId) => store.setOpenBank(interactableId),
     onEngageMerchantStall: (interactableId) => store.setOpenMerchant(interactableId),
     onEngageQuestBoard: (interactableId) => store.setOpenNotice(interactableId),
+    onEngageCombatEncounter: (interactableId) => economy.attackEncounter(interactableId),
     onEngageNpc: (npc) =>
       store.setOpenDialogue({
         npcId: npc.id,
