@@ -95,7 +95,10 @@ export interface EconomyState {
     readonly maxHitpoints: number;
     readonly defeated: boolean;
     readonly respawnAtMs: number | null;
+    readonly nextAttackAtMs: number;
     readonly damage: number;
+    readonly rolledDamage: number;
+    readonly rolledHit: boolean;
     readonly enemyDamage: number;
     readonly coinsGained: number;
     readonly drops: readonly { readonly itemId: string; readonly quantity: number }[];
