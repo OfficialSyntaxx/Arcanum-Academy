@@ -1,5 +1,6 @@
 import {
   createLogger,
+  ClientOpcode,
   createMemorySink,
   consoleSink,
   COURTYARD,
@@ -240,6 +241,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     onEngageMerchantStall: (interactableId) => store.setOpenMerchant(interactableId),
     onEngageQuestBoard: (interactableId) => store.setOpenNotice(interactableId),
     onEngageCombatEncounter: (interactableId) => economy.attackEncounter(interactableId),
+    onPresence: (position) => transport.send(ClientOpcode.PresenceUpdate, position),
     onEngageNpc: (npc) =>
       store.setOpenDialogue({
         npcId: npc.id,
