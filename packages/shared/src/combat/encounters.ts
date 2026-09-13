@@ -13,6 +13,8 @@ export interface CombatEncounterDefinition {
   readonly rewardCoins: number;
   readonly respawnMs: number;
   readonly playerRecoveryMs: number;
+  /** Combat level required before this encounter may be attacked. */
+  readonly requiredCombatLevel: number;
 }
 
 export const PRACTICE_WISP: CombatEncounterDefinition = Object.freeze({
@@ -25,10 +27,25 @@ export const PRACTICE_WISP: CombatEncounterDefinition = Object.freeze({
   rewardCoins: 6,
   respawnMs: 4_000,
   playerRecoveryMs: 5_000,
+  requiredCombatLevel: 1,
+});
+
+export const ARCANE_WISP: CombatEncounterDefinition = Object.freeze({
+  interactableId: asId<InteractableId>('int.duel.arcane_wisp'),
+  label: 'Arcane Wisp',
+  position: { x: -4, z: 17.5 },
+  maxHitpoints: 10,
+  playerDamage: 1,
+  enemyDamage: 1,
+  rewardCoins: 12,
+  respawnMs: 5_500,
+  playerRecoveryMs: 6_000,
+  requiredCombatLevel: 2,
 });
 
 export const COMBAT_ENCOUNTERS: readonly CombatEncounterDefinition[] = Object.freeze([
   PRACTICE_WISP,
+  ARCANE_WISP,
 ]);
 
 export function combatEncounterByInteractable(
