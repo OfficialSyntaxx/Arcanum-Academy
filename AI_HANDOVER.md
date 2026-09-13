@@ -2,14 +2,13 @@
 
 ### Game design document and engineering handover — everything needed to build it from nothing
 
-**Written:** 2026-09-09 · **Updated:** 2026-09-13 · **Author:** Claude Code, with Codex implementation updates
+**Written:** 2026-09-09 · **Updated:** 2026-09-12 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
 **Code state:** G2 is in active vertical-slice development. Reliable skilling/economy,
-persistence, observability, quests, a server-authoritative practice-combat slice, and the first
-production GLB character presentation are live. The current focus is replacing temporary
-presentation with a coherent world art pass, beginning with named NPCs, then real tool sockets
-and creature visuals.
+persistence, observability, quests, starter combat, and the first production GLB character
+presentation are live. The current focus is replacing temporary presentation with a coherent
+world art pass, beginning with named NPCs, then real tool sockets and creature visuals.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -51,34 +50,8 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of the 2026-09-13 combat vitality work it reports **387 tests across
-38 files**.
-
-Combat vertical slice update (2026-09-13): the Courtyard now has `Practice Wisp` on the duelling
-terrace. `combat.attack` accepts only an authored interactable id; the server calculates damage,
-enforces the 600 ms tick and owns defeat/respawn. The client receives only the confirmed target
-state and displays a compact HP/Attack HUD that clears when the player travels away. This is a
-practice target—there is deliberately no player health, equipment damage, creature AI, loot or
-death system yet. Add those as a complete next combat phase, not as client-side shortcuts.
-
-Creature presentation update (2026-09-13): `assets/poly-pizza/armabee-evolved.glb` is now the
-Practice Wisp's compact animated visual. It adds 184 KiB to the PWA precache (now about 2.1 MiB),
-uses Flying Idle while alive and Death when the server confirms a defeat. It is strictly a visual
-layer: a failed GLB fetch cannot change combat state. The next combat phase is player hitpoints,
-hostile timing, rewards and death/recovery—not more client-only combat logic.
-
-Combat vitality update (2026-09-13): player hitpoints are persisted in the PlayerState schema
-(v3; legacy saves migrate to 10/10). Each non-lethal Practice Wisp hit counterattacks for one
-server-calculated point. Reaching zero begins a five-second recovery; reconnecting cannot erase
-the loss. The HUD displays both target and player HP. Combat is still deliberately a contained
-practice loop: add movement-range validation, player respawn placement, loot, food, equipment
-stats and hostile AI together in the following phase.
-
-Combat range update (2026-09-13): the client now sends its current free-movement position through
-the existing presence channel at the hub's 4 Hz projection cadence. `combat.attack` requires a
-fresh server-side position within the authored interaction radius of the encounter; otherwise it
-returns `combat.position_unknown` or `combat.out_of_range`. This prevents remote combat without
-changing the player's direct, obstacle-aware movement model.
+afterwards is yours. As of the 2026-09-12 named-NPC visual work it reports **385 tests across
+37 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -139,18 +112,6 @@ single hard-coded handler. The board surfaces the active or next unlocked entry.
 **The First Kindling**, **Embers for the Archive** unlocks and requires four Emberwood Branches plus
 two Crystal Shards. Preconditions, objective counts, exact inventory turn-ins and coin rewards are
 all enforced server-side; adding the next resource quest is a catalog entry, not a new handler.
-
-Named NPC interaction update (2026-09-13): proximity to an authored professor, merchant,
-groundskeeper, archivist, referee or rival now gives the player a **Talk** contextual action. It
-opens a concise mobile dialogue panel using that character's authored bark set, logs the exchange
-to the local diagnostic trace, and closes automatically when travel begins. Anonymous crowd
-students deliberately remain non-interactable.
-
-Mobile asset guard (2026-09-13): `npm run asset-budget` now runs after the client build and
-enforces a 1 MiB maximum individual precached file and 3 MiB total precache. Current production
-output is 1.93 MiB with a 552 KiB largest asset. Do not loosen this casually: a Quaternius outfit
-experiment correctly failed the PWA build after adding roughly 70 MiB of texture/animation data.
-Prefer compact GLB assets, runtime loading, atlases or texture compression before increasing a cap.
 
 Reliability and operations: production uses Render Postgres for player and identity persistence.
 The client submits low-volume diagnostic events; a protected server diagnostic feed persists them
