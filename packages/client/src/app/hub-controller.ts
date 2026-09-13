@@ -74,7 +74,11 @@ export interface HubControllerOptions {
   /** Called when the player attacks an in-world combat encounter. */
   readonly onEngageCombatEncounter?: (interactableId: string) => void;
   /** Reports movement to the gateway for authoritative interaction range checks. */
-  readonly onPresence?: (position: { readonly x: number; readonly z: number; readonly facing: number }) => void;
+  readonly onPresence?: (position: {
+    readonly x: number;
+    readonly z: number;
+    readonly facing: number;
+  }) => void;
   /** Called when the player speaks to a nearby named character. */
   readonly onEngageNpc?: (npc: {
     readonly id: string;
