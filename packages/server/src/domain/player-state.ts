@@ -79,7 +79,7 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 3;
+export const PLAYER_SCHEMA_VERSION = 2;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
 export interface PlayerState {
@@ -88,7 +88,7 @@ export interface PlayerState {
   readonly bank: Inventory;
   /** Per-account soft currency, earned from sales and spent on services. */
   readonly coins: number;
-  /** Combat vitality is durable: refreshes and reconnects cannot heal a loss. */
+  /** Durable combat vitality; reconnecting never grants a free heal. */
   readonly hitpoints: { readonly current: number; readonly max: number; readonly respawnAtMs: number | null };
   /** Progress per skill. Absent means untouched, which reads as level one. */
   readonly skills: Readonly<Record<string, SkillProgress>>;
@@ -139,18 +139,16 @@ function readNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-function readHitpoints(value: unknown) {
+function readHitpoints(value: unknown): PlayerState['hitpoints'] {
   if (!isRecord(value)) return { current: 10, max: 10, respawnAtMs: null };
   const max = Math.max(1, Math.floor(readNumber(value.max, 10)));
   const current = Math.max(0, Math.min(max, Math.floor(readNumber(value.current, max))));
-  const rawRespawn = value.respawnAtMs;
   return {
     current,
     max,
-    respawnAtMs:
-      typeof rawRespawn === 'number' && Number.isFinite(rawRespawn)
-        ? Math.max(0, rawRespawn)
-        : null,
+    respawnAtMs: typeof value.respawnAtMs === 'number' && Number.isFinite(value.respawnAtMs)
+      ? Math.max(0, value.respawnAtMs)
+      : null,
   };
 }
 
