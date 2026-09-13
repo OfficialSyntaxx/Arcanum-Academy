@@ -74,6 +74,12 @@ the loss. The HUD displays both target and player HP. Combat is still deliberate
 practice loop: add movement-range validation, player respawn placement, loot, food, equipment
 stats and hostile AI together in the following phase.
 
+Combat range update (2026-09-13): the client now sends its current free-movement position through
+the existing presence channel at the hub's 4 Hz projection cadence. `combat.attack` requires a
+fresh server-side position within the authored interaction radius of the encounter; otherwise it
+returns `combat.position_unknown` or `combat.out_of_range`. This prevents remote combat without
+changing the player's direct, obstacle-aware movement model.
+
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
 
