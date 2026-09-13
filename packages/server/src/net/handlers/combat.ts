@@ -52,9 +52,8 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
     }
     const nowMs = options.now();
     return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
-      const recovered = recover(state, nowMs);
-      if (recovered.hitpoints.respawnAtMs !== null) {
-        return err(failure(FailureCode.Conflict, 'combat.player_recovering', { detail: 'you are recovering at the academy infirmary' }));
+      if (state.hitpoints.respawnAtMs !== null) {
+        return err(failure(FailureCode.Conflict, 'combat.player_recovering', { detail: 'recover before returning to combat' }));
       }
       const current = respawnSparringTarget(
         encounters.get(interactableId) ?? createSparringState(definition.maxHitpoints, nowMs),
@@ -72,14 +71,14 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
         return err(failure(FailureCode.Conflict, `combat.${outcome.reason}`, { detail: 'the practice target is not ready yet' }));
       }
       const nextHp = outcome.defeated
-        ? recovered.hitpoints
-        : damagePlayer(recovered.hitpoints, definition.enemyDamage, definition.playerRecoveryMs, nowMs);
+        ? state.hitpoints
+        : damagePlayer(state.hitpoints, definition.enemyDamage, definition.playerRecoveryMs, nowMs);
       const coinsGained = outcome.defeated
-        ? Math.max(0, Math.min(definition.rewardCoins, options.currencyCap - recovered.coins))
+        ? Math.max(0, Math.min(definition.rewardCoins, options.currencyCap - state.coins))
         : 0;
       const next = {
-        ...recovered,
-        coins: recovered.coins + coinsGained,
+        ...state,
+        coins: state.coins + coinsGained,
         hitpoints: nextHp,
         lastSeenAtMs: nowMs,
       };
@@ -103,13 +102,21 @@ export function registerCombatHandlers(router: RegistryCommandRouter, options: C
       });
     });
   };
-  router.register('combat.attack', attack);
-}
-
-function recover(state: PlayerState, nowMs: number): PlayerState {
-  const hp = state.hitpoints;
-  if (hp.respawnAtMs === null || nowMs < hp.respawnAtMs) return state;
-  return { ...state, hitpoints: { current: hp.max, max: hp.max, respawnAtMs: null } };
+  const recover: CommandHandler = async (session) => {
+    const nowMs = options.now();
+    return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      const hp = state.hitpoints;
+      if (hp.current > 0 || hp.respawnAtMs === null) {
+        return err(failure(FailureCode.Conflict, 'combat.recovery_not_needed', { detail: 'you are already conscious' }));
+      }
+      if (nowMs < hp.respawnAtMs) {
+        return err(failure(FailureCode.Conflict, 'combat.player_recovering', { detail: 'the infirmary is still restoring you' }));
+      }
+      const next = { ...state, hitpoints: { current: hp.max, max: hp.max, respawnAtMs: null }, lastSeenAtMs: nowMs };
+      return ok({ state: next, value: { hitpoints: next.hitpoints } });
+    });
+  };
+  router.register('combat.attack', attack).register('combat.recover', recover);
 }
 
 function damagePlayer(
