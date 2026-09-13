@@ -95,6 +95,7 @@ export interface EconomyState {
     readonly enemyDamage: number;
     readonly coinsGained: number;
     readonly combatXpGained: number;
+    readonly style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
   } | null;
   /** Local receipt time of the latest server-confirmed combat hit. Presentation only. */
   readonly lastCombatStrikeAtMs: number;
