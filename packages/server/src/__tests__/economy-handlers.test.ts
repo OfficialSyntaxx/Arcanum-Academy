@@ -26,7 +26,7 @@ const SLOTS = DEFAULT_TUNABLES.gathering.baseInventorySlots;
 
 /** The crystal node the shipped content places in the courtyard. */
 const CRYSTAL = NODE_CATALOG.nodes.find((node) => node.kind === 'CRYSTAL')!;
-const DUST_RECIPE = RECIPE_BOOK.recipes[0]!;
+const DUST_RECIPE = RECIPE_BOOK.recipes.find((recipe) => recipe.id === 'recipe.dust.resonant')!;
 
 /** The crystal node, but demanding a level a new player cannot have. */
 const demandingNode = { ...CRYSTAL, requiredSkillLevel: 50 };
