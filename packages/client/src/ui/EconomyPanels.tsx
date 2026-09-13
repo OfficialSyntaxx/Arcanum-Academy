@@ -5,6 +5,7 @@ import {
   RECIPE_BOOK,
   SKILL_TABLE,
   SkillCategory,
+  ZONES_BY_ID,
   wasteRateBasisPoints,
   levelForXp,
   xpForLevel,
@@ -23,6 +24,20 @@ import { LabelStrip } from './LabelStrip.js';
 
 function itemName(definitionId: string): string {
   return ITEM_CATALOG.get(definitionId as never)?.name ?? definitionId;
+}
+
+/** Presentation belongs to the authored station and skill, never a hard-coded profession. */
+export function craftingPresentation(stationInteractableId: string) {
+  const recipes = RECIPE_BOOK.atStation(stationInteractableId as never);
+  const station = Array.from(ZONES_BY_ID.values())
+    .flatMap((zone) => zone.interactables)
+    .find((entry) => entry.id === stationInteractableId);
+  const skill = recipes[0] === undefined ? undefined : SKILL_TABLE.get(recipes[0].requiredSkillId);
+  return {
+    title: skill?.name ?? station?.label ?? 'Crafting',
+    serial: `${station?.label ?? 'Crafting station'} · ${recipes.length} recipes`,
+    verb: station?.verb ?? 'Craft',
+  };
 }
 
 /**
@@ -371,6 +386,7 @@ export function CraftingPanel({
 }) {
   const economy = useAppStore((state) => state.economy);
   const recipes = RECIPE_BOOK.atStation(stationInteractableId as never);
+  const presentation = craftingPresentation(stationInteractableId);
 
   const held = new Map<string, number>();
   for (const stack of economy.stacks) {
@@ -379,9 +395,9 @@ export function CraftingPanel({
 
   return (
     <div className="panel crafting-panel">
-      <LabelStrip title="Refining" serial={`${recipes.length} recipes`} />
+      <LabelStrip title={presentation.title} serial={presentation.serial} />
       {recipes.length === 0 ? (
-        <p className="inventory-panel__empty">Nothing is refined here.</p>
+        <p className="inventory-panel__empty">Nothing can be made here yet.</p>
       ) : (
         <ul className="crafting-panel__list">
           {recipes.map((recipe) => {
@@ -414,7 +430,7 @@ export function CraftingPanel({
                   onClick={() => onCraft(recipe.id)}
                 >
                   {levelMet
-                    ? `Refine ${itemName(recipe.output.itemId)}`
+                    ? `${presentation.verb} ${itemName(recipe.output.itemId)}`
                     : `Needs level ${recipe.requiredSkillLevel}`}
                 </button>
               </li>
