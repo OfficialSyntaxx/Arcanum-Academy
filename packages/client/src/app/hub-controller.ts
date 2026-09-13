@@ -70,6 +70,13 @@ export interface HubControllerOptions {
   readonly onEngageMerchantStall?: (interactableId: string) => void;
   /** Called when the player reads an in-world notice or quest board. */
   readonly onEngageQuestBoard?: (interactableId: string) => void;
+  /** Called when the player speaks to a nearby named character. */
+  readonly onEngageNpc?: (npc: {
+    readonly id: string;
+    readonly name: string;
+    readonly role: string;
+    readonly line: string;
+  }) => void;
   /** Called when the player engages a zone portal, with the target zone id. */
   readonly onEngageZonePortal?: (targetZoneId: string) => void;
   /**
@@ -234,6 +241,23 @@ export class HubController {
         source: 'world',
         message: 'Interact pressed with no active prompt',
       });
+      return;
+    }
+    if (prompt.kind === 'npc') {
+      const npc = this.npcs.namedById(prompt.id);
+      if (!npc) return;
+      const minute = Math.floor(
+        ((this.now() % this.options.tunables.world.worldDayLengthMs) /
+          this.options.tunables.world.worldDayLengthMs) *
+          1440,
+      );
+      const line = npc.barks[minute % Math.max(1, npc.barks.length)] ?? 'Good to see you.';
+      useAppStore.getState().recordDiagnostic({
+        level: 'info',
+        source: 'world',
+        message: `Talk → ${npc.name} (${npc.id})`,
+      });
+      this.options.onEngageNpc?.({ id: npc.id, name: npc.name, role: npc.role, line });
       return;
     }
     useAppStore.getState().recordDiagnostic({
@@ -488,7 +512,14 @@ export class HubController {
           this.options.tunables.world.interactionRadius,
         );
 
-    const promptId = nearest?.interactable.id ?? null;
+    const nearbyNpc = nearest
+      ? null
+      : this.npcs.nearestNamed(
+          this.player.position.x,
+          this.player.position.z,
+          this.options.tunables.world.interactionRadius,
+        );
+    const promptId = nearest?.interactable.id ?? nearbyNpc?.id ?? null;
     if (promptId !== this.lastPromptId) {
       this.lastPromptId = promptId;
       const prompt: InteractionPromptState | null = nearest
@@ -502,7 +533,15 @@ export class HubController {
               ? { targetZone: nearest.interactable.targetZone }
               : {}),
           }
-        : null;
+        : nearbyNpc
+          ? {
+              id: nearbyNpc.id,
+              label: nearbyNpc.name,
+              verb: 'Talk',
+              kind: 'npc',
+              approach: this.world.zone.spawn,
+            }
+          : null;
       store.setInteractionPrompt(prompt);
     }
 
