@@ -131,6 +131,16 @@
           "atLevel": 1,
           "description": "Cook shore wolf meat at a campfire",
           "recipeId": "recipe.meat.cooked_shore_wolf"
+        },
+        {
+          "atLevel": 10,
+          "description": "Cook Moonrays",
+          "recipeId": "recipe.fish.cooked_moonray"
+        },
+        {
+          "atLevel": 25,
+          "description": "Cook Stargills",
+          "recipeId": "recipe.fish.cooked_stargill"
         }
       ]
     },
