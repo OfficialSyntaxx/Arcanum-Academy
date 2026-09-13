@@ -1,4 +1,10 @@
-import { asId, ITEM_CATALOG, SKILL_TABLE, type SkillId } from '@alderfell/shared';
+import {
+  asId,
+  ITEM_CATALOG,
+  SKILL_TABLE,
+  type ItemDefinitionId,
+  type SkillId,
+} from '@alderfell/shared';
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../state/app-store.js';
 
@@ -98,10 +104,10 @@ export function CombatHud({
       </div>
       <p className="combat-hud__log" aria-live="polite">
         {combat.foodConsumed !== undefined
-          ? `You eat cooked Shore Wolf Meat and restore ${combat.foodConsumed.healAmount} HP.`
+          ? `You eat ${ITEM_CATALOG.get(asId<ItemDefinitionId>(combat.foodConsumed.itemId))?.name ?? 'food'} and restore ${combat.foodConsumed.healAmount} HP.`
           : combat.defeated
-            ? 'The Shore Wolf is defeated.'
-            : `${strikeMessage}${combat.enemyDamage > 0 ? ` The Shore Wolf hits you for ${combat.enemyDamage}.` : ''}`}
+            ? `The ${combat.label} is defeated.`
+            : `${strikeMessage}${combat.enemyDamage > 0 ? ` The ${combat.label} hits you for ${combat.enemyDamage}.` : ''}`}
       </p>
       {player.current === 0 ? (
         player.respawnAtMs !== null && now < player.respawnAtMs ? (
@@ -117,7 +123,7 @@ export function CombatHud({
           {combat.drops
             .map(
               (drop) =>
-                `${drop.quantity} ${drop.itemId === 'item.meat.raw_shore_wolf' ? 'Raw Shore Wolf Meat' : drop.itemId}`,
+                `${drop.quantity} ${ITEM_CATALOG.get(asId<ItemDefinitionId>(drop.itemId))?.name ?? drop.itemId}`,
             )
             .join(', ')}{' '}
           · +{combat.combatXpGained} {styleSkillName} XP
