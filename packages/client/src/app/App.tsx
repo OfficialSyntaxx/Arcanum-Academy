@@ -120,6 +120,7 @@ export function App() {
                 economy?.attackEncounter(interactableId, style)
               }
               onRecoverCombat={() => economy?.recoverCombat()}
+              onReclaimCombatGrave={() => economy?.reclaimCombatGrave()}
               onEatCombatFood={(interactableId, itemId) =>
                 economy?.eatCombatFood(interactableId, itemId)
               }
