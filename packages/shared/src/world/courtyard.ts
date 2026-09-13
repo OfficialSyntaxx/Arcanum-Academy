@@ -400,12 +400,12 @@ export const COURTYARD: Zone = {
       verb: 'Read',
     },
     {
-      id: ix('int.duel.training_wisp'),
+      id: ix('int.combat.shore_wolf'),
       kind: InteractableKind.CombatEncounter,
       position: { x: 0, z: 12.8 },
       approach: wp('wp.duel.entry'),
       facing: Math.PI,
-      label: 'Practice Wisp',
+      label: 'Shore Wolf',
       verb: 'Attack',
     },
 
