@@ -9,6 +9,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { heightAt, InteractableKind, type Zone } from '@alderfell/shared';
 // Quaternius, "Wolf", CC0 1.0: https://poly.pizza/m/P1gU3Qkr9r
 import shoreWolfUrl from '../../../../assets/quaternius/low-poly-animated-animals/wolf.glb?url';
+// PolyPizza, "Armabee Evolved", CC0 1.0: https://poly.pizza/m/GcttdvsqsQ
+import armabeeUrl from '../../../../assets/poly-pizza/armabee-evolved.glb?url';
 
 interface Avatar {
   readonly id: string;
@@ -22,7 +24,10 @@ interface Avatar {
   attackStartedAtMs: number;
 }
 
-const modelPromise = new GLTFLoader().loadAsync(shoreWolfUrl);
+const models = {
+  'int.combat.shore_wolf': new GLTFLoader().loadAsync(shoreWolfUrl),
+  'int.combat.emberwing_armabee': new GLTFLoader().loadAsync(armabeeUrl),
+} as const;
 
 export class CombatAvatarGroup {
   readonly root = new Group();
@@ -37,9 +42,11 @@ export class CombatAvatarGroup {
     for (const encounter of zone.interactables.filter(
       (entry) => entry.kind === InteractableKind.CombatEncounter,
     )) {
-      void modelPromise.then((gltf) =>
-        this.create(encounter.id, encounter.position.x, encounter.position.z, gltf),
-      );
+      const model = models[encounter.id as keyof typeof models];
+      if (model !== undefined)
+        void model.then((gltf) =>
+          this.create(encounter.id, encounter.position.x, encounter.position.z, gltf),
+        );
     }
   }
 
@@ -99,7 +106,12 @@ export class CombatAvatarGroup {
     this.root.clear();
   }
 
-  private create(id: string, x: number, z: number, gltf: Awaited<typeof modelPromise>): void {
+  private create(
+    id: string,
+    x: number,
+    z: number,
+    gltf: Awaited<(typeof models)[keyof typeof models]>,
+  ): void {
     if (this.disposed || this.avatars.has(id)) return;
     const model = clone(gltf.scene);
     model.updateMatrixWorld(true);
@@ -139,14 +151,19 @@ export class CombatAvatarGroup {
   }
 
   private play(avatar: Avatar, intent: 'idle' | 'hit' | 'attack' | 'death'): void {
-    const next =
+    const exact =
       intent === 'death'
-        ? avatar.actions.get('animalarmature|death')
+        ? 'animalarmature|death'
         : intent === 'hit'
-          ? avatar.actions.get('animalarmature|idle_hitreact_left')
+          ? 'animalarmature|idle_hitreact_left'
           : intent === 'attack'
-            ? avatar.actions.get('animalarmature|attack')
-            : avatar.actions.get('animalarmature|idle');
+            ? 'animalarmature|attack'
+            : 'animalarmature|idle';
+    const token = intent === 'hit' ? 'hit' : intent;
+    const next =
+      avatar.actions.get(exact) ??
+      [...avatar.actions.entries()].find(([name]) => name.includes(token))?.[1] ??
+      (intent === 'idle' ? [...avatar.actions.values()][0] : undefined);
     if (!next || next === avatar.current) return;
     next.reset().play();
     avatar.current?.crossFadeTo(next, 0.16, false);
