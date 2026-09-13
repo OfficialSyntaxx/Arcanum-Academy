@@ -34,7 +34,7 @@ const total = measured.reduce((sum, entry) => sum + entry.bytes, 0);
 
 if (oversized.length > 0 || total > MAX_PRECACHE_BYTES) {
   const details = [...oversized, ...measured]
-    .filter((entry, index, source) => oversized.includes(entry) || index < 8)
+    .filter((entry, index) => oversized.includes(entry) || index < 8)
     .map((entry) => `  ${entry.path}: ${(entry.bytes / 1024).toFixed(1)} KiB`)
     .join('\n');
   throw new Error(
