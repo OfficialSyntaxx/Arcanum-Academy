@@ -60,6 +60,7 @@ const OWNED = new Set([
   'quest.accept',
   'quest.complete',
   'combat.attack',
+  'combat.recover',
 ]);
 
 export class EconomyController {
@@ -132,6 +133,10 @@ export class EconomyController {
 
   attackEncounter(interactableId: string): void {
     this.send('combat.attack', { interactableId });
+  }
+
+  recoverCombat(): void {
+    this.send('combat.recover');
   }
 
   dispose(): void {
