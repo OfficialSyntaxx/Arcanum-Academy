@@ -9,6 +9,8 @@ export interface CombatEncounterDefinition {
   readonly maxHitpoints: number;
   readonly playerDamage: number;
   readonly enemyDamage: number;
+  /** Soft currency granted exactly once when this target is defeated. */
+  readonly rewardCoins: number;
   readonly respawnMs: number;
   readonly playerRecoveryMs: number;
 }
@@ -20,6 +22,7 @@ export const PRACTICE_WISP: CombatEncounterDefinition = Object.freeze({
   maxHitpoints: 8,
   playerDamage: 1,
   enemyDamage: 1,
+  rewardCoins: 6,
   respawnMs: 4_000,
   playerRecoveryMs: 5_000,
 });
