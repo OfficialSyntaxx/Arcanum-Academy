@@ -45,6 +45,7 @@ function harness() {
     skills: SKILL_TABLE,
     progression: DEFAULT_TUNABLES.progression,
     combatXpPerDamage: DEFAULT_TUNABLES.combat.combatXpPerDamage,
+    hitpointsXpPerDamage: DEFAULT_TUNABLES.combat.hitpointsXpPerDamage,
     positionFor: () => position,
   });
   return {
@@ -95,13 +96,31 @@ describe('Shore Wolf combat handlers', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.reason).toBe('combat.not_an_encounter');
   });
-  it('awards confirmed Combat XP and reports the selected style', async () => {
+  it('awards Defence and Hitpoints XP for a defensive strike', async () => {
     const h = harness();
     expect(await h.dispatch(SHORE_WOLF, 'DEFENSIVE')).toMatchObject({
       ok: true,
-      value: { combat: { damage: 1, combatXpGained: 4, style: 'DEFENSIVE' } },
+      value: {
+        combat: {
+          damage: 1,
+          combatXpGained: 4,
+          hitpointsXpGained: 1,
+          styleSkillId: 'skill.defence',
+          style: 'DEFENSIVE',
+        },
+      },
     });
-    expect((await h.state()).skills['skill.combat']).toEqual({ level: 1, xp: 4 });
+    expect((await h.state()).skills['skill.defence']).toEqual({ level: 1, xp: 4 });
+    expect((await h.state()).skills['skill.hitpoints']).toEqual({ level: 1, xp: 1 });
+  });
+  it.each([
+    ['ACCURATE', 'skill.attack'],
+    ['AGGRESSIVE', 'skill.strength'],
+    ['DEFENSIVE', 'skill.defence'],
+  ] as const)('awards the selected %s style skill', async (style, skillId) => {
+    const h = harness();
+    await h.dispatch(SHORE_WOLF, style);
+    expect((await h.state()).skills[skillId]).toEqual({ level: 1, xp: 4 });
   });
   it('enforces cooldowns', async () => {
     const h = harness();
