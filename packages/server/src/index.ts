@@ -164,6 +164,7 @@ async function main(): Promise<void> {
     now: () => Date.now(),
     tickMs: DEFAULT_TUNABLES.combat.tickMs,
     interactionRadius: DEFAULT_TUNABLES.world.interactionRadius,
+    currencyCap: DEFAULT_TUNABLES.economy.currencyCap,
     positionFor: (sessionId) => presence.positionFor(sessionId),
   });
 
