@@ -82,6 +82,16 @@ export interface EconomyState {
   }[];
   /** Server-confirmed quest progress. Missing means the quest is available. */
   readonly quests: Readonly<Record<string, QuestProgress>>;
+  /** The last server-confirmed practice encounter state. */
+  readonly combat: {
+    readonly interactableId: string;
+    readonly label: string;
+    readonly hitpoints: number;
+    readonly maxHitpoints: number;
+    readonly defeated: boolean;
+    readonly respawnAtMs: number | null;
+    readonly damage: number;
+  } | null;
 }
 
 export const EMPTY_ECONOMY: EconomyState = {
@@ -98,6 +108,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   overflowed: false,
   cards: [],
   quests: {},
+  combat: null,
 };
 
 export interface AppState {
@@ -246,6 +257,7 @@ export const useAppStore = create<AppState>((set) => ({
       openMerchantId: null,
       openNoticeId: null,
       openDialogue: null,
+      economy: { ...state.economy, combat: null },
       lastCommandError: null,
     })),
 }));
