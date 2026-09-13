@@ -191,13 +191,15 @@ export class HubController {
     // Under reduced motion the camera resolves immediately instead of easing.
     this.camera.update(focus, this.accessibility.reducedMotion ? 1 : dtSeconds);
 
-    const gathering = useAppStore.getState().economy.gatheringNodeId !== null;
+    const economy = useAppStore.getState().economy;
+    const gathering = economy.gatheringNodeId !== null;
+    const combatStriking = this.now() - economy.lastCombatStrikeAtMs < 520;
     this.playerAvatar.update(
       dtSeconds,
       focus,
       this.player.facing,
       this.player.gait,
-      gathering,
+      gathering || combatStriking,
     );
     if (!this.playerAvatar.ready) {
       this.world.actors.setTransform(
@@ -214,7 +216,7 @@ export class HubController {
     }
     this.npcs.update(this.now(), dtSeconds * 1000);
     this.npcAvatars.update(dtSeconds, this.npcs.namedPresentations());
-    this.combatAvatars.update(dtSeconds, useAppStore.getState().economy.combat);
+    this.combatAvatars.update(dtSeconds, economy.combat, economy.lastCombatStrikeAtMs);
     this.world.actors.flush();
 
     const dayFraction =
