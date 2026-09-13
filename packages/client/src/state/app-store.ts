@@ -42,6 +42,14 @@ export interface InteractionPromptState {
   readonly targetZone?: string;
 }
 
+/** A short, authored in-world exchange with a named NPC. */
+export interface DialogueState {
+  readonly npcId: string;
+  readonly name: string;
+  readonly role: string;
+  readonly line: string;
+}
+
 /**
  * The economy as the client believes it to be.
  *
@@ -124,6 +132,8 @@ export interface AppState {
   readonly openMerchantId: string | null;
   /** The world notice or quest board currently being read, or null. */
   readonly openNoticeId: string | null;
+  /** The named character currently being spoken to, if any. */
+  readonly openDialogue: DialogueState | null;
   /** This player's id, as the server reported it at handshake. */
   readonly playerId: string;
   /** Non-null while waiting for the ladder to pair you. */
@@ -154,6 +164,7 @@ export interface AppState {
   setOpenBank(interactableId: string | null): void;
   setOpenMerchant(interactableId: string | null): void;
   setOpenNotice(interactableId: string | null): void;
+  setOpenDialogue(dialogue: DialogueState | null): void;
   setPlayerId(playerId: string): void;
   setQueued(queued: { queueSize: number } | null): void;
   beginTravel(): void;
@@ -183,6 +194,7 @@ export const useAppStore = create<AppState>((set) => ({
   openBankId: null,
   openMerchantId: null,
   openNoticeId: null,
+  openDialogue: null,
   playerId: '',
   queued: null,
   travelRevision: 0,
@@ -222,6 +234,7 @@ export const useAppStore = create<AppState>((set) => ({
   setOpenBank: (openBankId) => set({ openBankId }),
   setOpenMerchant: (openMerchantId) => set({ openMerchantId }),
   setOpenNotice: (openNoticeId) => set({ openNoticeId }),
+  setOpenDialogue: (openDialogue) => set({ openDialogue }),
   setPlayerId: (playerId) => set({ playerId }),
   setQueued: (queued) => set({ queued }),
   beginTravel: () =>
@@ -232,6 +245,7 @@ export const useAppStore = create<AppState>((set) => ({
       openBankId: null,
       openMerchantId: null,
       openNoticeId: null,
+      openDialogue: null,
       lastCommandError: null,
     })),
 }));
