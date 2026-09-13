@@ -14,7 +14,7 @@ import {
 import { useAppStore } from '../state/app-store.js';
 import { NoticeBoard } from '../ui/NoticeBoard.js';
 import { NpcDialogue } from '../ui/NpcDialogue.js';
-import { CombatHud } from '../ui/CombatHud.js';
+import { CombatHud, GravestoneHud } from '../ui/CombatHud.js';
 
 /**
  * The hub overlay.
@@ -50,6 +50,7 @@ export interface HubScreenProps {
     style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE',
   ) => void;
   readonly onRecoverCombat: () => void;
+  readonly onReclaimCombatGrave: () => void;
   readonly onEatCombatFood: (interactableId: string, itemId: string) => void;
 }
 
@@ -78,6 +79,7 @@ export function HubScreen({
   onNavigate,
   onAttackEncounter,
   onRecoverCombat,
+  onReclaimCombatGrave,
   onEatCombatFood,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
@@ -125,6 +127,7 @@ export function HubScreen({
       <CollectionToast />
       <CommandError />
       <CombatHud onAttack={onAttackEncounter} onRecover={onRecoverCombat} onEat={onEatCombatFood} />
+      <GravestoneHud onReclaim={onReclaimCombatGrave} />
       <button
         type="button"
         className="satchel-toggle"
