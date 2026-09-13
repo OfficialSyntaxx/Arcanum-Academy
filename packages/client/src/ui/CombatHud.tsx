@@ -36,7 +36,7 @@ export function CombatHud({
           <button type="button" onClick={onRecover}>Recover</button>
         )
       ) : combat.defeated ? (
-        <p>Defeated · +{combat.coinsGained} coins · Reforming…</p>
+        <p>Defeated · +{combat.coinsGained} coins · +{combat.combatXpGained} Combat XP · Reforming…</p>
       ) : (
         <button type="button" onClick={() => onAttack(combat.interactableId)}>Attack</button>
       )}
