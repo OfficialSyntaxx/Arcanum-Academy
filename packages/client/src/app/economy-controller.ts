@@ -143,6 +143,11 @@ export class EconomyController {
     this.send('combat.recover');
   }
 
+  /** Travelling away ends the local combat presentation; the server still owns target respawn. */
+  disengageCombat(): void {
+    useAppStore.getState().setEconomy({ combat: null, lastCombatStrikeAtMs: 0 });
+  }
+
   eatCombatFood(interactableId: string, itemId: string): void {
     this.send('combat.eat', { interactableId, itemId });
   }
@@ -228,8 +233,7 @@ export class EconomyController {
       ...(patch.decks !== undefined ? { decks: patch.decks } : {}),
       ...(patch.quests !== undefined ? { quests: patch.quests } : {}),
       ...(patch.combat !== undefined ? { combat: patch.combat } : {}),
-      ...((envelope.kind === 'combat.attack' || envelope.kind === 'combat.eat') &&
-      patch.combat !== undefined
+      ...(envelope.kind === 'combat.attack' && patch.combat !== undefined
         ? { lastCombatStrikeAtMs: Date.now() }
         : {}),
     };
