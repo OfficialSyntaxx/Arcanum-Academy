@@ -14,6 +14,7 @@ import {
 import { useAppStore } from '../state/app-store.js';
 import { NoticeBoard } from '../ui/NoticeBoard.js';
 import { NpcDialogue } from '../ui/NpcDialogue.js';
+import { CombatHud } from '../ui/CombatHud.js';
 
 /**
  * The hub overlay.
@@ -44,6 +45,7 @@ export interface HubScreenProps {
   readonly onUpgradeTool: (toolId: string) => void;
   readonly onAcceptQuest: (questId: string) => void;
   readonly onCompleteQuest: (questId: string) => void;
+  readonly onAttackEncounter: (interactableId: string) => void;
 }
 
 /**
@@ -69,6 +71,7 @@ export function HubScreen({
   onAcceptQuest,
   onCompleteQuest,
   onNavigate,
+  onAttackEncounter,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
@@ -114,6 +117,7 @@ export function HubScreen({
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
       <CollectionToast />
       <CommandError />
+      <CombatHud onAttack={onAttackEncounter} />
       <button
         type="button"
         className="satchel-toggle"
