@@ -46,6 +46,8 @@ function harness() {
     progression: DEFAULT_TUNABLES.progression,
     combatXpPerDamage: DEFAULT_TUNABLES.combat.combatXpPerDamage,
     hitpointsXpPerDamage: DEFAULT_TUNABLES.combat.hitpointsXpPerDamage,
+    itemsKeptOnDeath: DEFAULT_TUNABLES.combat.itemsKeptOnDeath,
+    graveExpiryMs: DEFAULT_TUNABLES.combat.graveExpiryMs,
     positionFor: () => position,
   });
   return {
@@ -54,6 +56,7 @@ function harness() {
       style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = 'ACCURATE',
     ) => router.dispatch(session(), 'combat.attack', { interactableId, style }),
     recover: () => router.dispatch(session(), 'combat.recover', {}),
+    reclaimGrave: () => router.dispatch(session(), 'combat.reclaim_grave', {}),
     eat: (itemId = 'item.meat.cooked_shore_wolf') =>
       router.dispatch(session(), 'combat.eat', { interactableId: SHORE_WOLF, itemId }),
     moveTo: (p: { x: number; z: number } | null) => {
@@ -78,6 +81,20 @@ function harness() {
         if (!inventory.ok) throw Error(inventory.error.reason);
         return ok({ state: { ...state, inventory: inventory.value }, value: undefined });
       });
+      if (!r.ok) throw Error(r.error.reason);
+    },
+    async grant(itemId: Parameters<typeof addItems>[1], quantity: number) {
+      const r = await players.update(PLAYER, (state) => {
+        const inventory = addItems(state.inventory, itemId, quantity, ITEM_CATALOG);
+        if (!inventory.ok) throw Error(inventory.error.reason);
+        return ok({ state: { ...state, inventory: inventory.value }, value: undefined });
+      });
+      if (!r.ok) throw Error(r.error.reason);
+    },
+    async setHitpoints(current: number) {
+      const r = await players.update(PLAYER, (state) =>
+        ok({ state: { ...state, hitpoints: { ...state.hitpoints, current } }, value: undefined }),
+      );
       if (!r.ok) throw Error(r.error.reason);
     },
   };
@@ -174,6 +191,36 @@ describe('Shore Wolf combat handlers', () => {
     const blocked = await h.dispatch();
     expect(blocked.ok).toBe(false);
     if (!blocked.ok) expect(blocked.error.reason).toBe('combat.cooldown');
+  });
+  it('keeps the three most valuable items and restores the grave only in range', async () => {
+    const h = harness();
+    await h.grant('item.crystal.prismatic' as Parameters<typeof addItems>[1], 1);
+    await h.grant('item.crystal.resonant' as Parameters<typeof addItems>[1], 2);
+    await h.grant('item.crystal.shard' as Parameters<typeof addItems>[1], 3);
+    await h.setHitpoints(1);
+    expect(await h.dispatch()).toMatchObject({
+      ok: true,
+      value: { grave: { stacks: [{ definitionId: 'item.crystal.shard', quantity: 3 }] } },
+    });
+    let state = await h.state();
+    expect(state.inventory.stacks).toEqual([
+      { definitionId: 'item.crystal.prismatic', quantity: 1 },
+      { definitionId: 'item.crystal.resonant', quantity: 2 },
+    ]);
+    h.advance(DEFAULT_TUNABLES.combat.tickMs + 5_000);
+    expect((await h.recover()).ok).toBe(true);
+    h.moveTo({ x: 20, z: 20 });
+    const remote = await h.reclaimGrave();
+    expect(remote.ok).toBe(false);
+    if (!remote.ok) expect(remote.error.reason).toBe('combat.grave_out_of_range');
+    h.moveTo({ x: 0, z: 12.8 });
+    expect(await h.reclaimGrave()).toMatchObject({ ok: true, value: { grave: null } });
+    state = await h.state();
+    expect(state.grave).toBeNull();
+    expect(state.inventory.stacks).toContainEqual({
+      definitionId: 'item.crystal.shard',
+      quantity: 3,
+    });
   });
   it('rejects inventory materials that are not combat food', async () => {
     const h = harness();
