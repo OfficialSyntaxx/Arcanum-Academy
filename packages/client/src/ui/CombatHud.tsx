@@ -5,15 +5,22 @@ import { useAppStore } from '../state/app-store.js';
 export function CombatHud({
   onAttack,
   onRecover,
+  onEat,
 }: {
   readonly onAttack: (
     interactableId: string,
     style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE',
   ) => void;
   readonly onRecover: () => void;
+  readonly onEat: (interactableId: string) => void;
 }) {
   const combat = useAppStore((state) => state.economy.combat);
   const player = useAppStore((state) => state.economy.hitpoints);
+  const cookedMeat = useAppStore(
+    (state) =>
+      state.economy.stacks.find((stack) => stack.definitionId === 'item.meat.cooked_shore_wolf')
+        ?.quantity ?? 0,
+  );
   const [now, setNow] = useState(Date.now());
   const [style, setStyle] = useState<'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE'>('ACCURATE');
   useEffect(() => {
@@ -61,9 +68,11 @@ export function CombatHud({
         ))}
       </div>
       <p className="combat-hud__log" aria-live="polite">
-        {combat.defeated
-          ? 'The Shore Wolf is defeated.'
-          : `${strikeMessage}${combat.enemyDamage > 0 ? ` The Shore Wolf hits you for ${combat.enemyDamage}.` : ''}`}
+        {combat.foodConsumed !== undefined
+          ? `You eat cooked Shore Wolf Meat and restore ${combat.foodConsumed.healAmount} HP.`
+          : combat.defeated
+            ? 'The Shore Wolf is defeated.'
+            : `${strikeMessage}${combat.enemyDamage > 0 ? ` The Shore Wolf hits you for ${combat.enemyDamage}.` : ''}`}
       </p>
       {player.current === 0 ? (
         player.respawnAtMs !== null && now < player.respawnAtMs ? (
@@ -85,13 +94,22 @@ export function CombatHud({
           · +{combat.combatXpGained} Combat XP · Reforming…
         </p>
       ) : (
-        <button
-          type="button"
-          disabled={attackReadyInMs > 0}
-          onClick={() => onAttack(combat.interactableId, style)}
-        >
-          {attackReadyInMs > 0 ? `Ready in ${Math.ceil(attackReadyInMs / 1_000)}s` : 'Attack'}
-        </button>
+        <div className="combat-hud__actions">
+          <button
+            type="button"
+            disabled={attackReadyInMs > 0}
+            onClick={() => onAttack(combat.interactableId, style)}
+          >
+            {attackReadyInMs > 0 ? `Ready in ${Math.ceil(attackReadyInMs / 1_000)}s` : 'Attack'}
+          </button>
+          <button
+            type="button"
+            disabled={cookedMeat === 0 || attackReadyInMs > 0}
+            onClick={() => onEat(combat.interactableId)}
+          >
+            Eat +3 HP ({cookedMeat})
+          </button>
+        </div>
       )}
     </section>
   );
