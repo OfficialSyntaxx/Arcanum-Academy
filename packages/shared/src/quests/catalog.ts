@@ -71,7 +71,5 @@ export function questIsUnlocked(
   quest: QuestDefinition,
   progress: Readonly<Record<string, QuestProgress>>,
 ): boolean {
-  return quest.prerequisites.every(
-    (id) => progress[id]?.status === QuestStatus.Completed,
-  );
+  return quest.prerequisites.every((id) => progress[id]?.status === QuestStatus.Completed);
 }
