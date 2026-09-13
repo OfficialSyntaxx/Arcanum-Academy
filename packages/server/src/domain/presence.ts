@@ -80,14 +80,6 @@ export class PresenceService {
     this.entries.delete(sessionId);
   }
 
-  /** Read-only latest position for server-side interaction range checks. */
-  positionFor(sessionId: SessionId): { readonly x: number; readonly z: number } | null {
-    const entry = this.entries.get(sessionId);
-    if (entry === undefined) return null;
-    if (entry.updatedAtMs < this.options.now() - this.options.staleAfterMs) return null;
-    return { x: entry.x, z: entry.z };
-  }
-
   /**
    * The neighbours a session can see, nearest first.
    *
@@ -118,6 +110,12 @@ export class PresenceService {
         a.distanceSquared - b.distanceSquared || a.entry.sessionId.localeCompare(b.entry.sessionId),
     );
     return near.slice(0, this.options.maxNeighbours).map((candidate) => candidate.entry);
+  }
+
+  /** Latest accepted position for an authoritative interaction-range check. */
+  positionFor(sessionId: SessionId): { readonly x: number; readonly z: number } | null {
+    const entry = this.entries.get(sessionId);
+    return entry === undefined ? null : { x: entry.x, z: entry.z };
   }
 
   /** Drops entries nobody has refreshed. Driven by the gateway sweep. */
