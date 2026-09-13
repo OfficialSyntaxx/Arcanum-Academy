@@ -2,6 +2,27 @@
   "schemaVersion": 2,
   "entries": [
     {
+      "id": "recipe.meat.cooked_shore_wolf",
+      "name": "Cook Shore Wolf Meat",
+      "stationInteractableId": "int.station.shorelands_campfire",
+      "requiredSkillId": "skill.cooking",
+      "requiredSkillLevel": 1,
+      "inputs": [
+        {
+          "itemId": "item.meat.raw_shore_wolf",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.meat.cooked_shore_wolf",
+        "quantity": 1
+      },
+      "craftDurationMs": 3000,
+      "baseWasteRateBasisPoints": 0,
+      "wasteReductionPerSkillLevelBasisPoints": 0,
+      "xpPerCraft": 8
+    },
+    {
       "id": "recipe.dust.resonant",
       "name": "Grind Resonant Dust",
       "stationInteractableId": "int.station.grinder",
