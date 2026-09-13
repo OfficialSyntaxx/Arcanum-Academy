@@ -169,6 +169,7 @@ async function main(): Promise<void> {
     interactionRadius: DEFAULT_TUNABLES.world.interactionRadius,
     currencyCap: DEFAULT_TUNABLES.economy.currencyCap,
     combatXpPerDamage: DEFAULT_TUNABLES.combat.combatXpPerDamage,
+    hitpointsXpPerDamage: DEFAULT_TUNABLES.combat.hitpointsXpPerDamage,
     positionFor: (sessionId) => presence.positionFor(sessionId),
   });
 
