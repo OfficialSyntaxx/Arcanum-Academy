@@ -60,6 +60,7 @@ const OWNED = new Set([
   'quest.accept',
   'quest.complete',
   'combat.attack',
+  'combat.eat',
   'combat.recover',
 ]);
 
@@ -140,6 +141,10 @@ export class EconomyController {
 
   recoverCombat(): void {
     this.send('combat.recover');
+  }
+
+  eatCombatFood(interactableId: string): void {
+    this.send('combat.eat', { interactableId });
   }
 
   dispose(): void {
@@ -223,7 +228,8 @@ export class EconomyController {
       ...(patch.decks !== undefined ? { decks: patch.decks } : {}),
       ...(patch.quests !== undefined ? { quests: patch.quests } : {}),
       ...(patch.combat !== undefined ? { combat: patch.combat } : {}),
-      ...(envelope.kind === 'combat.attack' && patch.combat !== undefined
+      ...((envelope.kind === 'combat.attack' || envelope.kind === 'combat.eat') &&
+      patch.combat !== undefined
         ? { lastCombatStrikeAtMs: Date.now() }
         : {}),
     };
