@@ -87,6 +87,13 @@ export interface EconomyState {
   }[];
   /** Server-confirmed quest progress. Missing means the quest is available. */
   readonly quests: Readonly<Record<string, QuestProgress>>;
+  /** Durable no-expiry item recovery at the position where the player fell. */
+  readonly grave: {
+    readonly position: { readonly x: number; readonly z: number };
+    readonly stacks: readonly { readonly definitionId: string; readonly quantity: number }[];
+    readonly createdAtMs: number;
+    readonly expiresAtMs: number | null;
+  } | null;
   /** The last server-confirmed combat encounter state. */
   readonly combat: {
     readonly interactableId: string;
@@ -127,6 +134,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   overflowed: false,
   cards: [],
   quests: {},
+  grave: null,
   combat: null,
   lastCombatStrikeAtMs: 0,
 };
