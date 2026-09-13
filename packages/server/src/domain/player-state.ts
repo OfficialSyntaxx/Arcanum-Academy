@@ -79,7 +79,7 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 2;
+export const PLAYER_SCHEMA_VERSION = 3;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
 export interface PlayerState {
@@ -88,6 +88,8 @@ export interface PlayerState {
   readonly bank: Inventory;
   /** Per-account soft currency, earned from sales and spent on services. */
   readonly coins: number;
+  /** Combat vitality is durable: refreshes and reconnects cannot heal a loss. */
+  readonly hitpoints: { readonly current: number; readonly max: number; readonly respawnAtMs: number | null };
   /** Progress per skill. Absent means untouched, which reads as level one. */
   readonly skills: Readonly<Record<string, SkillProgress>>;
   /** The tool equipped for each gathering skill, keyed by skill id. */
@@ -111,6 +113,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     inventory: createInventory(slotCapacity),
     bank: createInventory(BANK_SLOT_CAPACITY),
     coins: 0,
+    hitpoints: { current: 10, max: 10, respawnAtMs: null },
     skills: {},
     tools: starterTools(nowMs),
     nodes: {},
@@ -134,6 +137,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function readNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function readHitpoints(value: unknown) {
+  if (!isRecord(value)) return { current: 10, max: 10, respawnAtMs: null };
+  const max = Math.max(1, Math.floor(readNumber(value.max, 10)));
+  const current = Math.max(0, Math.min(max, Math.floor(readNumber(value.current, max))));
+  const rawRespawn = value.respawnAtMs;
+  return {
+    current,
+    max,
+    respawnAtMs:
+      typeof rawRespawn === 'number' && Number.isFinite(rawRespawn)
+        ? Math.max(0, rawRespawn)
+        : null,
+  };
 }
 
 function readInventory(value: unknown, slotCapacity: number): Inventory {
@@ -246,6 +264,7 @@ export function parsePlayerState(
     inventory: readInventory(data.inventory, slotCapacity),
     bank: readInventory(data.bank, BANK_SLOT_CAPACITY),
     coins: Math.max(0, Math.floor(readNumber(data.coins, 0))),
+    hitpoints: readHitpoints(data.hitpoints),
     skills: readSkills(data.skills),
     // Merge rather than replace so every pre-tool save receives the Academy
     // kit while preserving any future upgraded equipment it already owns.
@@ -263,6 +282,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     bank: { stacks: state.bank.stacks, slotCapacity: state.bank.slotCapacity },
     coins: state.coins,
+    hitpoints: state.hitpoints,
     skills: state.skills,
     tools: state.tools,
     nodes: state.nodes,
