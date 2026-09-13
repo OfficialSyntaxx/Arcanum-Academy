@@ -161,6 +161,7 @@ async function main(): Promise<void> {
   });
   registerCombatHandlers(router, {
     players,
+    items: ITEM_CATALOG,
     skills: SKILL_TABLE,
     progression: DEFAULT_TUNABLES.progression,
     now: () => Date.now(),
