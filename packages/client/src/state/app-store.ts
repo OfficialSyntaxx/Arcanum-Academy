@@ -93,6 +93,7 @@ export interface EconomyState {
     readonly respawnAtMs: number | null;
     readonly damage: number;
     readonly enemyDamage: number;
+    readonly coinsGained: number;
   } | null;
 }
 
