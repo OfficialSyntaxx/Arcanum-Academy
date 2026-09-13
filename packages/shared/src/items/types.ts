@@ -45,6 +45,12 @@ export interface ToolProperties {
   readonly repairCost: number;
 }
 
+/** A stackable item that can be consumed directly from the combat HUD. */
+export interface ConsumableProperties {
+  /** Hitpoints restored by one use. */
+  readonly healAmount: number;
+}
+
 export interface ItemDefinition {
   readonly id: ItemDefinitionId;
   readonly name: string;
@@ -58,6 +64,8 @@ export interface ItemDefinition {
   readonly iconKey: string;
   /** Present exactly when `category` is `Tool`. */
   readonly tool?: ToolProperties;
+  /** Present for a material that can be consumed for an immediate effect. */
+  readonly consumable?: ConsumableProperties;
 }
 
 /** One owned tool. Never appears in content, only in player state. */
