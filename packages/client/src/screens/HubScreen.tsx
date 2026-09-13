@@ -13,6 +13,7 @@ import {
 } from '../ui/EconomyPanels.js';
 import { useAppStore } from '../state/app-store.js';
 import { NoticeBoard } from '../ui/NoticeBoard.js';
+import { NpcDialogue } from '../ui/NpcDialogue.js';
 
 /**
  * The hub overlay.
@@ -74,11 +75,13 @@ export function HubScreen({
   const openBankId = useAppStore((state) => state.openBankId);
   const openMerchantId = useAppStore((state) => state.openMerchantId);
   const openNoticeId = useAppStore((state) => state.openNoticeId);
+  const openDialogue = useAppStore((state) => state.openDialogue);
   const travelRevision = useAppStore((state) => state.travelRevision);
   const setOpenStation = useAppStore((state) => state.setOpenStation);
   const setOpenBank = useAppStore((state) => state.setOpenBank);
   const setOpenMerchant = useAppStore((state) => state.setOpenMerchant);
   const setOpenNotice = useAppStore((state) => state.setOpenNotice);
+  const setOpenDialogue = useAppStore((state) => state.setOpenDialogue);
 
   // Satchel and map are local presentation state, while crafting and prompts
   // live in the app store. They all subscribe to the same travel boundary.
@@ -154,6 +157,7 @@ export function HubScreen({
           onClose={() => setOpenNotice(null)}
         />
       )}
+      {openDialogue !== null && <NpcDialogue onClose={() => setOpenDialogue(null)} />}
     </div>
   );
 }
