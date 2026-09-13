@@ -94,6 +94,8 @@ export interface PresenceTracker {
     position: { x: number; z: number; facing: number },
   ): boolean;
   neighbours(sessionId: SessionId): readonly unknown[];
+  /** Latest accepted position for an authoritative range check. */
+  positionFor(sessionId: SessionId): { readonly x: number; readonly z: number } | null;
   leave(sessionId: SessionId): void;
   sweep(): number;
 }
