@@ -42,6 +42,7 @@ interface HarvestPatch {
   }[];
   readonly decks?: Readonly<Record<string, { name: string; cardDefinitionIds: readonly string[] }>>;
   readonly quests?: Readonly<Record<string, QuestProgress>>;
+  readonly grave?: EconomyState['grave'];
   readonly combat?: EconomyState['combat'];
 }
 
@@ -62,6 +63,7 @@ const OWNED = new Set([
   'combat.attack',
   'combat.eat',
   'combat.recover',
+  'combat.reclaim_grave',
 ]);
 
 export class EconomyController {
@@ -141,6 +143,10 @@ export class EconomyController {
 
   recoverCombat(): void {
     this.send('combat.recover');
+  }
+
+  reclaimCombatGrave(): void {
+    this.send('combat.reclaim_grave');
   }
 
   /** Travelling away ends the local combat presentation; the server still owns target respawn. */
@@ -232,6 +238,7 @@ export class EconomyController {
       ...(patch.cards !== undefined ? { cards: patch.cards } : {}),
       ...(patch.decks !== undefined ? { decks: patch.decks } : {}),
       ...(patch.quests !== undefined ? { quests: patch.quests } : {}),
+      ...(patch.grave !== undefined ? { grave: patch.grave } : {}),
       ...(patch.combat !== undefined ? { combat: patch.combat } : {}),
       ...(envelope.kind === 'combat.attack' && patch.combat !== undefined
         ? { lastCombatStrikeAtMs: Date.now() }
