@@ -16,6 +16,7 @@ import { InMemoryPlayerRepository } from '../persistence/repository.js';
 import type { Session } from '../session/session-store.js';
 const PLAYER = asId<PlayerId>('combat-player');
 const SHORE_WOLF = 'int.combat.shore_wolf';
+const EMBERWING_ARMABEE = 'int.combat.emberwing_armabee';
 function session(): Session {
   return {
     id: asId<SessionId>('combat-session'),
@@ -167,6 +168,30 @@ describe('Shore Wolf combat handlers', () => {
     });
     expect((await h.state()).inventory.stacks).toContainEqual({
       definitionId: 'item.meat.raw_shore_wolf',
+      quantity: 1,
+    });
+  });
+  it('resolves the distinct Emberwing Armabee encounter and awards wax', async () => {
+    const h = harness();
+    h.moveTo({ x: -7, z: 19 });
+    let result: unknown;
+    for (let i = 0; i < 5; i += 1) {
+      result = await h.dispatch(EMBERWING_ARMABEE);
+      h.advance(DEFAULT_TUNABLES.combat.tickMs);
+    }
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        combat: {
+          label: 'Emberwing Armabee',
+          defeated: true,
+          coinsGained: 8,
+          drops: [{ itemId: 'item.material.armabee_wax', quantity: 1 }],
+        },
+      },
+    });
+    expect((await h.state()).inventory.stacks).toContainEqual({
+      definitionId: 'item.material.armabee_wax',
       quantity: 1,
     });
   });
