@@ -200,6 +200,12 @@ active gathering/hunt/cooking steps, and the Archive follow-up. Dialogue remains
 only—NPC interaction neither accepts nor completes a quest—and other named NPCs retain their
 authored rotating barks.
 
+**G5-C side-quest update (2026-09-14):** **A Clear Copy** unlocks after Embers for the Archive.
+It asks for one Azure Ink—made from gathered Pale Caps and Crystal Shards through the existing
+grinder and Scribing Hall recipes—and rewards 35 coins. The authored catalog keeps the objective,
+prerequisite, inventory turn-in, and one-time reward server-authoritative; Professor Vosk gives
+quest-aware guidance without changing state.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
