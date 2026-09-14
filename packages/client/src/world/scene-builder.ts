@@ -430,6 +430,8 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   const markerRing = track(new RingGeometry(0.85, 1.15, 24));
   const markerPost = track(new BoxGeometry(0.5, 1.4, 0.5));
   const markerHalo = track(new TorusGeometry(0.55, 0.05, 6, 20));
+  const portalArch = track(new TorusGeometry(0.92, 0.09, 6, 20, Math.PI));
+  const arenaRing = track(new TorusGeometry(1.42, 0.07, 6, 28));
   const campfireStoneRing = track(new TorusGeometry(0.58, 0.12, 6, 8));
   const campfireLog = track(new BoxGeometry(1.05, 0.13, 0.16));
   const campfireFlame = track(new ConeGeometry(0.24, 0.76, 6));
@@ -439,6 +441,8 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
       ring: markerRing,
       post: markerPost,
       halo: markerHalo,
+      portalArch,
+      arenaRing,
       campfireStoneRing,
       campfireLog,
       campfireFlame,
@@ -485,6 +489,10 @@ interface MarkerParts {
   readonly ring: BufferGeometry;
   readonly post: BufferGeometry;
   readonly halo: BufferGeometry;
+  /** A half-ring used upright to turn a route marker into a visible gateway. */
+  readonly portalArch: BufferGeometry;
+  /** Larger ground ring used to give encounters a readable arena silhouette. */
+  readonly arenaRing: BufferGeometry;
   readonly material: Material;
   readonly campfireStoneRing: BufferGeometry;
   readonly campfireLog: BufferGeometry;
@@ -529,11 +537,30 @@ function buildMarker(interactable: Interactable, parts: MarkerParts): Object3D {
     halo.position.y = 1.6;
     halo.rotation.x = Math.PI / 2;
     marker.add(halo);
+  } else if (interactable.kind === InteractableKind.ZonePortal) {
+    // Destination gates have a distinct silhouette before their prompt appears:
+    // two short pylons and an upright arch read as a route landmark even in the
+    // peripheral view of a phone camera. They stay within the marker footprint,
+    // so authored approach positions and interaction ranges are unchanged.
+    for (const x of [-0.72, 0.72]) {
+      const pylon = new Mesh(parts.post, parts.material);
+      pylon.position.set(x, 0.82, 0);
+      pylon.scale.set(0.72, 1.18, 0.72);
+      marker.add(pylon);
+    }
+    const arch = new Mesh(parts.portalArch, parts.material);
+    arch.position.y = 1.8;
+    arch.rotation.z = Math.PI;
+    marker.add(arch);
   } else {
     const post = new Mesh(parts.post, parts.material);
     post.position.y = 0.7;
     marker.add(post);
     if (interactable.kind === InteractableKind.CombatEncounter) {
+      const arena = new Mesh(parts.arenaRing, parts.material);
+      arena.rotation.x = -Math.PI / 2;
+      arena.position.y = 0.055;
+      marker.add(arena);
       const halo = new Mesh(parts.halo, parts.material);
       halo.position.y = 1.25;
       halo.rotation.x = Math.PI / 2;
