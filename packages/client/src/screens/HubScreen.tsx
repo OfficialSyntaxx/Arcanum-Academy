@@ -16,6 +16,7 @@ import { NoticeBoard } from '../ui/NoticeBoard.js';
 import { NpcDialogue } from '../ui/NpcDialogue.js';
 import { CombatHud, GravestoneHud } from '../ui/CombatHud.js';
 import { QuestJournal } from '../ui/QuestJournal.js';
+import { CollectionLog } from '../ui/CollectionLog.js';
 
 /**
  * The hub overlay.
@@ -101,11 +102,13 @@ export function HubScreen({
   const [satchelView, setSatchelView] = useState<'inventory' | 'equipment' | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
 
   useEffect(() => {
     setSatchelView(null);
     setMapOpen(false);
     setJournalOpen(false);
+    setCollectionOpen(false);
   }, [travelRevision]);
 
   useEffect(() => {
@@ -123,12 +126,14 @@ export function HubScreen({
       <JourneyTracker
         onOpenMap={() => setMapOpen(true)}
         onOpenJournal={() => setJournalOpen(true)}
+        onOpenCollection={() => setCollectionOpen(true)}
       />
       <button type="button" className="map-toggle" onClick={() => setMapOpen(true)}>
         Map
       </button>
       {mapOpen && <WorldMap onNavigate={onNavigate} onClose={() => setMapOpen(false)} />}
       {journalOpen && <QuestJournal onClose={() => setJournalOpen(false)} />}
+      {collectionOpen && <CollectionLog onClose={() => setCollectionOpen(false)} />}
       <div className="hub-help">Tap to walk · Drag to look · Pinch to zoom</div>
       <InteractionPrompt onEngage={onEngage} />
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
