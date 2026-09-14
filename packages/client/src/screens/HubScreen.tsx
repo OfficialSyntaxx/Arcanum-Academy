@@ -15,6 +15,7 @@ import { useAppStore } from '../state/app-store.js';
 import { NoticeBoard } from '../ui/NoticeBoard.js';
 import { NpcDialogue } from '../ui/NpcDialogue.js';
 import { CombatHud, GravestoneHud } from '../ui/CombatHud.js';
+import { QuestJournal } from '../ui/QuestJournal.js';
 
 /**
  * The hub overlay.
@@ -99,10 +100,12 @@ export function HubScreen({
   // live in the app store. They all subscribe to the same travel boundary.
   const [satchelView, setSatchelView] = useState<'inventory' | 'equipment' | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [journalOpen, setJournalOpen] = useState(false);
 
   useEffect(() => {
     setSatchelView(null);
     setMapOpen(false);
+    setJournalOpen(false);
   }, [travelRevision]);
 
   useEffect(() => {
@@ -117,11 +120,15 @@ export function HubScreen({
   return (
     <div className="hub">
       <HubHud />
-      <JourneyTracker onOpenMap={() => setMapOpen(true)} />
+      <JourneyTracker
+        onOpenMap={() => setMapOpen(true)}
+        onOpenJournal={() => setJournalOpen(true)}
+      />
       <button type="button" className="map-toggle" onClick={() => setMapOpen(true)}>
         Map
       </button>
       {mapOpen && <WorldMap onNavigate={onNavigate} onClose={() => setMapOpen(false)} />}
+      {journalOpen && <QuestJournal onClose={() => setJournalOpen(false)} />}
       <div className="hub-help">Tap to walk · Drag to look · Pinch to zoom</div>
       <InteractionPrompt onEngage={onEngage} />
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
