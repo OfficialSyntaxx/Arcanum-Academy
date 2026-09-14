@@ -34,6 +34,13 @@ describe('quest-aware NPC dialogue', () => {
         'Fallback',
       ),
     ).toContain('Two Shore Wolves');
+    expect(
+      questDialogueForNpc(
+        'npc.vosk',
+        { 'quest.clear_copy': quest(QuestStatus.Active) },
+        'Fallback',
+      ),
+    ).toContain('Azure Ink');
   });
 
   it('preserves authored barks where no quest response applies', () => {
