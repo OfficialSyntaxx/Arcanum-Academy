@@ -102,6 +102,24 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
     ],
     rewardCoins: 75,
   },
+  {
+    id: 'quest.clear_copy',
+    title: 'A Clear Copy',
+    description:
+      'Professor Vosk is restoring a salt-damaged survey of the old coast. Distil a vial of Azure Ink so the map can be copied before its markings fade.',
+    hint: 'Gather Pale Caps in the Alchemy Gardens and Crystal Shards at the Resonance Seam. Grind the shards, then distil Azure Ink at the Scribing Hall and return here for 35 coins.',
+    prerequisites: ['quest.embers_for_the_archive'],
+    objectives: [
+      {
+        kind: 'ITEM',
+        id: 'copy.azure_ink',
+        itemIds: [asId<ItemDefinitionId>('item.ink.azure')],
+        requiredQuantity: 1,
+        label: 'Distil 1 Azure Ink',
+      },
+    ],
+    rewardCoins: 35,
+  },
 ];
 
 export function questById(id: string): QuestDefinition | undefined {
