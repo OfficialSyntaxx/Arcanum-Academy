@@ -10,4 +10,6 @@ export interface QuestProgress {
   readonly status: QuestStatus;
   readonly acceptedAtMs: number;
   readonly completedAtMs: number | null;
+  /** Confirmed non-inventory objectives, keyed by the authored objective id. */
+  readonly objectiveCounts: Readonly<Record<string, number>>;
 }
