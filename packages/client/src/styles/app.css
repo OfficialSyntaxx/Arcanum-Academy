@@ -919,6 +919,94 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.journey-tracker__actions {
+  display: flex;
+  gap: 0.35rem;
+}
+.quest-journal {
+  pointer-events: auto;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(25rem, calc(100vw - 2rem));
+  max-height: min(37rem, calc(100dvh - var(--inset-top) - var(--inset-bottom) - 2rem));
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+}
+.quest-journal__head,
+.quest-journal__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.quest-journal h2,
+.quest-journal p {
+  margin: 0;
+}
+.quest-journal__intro {
+  margin-top: 0.6rem !important;
+  color: var(--haze-dim);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.quest-journal__list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.quest-journal__list > li {
+  padding: 0.65rem;
+  border: 1px solid color-mix(in srgb, #7d6240 70%, transparent);
+  border-radius: 0.4rem;
+  background: rgba(0, 0, 0, 0.13);
+}
+.quest-journal__row > strong {
+  font:
+    1rem Georgia,
+    serif;
+}
+.quest-journal__row > span {
+  color: var(--haze-dim);
+  font: 0.68rem var(--font-label);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.quest-journal__list > li[data-status='active'] {
+  border-left: 3px solid var(--verdigris);
+}
+.quest-journal__list > li[data-status='completed'] .quest-journal__row > span,
+.quest-journal__list li [data-complete='true'] {
+  color: var(--verdigris);
+}
+.quest-journal__list > li[data-status='locked'] {
+  opacity: 0.58;
+}
+.quest-journal__list ul {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+}
+.quest-journal__list ul li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.35rem;
+  align-items: baseline;
+}
+.quest-journal__list ul li > strong {
+  font-family: var(--font-serial);
+}
+.quest-journal__list > li > p {
+  margin-top: 0.5rem;
+  color: var(--haze-dim);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
 .satchel-toggle {
   top: calc(var(--inset-top) + 1rem);
   min-height: 48px;
@@ -1038,6 +1126,12 @@
   }
   .journey-tracker p {
     display: none;
+  }
+  .quest-journal {
+    top: calc(var(--inset-top) + 0.75rem);
+    bottom: calc(var(--inset-bottom) + 0.75rem);
+    max-height: none;
+    transform: translateX(-50%);
   }
   .inventory-panel,
   .crafting-panel {
