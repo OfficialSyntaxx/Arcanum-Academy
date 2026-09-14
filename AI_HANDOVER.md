@@ -184,6 +184,11 @@ is deterministic and presentation-only: clear, mist, or light rain changes the g
 rain uses a small focus-following instanced effect whose count is derived from the device's
 existing particle budget. Weather has no movement, gathering, combat, or economy modifiers.
 
+**G4-C journey update (2026-09-14):** The hub now keeps a compact, map-linked journey card for
+the active quest or the next available one. It reflects only the server-confirmed inventory and
+kill projection, hides during active combat, and directs new players to the Library notice board
+without bypassing normal in-world travel or quest acceptance.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
