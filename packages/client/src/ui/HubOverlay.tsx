@@ -75,7 +75,13 @@ export function HubHud() {
  * This compact card only answers the phone-first question players ask after
  * closing it: "what should I do next?" It never calculates progression locally.
  */
-export function JourneyTracker({ onOpenMap }: { onOpenMap: () => void }) {
+export function JourneyTracker({
+  onOpenMap,
+  onOpenJournal,
+}: {
+  onOpenMap: () => void;
+  onOpenJournal: () => void;
+}) {
   const economy = useAppStore((state) => state.economy);
   const inCombat = economy.combat !== null && !economy.combat.defeated;
   const quest =
@@ -110,9 +116,14 @@ export function JourneyTracker({ onOpenMap }: { onOpenMap: () => void }) {
       </span>
       <strong>{quest.title}</strong>
       <p>{nextStep}</p>
-      <button type="button" onClick={onOpenMap}>
-        Show map
-      </button>
+      <div className="journey-tracker__actions">
+        <button type="button" onClick={onOpenMap}>
+          Show map
+        </button>
+        <button type="button" onClick={onOpenJournal}>
+          Journal
+        </button>
+      </div>
     </aside>
   );
 }
