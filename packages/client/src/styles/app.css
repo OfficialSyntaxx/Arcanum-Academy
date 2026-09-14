@@ -876,6 +876,49 @@
 .hub-hud__population {
   display: none;
 }
+.journey-tracker {
+  position: absolute;
+  top: calc(var(--inset-top) + 5.75rem);
+  left: calc(var(--inset-left) + 0.75rem);
+  width: min(20rem, calc(100vw - var(--inset-left) - var(--inset-right) - 1.5rem));
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #7d6240;
+  border-left: 3px solid var(--verdigris);
+  border-radius: 0.4rem;
+  background: rgba(29, 22, 16, 0.9);
+  box-shadow: 0 0.3rem 0.9rem rgba(0, 0, 0, 0.2);
+  color: var(--haze);
+  pointer-events: auto;
+}
+.journey-tracker__eyebrow {
+  display: block;
+  margin-bottom: 0.1rem;
+  color: var(--verdigris);
+  font: 0.65rem var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.journey-tracker strong {
+  display: block;
+  font:
+    0.9rem Georgia,
+    serif;
+}
+.journey-tracker p {
+  margin: 0.2rem 0 0.4rem;
+  color: var(--haze-dim);
+  font: 0.73rem var(--font-label);
+  line-height: 1.3;
+}
+.journey-tracker button {
+  min-height: 2rem;
+  padding: 0 0.6rem;
+  border-color: #9c6f2c;
+  color: var(--haze);
+  font: 0.7rem var(--font-label);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .satchel-toggle {
   top: calc(var(--inset-top) + 1rem);
   min-height: 48px;
@@ -987,6 +1030,14 @@
   }
   .satchel-toggle {
     top: calc(var(--inset-top) + 0.5rem);
+  }
+  .journey-tracker {
+    top: calc(var(--inset-top) + 4.5rem);
+    width: min(19rem, calc(100vw - 10rem));
+    padding: 0.35rem 0.6rem;
+  }
+  .journey-tracker p {
+    display: none;
   }
   .inventory-panel,
   .crafting-panel {
