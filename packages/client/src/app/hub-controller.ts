@@ -39,6 +39,7 @@ import { NpcDirector } from '../npc/npc-director.js';
 import { NpcAvatarGroup } from '../npc/npc-avatar-group.js';
 import { CombatAvatarGroup } from '../combat/combat-avatar-group.js';
 import { GravestoneMarker } from '../combat/gravestone-marker.js';
+import { questDialogueForNpc } from '../npc/quest-dialogue.js';
 import { PlayerController } from '../player/player-controller.js';
 import { PlayerAvatar } from '../player/player-avatar.js';
 import type { RenderService } from '../render/renderer.js';
@@ -271,7 +272,8 @@ export class HubController {
           this.options.tunables.world.worldDayLengthMs) *
           1440,
       );
-      const line = npc.barks[minute % Math.max(1, npc.barks.length)] ?? 'Good to see you.';
+      const bark = npc.barks[minute % Math.max(1, npc.barks.length)] ?? 'Good to see you.';
+      const line = questDialogueForNpc(npc.id, useAppStore.getState().economy.quests, bark);
       useAppStore.getState().recordDiagnostic({
         level: 'info',
         source: 'world',
