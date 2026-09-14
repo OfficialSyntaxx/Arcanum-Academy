@@ -13,6 +13,17 @@ const complete = (quests: QuestRecord, id: string) => quests[id]?.status === Que
  */
 export function questDialogueForNpc(npcId: string, quests: QuestRecord, fallback: string): string {
   switch (npcId) {
+    case 'npc.vosk':
+      if (active(quests, 'quest.clear_copy')) {
+        return 'Azure Ink needs Pale Caps, ground Crystal Shards, and a patient hand at the Scribing Hall. The old coast cannot wait.';
+      }
+      if (
+        complete(quests, 'quest.embers_for_the_archive') &&
+        !complete(quests, 'quest.clear_copy')
+      ) {
+        return 'The notice board has a survey-copying job. A clear Azure Ink is worth more than a quick one.';
+      }
+      return fallback;
     case 'npc.bram':
       if (active(quests, 'quest.first_kindling')) {
         return 'The Mystic Mushroom patch is west in the Alchemy Gardens. Bring three to the Library board.';
