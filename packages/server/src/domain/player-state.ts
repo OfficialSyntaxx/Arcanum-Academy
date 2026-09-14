@@ -33,6 +33,7 @@ import {
   type QuestProgress,
   type Result,
   type Failure,
+  type DiscoveryProgress,
   type SkillId,
   type SkillProgress,
 } from '@alderfell/shared';
@@ -80,7 +81,7 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 5;
+export const PLAYER_SCHEMA_VERSION = 6;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
 export interface GravestoneState {
@@ -116,6 +117,8 @@ export interface PlayerState {
   /** Every card the player has scribed. The collection, not the deck. */
   /** Accepted/completed quests. An absent id is available but not accepted. */
   readonly quests: Readonly<Record<string, QuestProgress>>;
+  /** First-time discoveries, earned from confirmed gameplay events only. */
+  readonly discoveries: Readonly<Record<string, DiscoveryProgress>>;
   /**
    * Last moment the player was demonstrably present.
    *
@@ -134,6 +137,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     tools: starterTools(nowMs),
     nodes: {},
     quests: {},
+    discoveries: {},
     gathering: null,
     combatTargets: {},
     grave: null,
@@ -342,6 +346,20 @@ function readQuests(value: unknown): Record<string, QuestProgress> {
   return quests;
 }
 
+function readDiscoveries(value: unknown): Record<string, DiscoveryProgress> {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, raw]) => isRecord(raw) && typeof raw.unlockedAtMs === 'number')
+      .map(([id, raw]) => [
+        id,
+        {
+          unlockedAtMs: Math.max(0, Math.floor((raw as Record<string, number>).unlockedAtMs ?? 0)),
+        },
+      ]),
+  );
+}
+
 /**
  * Reads a stored record into player state.
  *
@@ -372,6 +390,7 @@ export function parsePlayerState(
     tools: { ...starterTools(record.updatedAtMs), ...readTools(data.tools) },
     nodes: readNodes(data.nodes),
     quests: readQuests(data.quests),
+    discoveries: readDiscoveries(data.discoveries),
     gathering: readGathering(data.gathering),
     combatTargets: readCombatTargets(data.combatTargets),
     grave: readGrave(data.grave),
@@ -390,6 +409,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     tools: state.tools,
     nodes: state.nodes,
     quests: state.quests,
+    discoveries: state.discoveries,
     gathering: state.gathering,
     combatTargets: state.combatTargets,
     grave: state.grave,
