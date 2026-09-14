@@ -168,6 +168,11 @@ Embers for the Archive. Its confirmed-kill counter requires two Shore Wolf defea
 campfire step requires one Cooked Shore Wolf Meat. Kill progress is stored per quest in the
 player record, advances only from server-confirmed combat defeats, and cannot be forged by the UI.
 
+**G3 presentation update (2026-09-14):** A persistent gravestone now has a small amber world
+marker at its server-confirmed death location, so recovery is discoverable without memorising
+coordinates. The combat HUD names the stat trained by the selected style and keeps its recovery
+prompt above mobile safe-area controls.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
