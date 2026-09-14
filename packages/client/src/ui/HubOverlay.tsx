@@ -1,4 +1,10 @@
 import { useAppStore } from '../state/app-store.js';
+import {
+  QUEST_CATALOG,
+  QuestStatus,
+  questIsUnlocked,
+  type ItemDefinitionId,
+} from '@alderfell/shared';
 
 /**
  * The single contextual action button.
@@ -61,5 +67,52 @@ export function HubHud() {
       </span>
       <span className="hub-hud__population">{population} present</span>
     </div>
+  );
+}
+
+/**
+ * The notice board remains the place where quests are accepted and turned in.
+ * This compact card only answers the phone-first question players ask after
+ * closing it: "what should I do next?" It never calculates progression locally.
+ */
+export function JourneyTracker({ onOpenMap }: { onOpenMap: () => void }) {
+  const economy = useAppStore((state) => state.economy);
+  const inCombat = economy.combat !== null && !economy.combat.defeated;
+  const quest =
+    QUEST_CATALOG.find(
+      (candidate) => economy.quests[candidate.id]?.status === QuestStatus.Active,
+    ) ??
+    QUEST_CATALOG.find(
+      (candidate) =>
+        economy.quests[candidate.id] === undefined && questIsUnlocked(candidate, economy.quests),
+    );
+  if (inCombat || quest === undefined) return null;
+
+  const progress = economy.quests[quest.id];
+  const accepted = progress?.status === QuestStatus.Active;
+  const objective = quest.objectives.find((candidate) => {
+    const count =
+      candidate.kind === 'ITEM'
+        ? economy.stacks
+            .filter((stack) => candidate.itemIds.includes(stack.definitionId as ItemDefinitionId))
+            .reduce((total, stack) => total + stack.quantity, 0)
+        : (progress?.objectiveCounts[candidate.id] ?? 0);
+    return count < candidate.requiredQuantity;
+  });
+  const nextStep = accepted
+    ? (objective?.label ?? 'Return to the notice board to turn in your work.')
+    : `Visit the Library notice board to begin ${quest.title}.`;
+
+  return (
+    <aside className="journey-tracker" aria-label="Current journey">
+      <span className="journey-tracker__eyebrow">
+        {accepted ? 'Current journey' : 'Next journey'}
+      </span>
+      <strong>{quest.title}</strong>
+      <p>{nextStep}</p>
+      <button type="button" onClick={onOpenMap}>
+        Show map
+      </button>
+    </aside>
   );
 }
