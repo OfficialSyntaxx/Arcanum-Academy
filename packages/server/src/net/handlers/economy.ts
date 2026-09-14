@@ -29,6 +29,8 @@ import {
   err,
   failure,
   FailureCode,
+  discoveryForSource,
+  recordDiscovery,
   ItemCategory,
   ok,
   Rng,
@@ -99,6 +101,7 @@ function project(state: PlayerState) {
     skills: state.skills,
     tools: state.tools,
     quests: state.quests,
+    discoveries: state.discoveries,
     gathering: state.gathering,
     grave: state.grave,
   };
@@ -153,6 +156,7 @@ function applyHarvest(
     tools,
     nodes: { ...state.nodes, [node.id]: outcome.nodeState },
     gathering: outcome.session,
+    discoveries: recordDiscovery(state.discoveries, discoveryForSource(node.id), nowMs),
     lastSeenAtMs: nowMs,
   };
 }
@@ -341,6 +345,7 @@ export function registerEconomyHandlers(
         ...state,
         inventory: outcome.value.inventory,
         skills: { ...state.skills, [recipe.requiredSkillId]: award.progress },
+        discoveries: recordDiscovery(state.discoveries, discoveryForSource(recipe.id), nowMs),
         lastSeenAtMs: nowMs,
       };
       return ok({
