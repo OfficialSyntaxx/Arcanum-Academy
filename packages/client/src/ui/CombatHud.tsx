@@ -20,7 +20,7 @@ export function GravestoneHud({ onReclaim }: { readonly onReclaim: () => void })
       <strong>
         Gravestone · {itemCount} item{itemCount === 1 ? '' : 's'} held
       </strong>
-      <p>Return to where you fell, then recover your items.</p>
+      <p>Follow the amber marker back to where you fell, then recover your items.</p>
       <button type="button" onClick={onReclaim}>
         Recover gravestone
       </button>
@@ -102,6 +102,11 @@ export function CombatHud({
           </button>
         ))}
       </div>
+      <p className="combat-hud__training">
+        Training:{' '}
+        {style === 'ACCURATE' ? 'Attack' : style === 'AGGRESSIVE' ? 'Strength' : 'Defence'}
+        {' + Hitpoints'}
+      </p>
       <p className="combat-hud__log" aria-live="polite">
         {combat.foodConsumed !== undefined
           ? `You eat ${ITEM_CATALOG.get(asId<ItemDefinitionId>(combat.foodConsumed.itemId))?.name ?? 'food'} and restore ${combat.foodConsumed.healAmount} HP.`
