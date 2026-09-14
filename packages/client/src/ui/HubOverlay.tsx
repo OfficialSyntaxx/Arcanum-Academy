@@ -78,9 +78,11 @@ export function HubHud() {
 export function JourneyTracker({
   onOpenMap,
   onOpenJournal,
+  onOpenCollection,
 }: {
   onOpenMap: () => void;
   onOpenJournal: () => void;
+  onOpenCollection: () => void;
 }) {
   const economy = useAppStore((state) => state.economy);
   const inCombat = economy.combat !== null && !economy.combat.defeated;
@@ -122,6 +124,9 @@ export function JourneyTracker({
         </button>
         <button type="button" onClick={onOpenJournal}>
           Journal
+        </button>
+        <button type="button" onClick={onOpenCollection}>
+          Log
         </button>
       </div>
     </aside>
