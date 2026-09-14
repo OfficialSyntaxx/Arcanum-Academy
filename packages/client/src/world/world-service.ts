@@ -49,6 +49,8 @@ import {
 import { environmentCollisionPlacements } from './environment-assets.js';
 import { Palette, atmosphereFor, daylight, sunElevation, type Atmosphere } from './palette.js';
 import { buildZoneGeometry, type ZoneGeometry } from './scene-builder.js';
+import { WeatherEffect } from './weather-effect.js';
+import { weatherForDay } from './weather.js';
 
 export interface NearestInteractable {
   readonly interactable: Interactable;
@@ -67,6 +69,14 @@ export class WorldService {
   private readonly sun: DirectionalLight;
   private readonly sky: HemisphereLight;
   private readonly navigationMarker: Mesh<RingGeometry, MeshBasicMaterial>;
+  private readonly weather: WeatherEffect;
+  private readonly skyColour = new Color();
+  private readonly fogColour = new Color();
+  private readonly weatherColour = new Color();
+  private readonly nightColour = new Color(0x17223d);
+  private readonly nightFogColour = new Color(0x27334a);
+  private scene: Scene | null = null;
+  private fog: Fog | null = null;
 
   private constructor(
     readonly zone: Zone,
@@ -136,10 +146,12 @@ export class WorldService {
     this.navigationMarker = new Mesh(markerGeometry, markerMaterial);
     this.navigationMarker.rotation.x = -Math.PI / 2;
     this.navigationMarker.visible = false;
+    this.weather = new WeatherEffect(quality);
 
     this.root.add(
       this.geometry.group,
       this.navigationMarker,
+      this.weather.group,
       this.actors.group,
       this.sun,
       this.sun.target,
@@ -155,9 +167,13 @@ export class WorldService {
   }
 
   attach(scene: Scene): void {
+    this.scene = scene;
     scene.add(this.root);
-    scene.background = new Color(this.atmosphere.sky);
-    scene.fog = new Fog(this.atmosphere.fog, this.atmosphere.fogNear, this.atmosphere.fogFar);
+    this.skyColour.set(this.atmosphere.sky);
+    this.fogColour.set(this.atmosphere.fog);
+    this.fog = new Fog(this.fogColour, this.atmosphere.fogNear, this.atmosphere.fogFar);
+    scene.background = this.skyColour;
+    scene.fog = this.fog;
   }
 
   /** Ground height at a point, from the zone's authored terraces. */
@@ -366,7 +382,7 @@ export class WorldService {
    * Moves the key light for the time of day and keeps it centred on the player,
    * which lets a small shadow map cover the whole visible area.
    */
-  updateAtmosphere(dayFraction: number, focus: Vec2): void {
+  updateAtmosphere(dayFraction: number, focus: Vec2, dayNumber: number, nowMs: number): void {
     const elevation = sunElevation(dayFraction);
     const azimuth = dayFraction * Math.PI * 2;
     const radius = 40;
@@ -381,8 +397,30 @@ export class WorldService {
     // Night never goes fully black: an unreadable hub is worse than an
     // implausible one, and this is a mobile screen in daylight.
     const light = daylight(dayFraction);
-    this.sun.intensity = this.atmosphere.sunIntensity * (0.25 + light * 0.75);
-    this.sky.intensity = this.atmosphere.ambientIntensity * (0.55 + light * 0.45);
+    const weather = weatherForDay(dayNumber);
+    this.sun.intensity = this.atmosphere.sunIntensity * (0.25 + light * 0.75) * weather.sunScale;
+    this.sky.intensity =
+      this.atmosphere.ambientIntensity * (0.55 + light * 0.45) * weather.ambientScale;
+
+    // The original implementation only moved the sun. Grade the sky and fog
+    // as well so dawn, dusk, night, mist, and rain read as different moments
+    // without a full-screen post-processing pass.
+    const night = 1 - light;
+    this.weatherColour.set(weather.skyTint);
+    this.skyColour
+      .set(this.atmosphere.sky)
+      .lerp(this.weatherColour, 0.24)
+      .lerp(this.nightColour, night * 0.84);
+    this.weatherColour.set(weather.fogTint);
+    this.fogColour
+      .set(this.atmosphere.fog)
+      .lerp(this.weatherColour, 0.28)
+      .lerp(this.nightFogColour, night * 0.62);
+    if (this.scene !== null && this.fog !== null) {
+      this.fog.near = this.atmosphere.fogNear * weather.fogNearScale;
+      this.fog.far = this.atmosphere.fogFar * weather.fogFarScale;
+    }
+    this.weather.update(weather, focus.x, focus.z, nowMs);
   }
 
   dispose(): void {
@@ -390,6 +428,7 @@ export class WorldService {
     this.actors.dispose();
     this.navigationMarker.geometry.dispose();
     this.navigationMarker.material.dispose();
+    this.weather.dispose();
     this.sun.dispose();
     this.sky.dispose();
     this.root.clear();
