@@ -189,6 +189,11 @@ the active quest or the next available one. It reflects only the server-confirme
 kill projection, hides during active combat, and directs new players to the Library notice board
 without bypassing normal in-world travel or quest acceptance.
 
+**G5-A quest journal update (2026-09-14):** The Journey card now opens a read-only, mobile-safe
+quest journal. It shows every authored quest's active, available, complete, or locked state and
+the relevant server-confirmed objective counts. Accepting and turning in work remain exclusively
+at the in-world Library notice board; the journal does not grant, consume, or calculate progress.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
