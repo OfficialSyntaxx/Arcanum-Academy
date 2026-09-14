@@ -38,6 +38,7 @@ import type { InputService } from '../input/input-service.js';
 import { NpcDirector } from '../npc/npc-director.js';
 import { NpcAvatarGroup } from '../npc/npc-avatar-group.js';
 import { CombatAvatarGroup } from '../combat/combat-avatar-group.js';
+import { GravestoneMarker } from '../combat/gravestone-marker.js';
 import { PlayerController } from '../player/player-controller.js';
 import { PlayerAvatar } from '../player/player-avatar.js';
 import type { RenderService } from '../render/renderer.js';
@@ -109,6 +110,7 @@ export class HubController {
   private npcs: NpcDirector;
   private npcAvatars: NpcAvatarGroup;
   private combatAvatars: CombatAvatarGroup;
+  private gravestoneMarker: GravestoneMarker;
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
   private readonly now: () => number;
@@ -154,6 +156,7 @@ export class HubController {
     this.npcs = new NpcDirector(world, options.tunables, this.now());
     this.npcAvatars = this.createNpcAvatars();
     this.combatAvatars = this.createCombatAvatars();
+    this.gravestoneMarker = this.createGravestoneMarker();
 
     // The renderer owns the canvas and its resize observer; the rig owns the
     // frustum. Hooking them here keeps the renderer ignorant of the camera's
@@ -221,6 +224,7 @@ export class HubController {
     this.npcs.update(this.now(), dtSeconds * 1000);
     this.npcAvatars.update(dtSeconds, this.npcs.namedPresentations());
     this.combatAvatars.update(dtSeconds, economy.combat, economy.lastCombatStrikeAtMs);
+    this.gravestoneMarker.update(economy.grave, this.now());
     this.world.actors.flush();
 
     const dayFraction =
@@ -316,6 +320,7 @@ export class HubController {
     this.npcs.dispose();
     this.npcAvatars.dispose();
     this.combatAvatars.dispose();
+    this.gravestoneMarker.dispose();
     this.playerAvatar.dispose();
     this.world.actors.release(this.playerSlot);
     this.options.render.scene.remove(this.world.root);
@@ -335,6 +340,7 @@ export class HubController {
     this.npcs = new NpcDirector(newWorld, this.options.tunables, this.now());
     this.npcAvatars = this.createNpcAvatars();
     this.combatAvatars = this.createCombatAvatars();
+    this.gravestoneMarker = this.createGravestoneMarker();
 
     newWorld.attach(this.options.render.scene);
     this.camera.snapTo({
@@ -366,6 +372,7 @@ export class HubController {
     this.npcs.dispose();
     this.npcAvatars.dispose();
     this.combatAvatars.dispose();
+    this.gravestoneMarker.dispose();
     this.playerAvatar.dispose();
     this.world.actors.release(this.playerSlot);
     this.options.render.scene.remove(this.world.root);
@@ -441,6 +448,12 @@ export class HubController {
     const avatars = new CombatAvatarGroup(this.world.zone, this.options.quality.shadowsEnabled);
     this.world.root.add(avatars.root);
     return avatars;
+  }
+
+  private createGravestoneMarker(): GravestoneMarker {
+    const marker = new GravestoneMarker(this.world.zone);
+    this.world.root.add(marker.root);
+    return marker;
   }
 
   /** Screen point to a world position on the courtyard floor. */
