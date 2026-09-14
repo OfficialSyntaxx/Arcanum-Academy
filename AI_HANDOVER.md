@@ -194,6 +194,12 @@ quest journal. It shows every authored quest's active, available, complete, or l
 the relevant server-confirmed objective counts. Accepting and turning in work remain exclusively
 at the in-world Library notice board; the journal does not grant, consume, or calculate progress.
 
+**G5-B dialogue update (2026-09-14):** Bram, Referee Calla Dun, and Archivist Onn now answer
+with brief guidance that reflects the server-confirmed quest projection: first notice-board work,
+active gathering/hunt/cooking steps, and the Archive follow-up. Dialogue remains presentation
+only—NPC interaction neither accepts nor completes a quest—and other named NPCs retain their
+authored rotating barks.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
