@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_TUNABLES,
   ITEM_CATALOG,
+  QuestStatus,
   SKILL_TABLE,
   asId,
   type PlayerId,
@@ -95,6 +96,26 @@ function harness() {
     async setHitpoints(current: number) {
       const r = await players.update(PLAYER, (state) =>
         ok({ state: { ...state, hitpoints: { ...state.hitpoints, current } }, value: undefined }),
+      );
+      if (!r.ok) throw Error(r.error.reason);
+    },
+    async activateFirstHunt() {
+      const r = await players.update(PLAYER, (state) =>
+        ok({
+          state: {
+            ...state,
+            quests: {
+              ...state.quests,
+              'quest.first_hunt': {
+                status: QuestStatus.Active,
+                acceptedAtMs: clock,
+                completedAtMs: null,
+                objectiveCounts: {},
+              },
+            },
+          },
+          value: undefined,
+        }),
       );
       if (!r.ok) throw Error(r.error.reason);
     },
@@ -193,6 +214,22 @@ describe('Shore Wolf combat handlers', () => {
     expect((await h.state()).inventory.stacks).toContainEqual({
       definitionId: 'item.material.armabee_wax',
       quantity: 1,
+    });
+  });
+  it('advances The First Hunt only for confirmed Shore Wolf defeats', async () => {
+    const h = harness();
+    await h.activateFirstHunt();
+    for (let i = 0; i < 4; i += 1) {
+      await h.dispatch();
+      h.advance(DEFAULT_TUNABLES.combat.tickMs);
+    }
+    h.advance(4_000);
+    for (let i = 0; i < 4; i += 1) {
+      await h.dispatch();
+      h.advance(DEFAULT_TUNABLES.combat.tickMs);
+    }
+    expect((await h.state()).quests['quest.first_hunt']?.objectiveCounts).toEqual({
+      'hunt.shore_wolves': 2,
     });
   });
   it('eats cooked Shore Wolf Meat for 3 HP and spends one combat tick', async () => {
