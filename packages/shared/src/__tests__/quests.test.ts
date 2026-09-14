@@ -26,6 +26,26 @@ describe('resource quest catalog', () => {
     ).toBe(true);
   });
 
+  it('unlocks A Clear Copy only after the Archive work is complete', () => {
+    const sideQuest = questById('quest.clear_copy');
+    expect(sideQuest).toMatchObject({
+      title: 'A Clear Copy',
+      rewardCoins: 35,
+      prerequisites: ['quest.embers_for_the_archive'],
+    });
+    expect(questIsUnlocked(sideQuest!, {})).toBe(false);
+    expect(
+      questIsUnlocked(sideQuest!, {
+        'quest.embers_for_the_archive': {
+          status: QuestStatus.Completed,
+          acceptedAtMs: 1,
+          completedAtMs: 2,
+          objectiveCounts: {},
+        },
+      }),
+    ).toBe(true);
+  });
+
   it('records only active matching encounter defeats for The First Hunt', () => {
     const progress = recordEncounterDefeat(
       {
