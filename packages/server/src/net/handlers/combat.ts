@@ -15,6 +15,8 @@ import {
   FailureCode,
   ok,
   recordEncounterDefeat,
+  discoveryForSource,
+  recordDiscovery,
   Rng,
   type Failure,
   type ProgressionTunables,
@@ -248,6 +250,9 @@ export function registerCombatHandlers(
       const quests = defeated
         ? recordEncounterDefeat(state.quests, id as Parameters<typeof recordEncounterDefeat>[1])
         : state.quests;
+      const discoveries = defeated
+        ? recordDiscovery(state.discoveries, discoveryForSource(id!), now)
+        : state.discoveries;
       const coins = defeated
         ? Math.min(encounter.rewardCoins, options.currencyCap - state.coins)
         : 0;
@@ -260,6 +265,7 @@ export function registerCombatHandlers(
         skills,
         grave,
         quests,
+        discoveries,
         lastSeenAtMs: now,
       };
       return ok({
@@ -271,6 +277,7 @@ export function registerCombatHandlers(
           coins: next.coins,
           skills: next.skills,
           quests: next.quests,
+          discoveries: next.discoveries,
           combat: {
             interactableId: id,
             label: encounter.label,
@@ -403,12 +410,19 @@ export function registerCombatHandlers(
         if (!added.ok) return err(added.error);
         inventory = added.value;
       }
-      const next = { ...state, inventory, grave: null, lastSeenAtMs: now };
+      const next = {
+        ...state,
+        inventory,
+        grave: null,
+        discoveries: recordDiscovery(state.discoveries, 'discovery.recovery.grave', now),
+        lastSeenAtMs: now,
+      };
       return ok({
         state: next,
         value: {
           inventory: { stacks: next.inventory.stacks, slotCapacity: next.inventory.slotCapacity },
           grave: null,
+          discoveries: next.discoveries,
         },
       });
     });
