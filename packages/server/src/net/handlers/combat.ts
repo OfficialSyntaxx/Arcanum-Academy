@@ -14,6 +14,7 @@ import {
   failure,
   FailureCode,
   ok,
+  recordEncounterDefeat,
   Rng,
   type Failure,
   type ProgressionTunables,
@@ -244,6 +245,9 @@ export function registerCombatHandlers(
                 createdAtMs: now,
                 expiresAtMs: options.graveExpiryMs === null ? null : now + options.graveExpiryMs,
               };
+      const quests = defeated
+        ? recordEncounterDefeat(state.quests, id as Parameters<typeof recordEncounterDefeat>[1])
+        : state.quests;
       const coins = defeated
         ? Math.min(encounter.rewardCoins, options.currencyCap - state.coins)
         : 0;
@@ -255,6 +259,7 @@ export function registerCombatHandlers(
         coins: state.coins + coins,
         skills,
         grave,
+        quests,
         lastSeenAtMs: now,
       };
       return ok({
@@ -265,6 +270,7 @@ export function registerCombatHandlers(
           hitpoints: next.hitpoints,
           coins: next.coins,
           skills: next.skills,
+          quests: next.quests,
           combat: {
             interactableId: id,
             label: encounter.label,
