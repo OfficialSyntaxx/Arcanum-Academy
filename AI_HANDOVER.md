@@ -178,6 +178,12 @@ procedural gateway silhouettes rather than generic posts, and combat encounters 
 arena rings. These are presentation-only landmarks: they preserve authored positions, approach
 points, interaction ranges, and the mobile draw-call budget.
 
+**G4-B atmosphere update (2026-09-14):** The world clock now grades the authored sky and fog as
+well as moving the key light, giving Shorelands a readable dawn-to-night cycle. Per-day weather
+is deterministic and presentation-only: clear, mist, or light rain changes the grade and fog;
+rain uses a small focus-following instanced effect whose count is derived from the device's
+existing particle budget. Weather has no movement, gathering, combat, or economy modifiers.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
