@@ -173,6 +173,11 @@ marker at its server-confirmed death location, so recovery is discoverable witho
 coordinates. The combat HUD names the stat trained by the selected style and keeps its recovery
 prompt above mobile safe-area controls.
 
+**G4-A route-readability update (2026-09-14):** Shorelands destination portals now use compact
+procedural gateway silhouettes rather than generic posts, and combat encounters sit in visible
+arena rings. These are presentation-only landmarks: they preserve authored positions, approach
+points, interaction ranges, and the mobile draw-call budget.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
