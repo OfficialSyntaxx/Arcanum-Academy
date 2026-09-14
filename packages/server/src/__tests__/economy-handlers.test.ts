@@ -422,6 +422,7 @@ describe('concurrent writes', () => {
 
     const state = await h.state();
     expect(state.skills[CRYSTAL.requiredSkillId]!.xp).toBe(8 * CRYSTAL.xpPerHarvest);
+    expect(state.discoveries).toHaveProperty('discovery.gather.crystal');
   });
 });
 
