@@ -80,7 +80,7 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 4;
+export const PLAYER_SCHEMA_VERSION = 5;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
 export interface GravestoneState {
@@ -328,6 +328,15 @@ function readQuests(value: unknown): Record<string, QuestProgress> {
         typeof raw.completedAtMs === 'number' && Number.isFinite(raw.completedAtMs)
           ? Math.max(0, raw.completedAtMs)
           : null,
+      objectiveCounts: isRecord(raw.objectiveCounts)
+        ? Object.fromEntries(
+            Object.entries(raw.objectiveCounts)
+              .filter(
+                ([, count]) => typeof count === 'number' && Number.isInteger(count) && count >= 0,
+              )
+              .map(([id, count]) => [id, count as number]),
+          )
+        : {},
     };
   }
   return quests;
