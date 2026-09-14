@@ -10,6 +10,7 @@ import {
   questIsUnlocked,
   type Failure,
   type ItemDefinitionId,
+  type QuestObjectiveDefinition,
   type Result,
 } from '@alderfell/shared';
 import type { PlayerState } from '../../domain/player-state.js';
@@ -34,8 +35,18 @@ function readQuestId(payload: unknown): string | null {
   return typeof questId === 'string' ? questId : null;
 }
 
-function objectiveCount(state: PlayerState, itemIds: readonly ItemDefinitionId[]): number {
+function itemObjectiveCount(state: PlayerState, itemIds: readonly ItemDefinitionId[]): number {
   return itemIds.reduce((total, itemId) => total + quantityOf(state.inventory, itemId), 0);
+}
+
+function objectiveComplete(
+  state: PlayerState,
+  questId: string,
+  objective: QuestObjectiveDefinition,
+): boolean {
+  if (objective.kind === 'ITEM')
+    return itemObjectiveCount(state, objective.itemIds) >= objective.requiredQuantity;
+  return (state.quests[questId]?.objectiveCounts[objective.id] ?? 0) >= objective.requiredQuantity;
 }
 
 function takeObjective(
@@ -65,6 +76,7 @@ function takeObjectives(state: PlayerState, questId: string): Result<PlayerState
   if (!quest) return err(failure(FailureCode.NotFound, 'quest.unknown'));
   let next = state;
   for (const objective of quest.objectives) {
+    if (objective.kind !== 'ITEM') continue;
     const consumed = takeObjective(next, objective.itemIds, objective.requiredQuantity);
     if (!consumed.ok) return err(consumed.error);
     next = consumed.value;
@@ -98,6 +110,7 @@ export function registerQuestHandlers(
             status: QuestStatus.Active,
             acceptedAtMs: nowMs,
             completedAtMs: null,
+            objectiveCounts: {},
           },
         },
         lastSeenAtMs: nowMs,
@@ -117,11 +130,7 @@ export function registerQuestHandlers(
       if (state.quests[quest.id]?.status !== QuestStatus.Active) {
         return err(failure(FailureCode.Conflict, 'quest.not_active'));
       }
-      if (
-        quest.objectives.some(
-          (objective) => objectiveCount(state, objective.itemIds) < objective.requiredQuantity,
-        )
-      ) {
+      if (quest.objectives.some((objective) => !objectiveComplete(state, quest.id, objective))) {
         return err(failure(FailureCode.Conflict, 'quest.objective_incomplete'));
       }
       const consumed = takeObjectives(state, quest.id);
@@ -135,6 +144,7 @@ export function registerQuestHandlers(
             status: QuestStatus.Completed,
             acceptedAtMs: state.quests[quest.id]!.acceptedAtMs,
             completedAtMs: nowMs,
+            objectiveCounts: state.quests[quest.id]!.objectiveCounts,
           },
         },
         lastSeenAtMs: nowMs,
