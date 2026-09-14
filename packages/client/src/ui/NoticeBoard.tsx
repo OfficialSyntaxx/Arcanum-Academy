@@ -32,9 +32,12 @@ export function NoticeBoard({
   const accepted = progress?.status === QuestStatus.Active;
   const completed = progress?.status === QuestStatus.Completed;
   const objectives = quest.objectives.map((objective) => {
-    const count = economy.stacks
-      .filter((stack) => objective.itemIds.includes(stack.definitionId as ItemDefinitionId))
-      .reduce((total, stack) => total + stack.quantity, 0);
+    const count =
+      objective.kind === 'ITEM'
+        ? economy.stacks
+            .filter((stack) => objective.itemIds.includes(stack.definitionId as ItemDefinitionId))
+            .reduce((total, stack) => total + stack.quantity, 0)
+        : (progress?.objectiveCounts[objective.id] ?? 0);
     return { ...objective, count, complete: count >= objective.requiredQuantity };
   });
   const ready = objectives.every((objective) => objective.complete);
