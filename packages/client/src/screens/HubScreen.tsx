@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { WorldMap } from '../ui/WorldMap.js';
-import { HubHud, InteractionPrompt } from '../ui/HubOverlay.js';
+import { HubHud, InteractionPrompt, JourneyTracker } from '../ui/HubOverlay.js';
 import {
   CommandError,
   BankPanel,
@@ -117,6 +117,7 @@ export function HubScreen({
   return (
     <div className="hub">
       <HubHud />
+      <JourneyTracker onOpenMap={() => setMapOpen(true)} />
       <button type="button" className="map-toggle" onClick={() => setMapOpen(true)}>
         Map
       </button>
