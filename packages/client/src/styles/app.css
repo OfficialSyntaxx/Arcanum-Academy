@@ -965,6 +965,15 @@
   color: var(--haze-dim);
   font: 0.8rem var(--font-label);
 }
+.combat-hud__training {
+  color: var(--amber) !important;
+  letter-spacing: 0.03em;
+}
+.combat-hud--grave {
+  top: auto;
+  bottom: calc(var(--inset-bottom) + 5.5rem);
+  border-color: #f4ae4f;
+}
 .combat-hud button {
   width: 100%;
   min-height: 2.35rem;
