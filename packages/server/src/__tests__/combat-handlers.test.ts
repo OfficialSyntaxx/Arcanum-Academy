@@ -191,6 +191,7 @@ describe('Shore Wolf combat handlers', () => {
       definitionId: 'item.meat.raw_shore_wolf',
       quantity: 1,
     });
+    expect((await h.state()).discoveries).toHaveProperty('discovery.combat.shore_wolf');
   });
   it('resolves the distinct Emberwing Armabee encounter and awards wax', async () => {
     const h = harness();
@@ -215,6 +216,7 @@ describe('Shore Wolf combat handlers', () => {
       definitionId: 'item.material.armabee_wax',
       quantity: 1,
     });
+    expect((await h.state()).discoveries).toHaveProperty('discovery.combat.emberwing');
   });
   it('advances The First Hunt only for confirmed Shore Wolf defeats', async () => {
     const h = harness();
@@ -279,6 +281,7 @@ describe('Shore Wolf combat handlers', () => {
     expect(await h.reclaimGrave()).toMatchObject({ ok: true, value: { grave: null } });
     state = await h.state();
     expect(state.grave).toBeNull();
+    expect(state.discoveries).toHaveProperty('discovery.recovery.grave');
     expect(state.inventory.stacks).toContainEqual({
       definitionId: 'item.crystal.shard',
       quantity: 3,
