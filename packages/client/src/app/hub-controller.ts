@@ -234,6 +234,8 @@ export class HubController {
     this.world.updateAtmosphere(
       dayFraction / this.options.tunables.world.worldDayLengthMs,
       this.player.position,
+      Math.floor(this.now() / this.options.tunables.world.worldDayLengthMs),
+      this.now(),
     );
     this.world.updateDoors(this.player.position, dtSeconds);
     this.world.updateNavigationMarker(this.player.destination, this.now());
