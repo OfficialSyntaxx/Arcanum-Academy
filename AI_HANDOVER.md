@@ -163,6 +163,11 @@ five-HP, eight-coin encounter with a guaranteed Armabee Wax drop. It uses the al
 animated PolyPizza Armabee Evolved GLB (CC0 1.0), alongside the Quaternius Shore Wolf; the
 creature renderer now chooses animation clips by intent so each model can retain its own clip names.
 
+**G3 quest update (2026-09-13):** **The First Hunt** now follows The First Kindling and unlocks
+Embers for the Archive. Its confirmed-kill counter requires two Shore Wolf defeats, and its
+campfire step requires one Cooked Shore Wolf Meat. Kill progress is stored per quest in the
+player record, advances only from server-confirmed combat defeats, and cannot be forged by the UI.
+
 **Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
 achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
 the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
