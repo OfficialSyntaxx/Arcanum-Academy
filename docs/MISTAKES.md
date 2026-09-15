@@ -39,3 +39,12 @@
   a rejected version check is false history unless the surrounding transaction rolls it back.
 - Restoration must move the live version forward and snapshot the displaced state first. Rewinding a
   version breaks optimistic concurrency; overwriting without a backup defeats the feature's purpose.
+
+# G6-B rules learned
+
+- A new server directory is a new architecture layer. Add its allowed dependency rule and document
+  the boundary in the same change; otherwise the executable boundary check correctly rejects it.
+- Never log raw admin URLs: search text and accidental query parameters are operator-controlled and
+  can contain sensitive data. Log the matched route pattern and method instead.
+- Escape SQL `LIKE` metacharacters for an ID search advertised as literal. Parameterization prevents
+  injection, but it does not stop `%` and `_` from silently changing search semantics.

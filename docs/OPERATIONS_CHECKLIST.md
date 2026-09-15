@@ -26,3 +26,20 @@ checks; never use a production player as an experiment.
 - [ ] Every route is rate-limited and access attempts are logged.
 - [ ] Account inspection is read-only by default and redacts credentials/tokens.
 - [ ] Mutation endpoints remain absent until their complete undo path is demonstrated.
+
+## G6-B — read-only account inspection
+
+- [ ] With `ADMIN_READ_TOKEN` unset, every `/admin/*` request returns 404.
+- [ ] Missing, malformed, short, and wrong bearer credentials receive the concealed 404 response.
+- [ ] Generate the production token from a secure random source with at least 32 characters; keep it
+      only in the server environment and never in a `VITE_*` value.
+- [ ] Search player IDs with ordinary text plus `%` and `_`; confirm wildcard characters are treated
+      literally and pages never exceed 100 records.
+- [ ] Inspect a current save containing token-, secret-, password-, and credential-shaped nested keys;
+      confirm every value is replaced by `[REDACTED]`.
+- [ ] Confirm snapshot lists contain metadata only and snapshot detail requires a separate request.
+- [ ] Confirm restore-audit history is readable and ordered, while POST/PUT/PATCH/DELETE mutation
+      attempts remain 404.
+- [ ] Make 31 requests inside one minute from one test address; confirm request 31 is rate-limited.
+- [ ] Review structured logs: accepted/refused/rate-limited attempts include IP, method, and route
+      pattern, but never the token or raw query text.

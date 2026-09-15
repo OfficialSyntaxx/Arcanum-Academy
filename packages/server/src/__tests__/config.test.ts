@@ -23,6 +23,11 @@ describe('loadConfig', () => {
     );
   });
 
+  it('accepts only a strong separate admin read token', () => {
+    expect(loadConfig({ ADMIN_READ_TOKEN: 'a'.repeat(32) }).ADMIN_READ_TOKEN).toBe('a'.repeat(32));
+    expect(() => loadConfig({ ADMIN_READ_TOKEN: 'too-short' })).toThrow(/ADMIN_READ_TOKEN/);
+  });
+
   it('fails loudly on an invalid port', () => {
     expect(() => loadConfig({ PORT: '70000' })).toThrow(/Invalid server configuration/);
   });

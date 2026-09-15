@@ -61,10 +61,14 @@ violation. It is not advisory — it runs in CI ahead of the typecheck.
 
 **Server layer rules**
 
-| Layer                              | May import                         |
-| ---------------------------------- | ---------------------------------- |
-| `config`, `session`, `persistence` | —                                  |
-| `net`                              | `session`, `persistence`, `config` |
+| Layer                              | May import                                   |
+| ---------------------------------- | -------------------------------------------- |
+| `config`, `session`, `persistence` | —                                            |
+| `net`                              | `session`, `persistence`, `config`, `domain` |
+| `admin`                            | `persistence`, `config`, `domain`            |
+
+The `admin` layer is a separately authenticated HTTP surface. Read routes may inspect the
+repository; any future mutation must call domain services and may never write raw persistence.
 
 Tests are exempt from layer rules; they legitimately reach across layers to assert.
 

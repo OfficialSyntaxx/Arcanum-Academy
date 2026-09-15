@@ -69,6 +69,16 @@ export interface PlayerStore {
 }
 
 export interface PlayerRepository extends PlayerStore {
+  listPlayers(input: {
+    readonly query?: string;
+    readonly cursor?: string;
+    readonly limit: number;
+  }): Promise<
+    Result<
+      { readonly records: readonly PlayerRecord[]; readonly nextCursor: string | null },
+      Failure
+    >
+  >;
   /**
    * Runs work atomically: every write inside commits together or none does.
    *
@@ -151,6 +161,28 @@ export class InMemoryPlayerRepository implements PlayerRepository {
 
   async find(playerId: PlayerId): Promise<Result<PlayerRecord | null, Failure>> {
     return ok(this.records.get(playerId) ?? null);
+  }
+
+  async listPlayers(input: {
+    readonly query?: string;
+    readonly cursor?: string;
+    readonly limit: number;
+  }): Promise<
+    Result<
+      { readonly records: readonly PlayerRecord[]; readonly nextCursor: string | null },
+      Failure
+    >
+  > {
+    const query = input.query?.toLowerCase() ?? '';
+    const matches = [...this.records.values()]
+      .filter((record) => record.playerId.toLowerCase().includes(query))
+      .filter((record) => input.cursor === undefined || record.playerId > input.cursor)
+      .sort((a, b) => a.playerId.localeCompare(b.playerId));
+    const records = matches.slice(0, input.limit);
+    return ok({
+      records,
+      nextCursor: matches.length > input.limit ? (records.at(-1)?.playerId ?? null) : null,
+    });
   }
 
   async create(

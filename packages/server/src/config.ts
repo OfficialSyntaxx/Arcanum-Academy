@@ -17,6 +17,8 @@ const schema = z.object({
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173'),
   /** Read credential for the retained diagnostics feed; never sent to clients. */
   DIAGNOSTICS_READ_KEY: z.string().min(16).optional(),
+  /** Separate read-only operations credential. When absent, /admin routes do not exist. */
+  ADMIN_READ_TOKEN: z.string().trim().min(32).optional(),
   /** Hard cap on concurrent sockets per process. Protects memory under load. */
   MAX_CONNECTIONS: z.coerce.number().int().positive().default(2_000),
   /** Seconds a disconnected session stays resumable. */

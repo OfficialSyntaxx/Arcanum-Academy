@@ -5,11 +5,12 @@
 **Written:** 2026-09-09 · **Updated:** 2026-09-15 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G6-A is implemented. Reliable skilling/economy, persistence, quest and diary
+**Code state:** G6-B is implemented. Reliable skilling/economy, persistence, quest and diary
 progression, combat/death recovery, the three-room Saltwake dungeon, its Drowned Warden boss,
 production GLB creature presentation, and the first persisted treasure-clue trail are live. The
-save now retains bounded immutable history, and restore is backup-first and audited. The next focus is
-G6-B: separately authenticated, rate-limited, read-only account inspection before mutation tooling.
+save retains bounded immutable history, restore is backup-first and audited, and a separately
+authenticated read-only operations API can inspect redacted accounts and history. The next focus is
+G6-C: a separate admin client for this API before any mutation tooling is exposed.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -51,7 +52,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of G6-A on 2026-09-15 it reports **444 tests across 50 files**.
+afterwards is yours. As of G6-B on 2026-09-15 it reports **452 tests across 51 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -245,6 +246,14 @@ operator, and written reason; it snapshots the displaced live record first, adva
 version, and appends a before/after audit receipt in the same transaction. No admin HTTP mutation
 route exists yet. Automated evidence is in `docs/G6_A_RETURN.md`; the durable operations regression
 list is `docs/OPERATIONS_CHECKLIST.md`.
+
+**G6-B operations update (2026-09-15):** a read-only `/admin` API is registered only when the
+server-only `ADMIN_READ_TOKEN` (32+ characters) is configured. It provides paginated literal ID
+search, redacted current-save inspection, snapshot metadata/detail, and restore-audit history. Bearer
+comparison is timing-safe, sensitive-shaped keys are recursively redacted, each source is limited to
+30 requests/minute, and structured access logs exclude raw query strings and credentials. There is
+deliberately no mutation endpoint or player-client admin code. Automated evidence is in
+`docs/G6_B_RETURN.md`; deployment checks are in `docs/OPERATIONS_CHECKLIST.md`.
 
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
@@ -1624,6 +1633,11 @@ packages/server/src/admin/
   operations.ts    grant/revoke/setXp/ban/restore — all via PlayerService
 packages/admin/    a separate tiny Vite app; NOT part of the game bundle
 ```
+
+**G6-B live read routes:** `GET /admin/players`, `GET /admin/players/:playerId`, `GET
+/admin/players/:playerId/snapshots`, `GET /admin/players/:playerId/snapshots/:snapshotId`, and `GET
+/admin/players/:playerId/restore-audit`. They exist only when `ADMIN_READ_TOKEN` is configured. No
+write route exists; G6-C builds the separate client against these reads first.
 
 The existing pieces you build on: `PlayerService` (load/mutate/save with bounded retry under
 optimistic concurrency), `PlayerRepository` interface with in-memory and Postgres adapters,

@@ -106,6 +106,9 @@ const LAYERS = {
     // job or a test without a gateway in sight.
     domain: ['persistence', 'config'],
     net: ['session', 'persistence', 'config', 'domain'],
+    // A separately authenticated HTTP surface. Read operations may see persistence;
+    // future mutations must enter through domain services rather than raw storage.
+    admin: ['persistence', 'config', 'domain'],
   },
 };
 

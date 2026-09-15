@@ -39,6 +39,7 @@ import {
   PostgresIdentityStore,
   type IdentityStore,
 } from './domain/identity.js';
+import { registerAdminRoutes } from './admin/routes.js';
 
 /**
  * Server entry point.
@@ -203,6 +204,14 @@ async function main(): Promise<void> {
   });
 
   const app = Fastify({ logger: false });
+  if (config.ADMIN_READ_TOKEN !== undefined) {
+    registerAdminRoutes(app, {
+      token: config.ADMIN_READ_TOKEN,
+      repository,
+      logger: logger.child('admin'),
+    });
+    logger.info('read-only admin routes registered');
+  }
   let diagnostics: DiagnosticStore = new DiagnosticBuffer();
   if (postgres !== null) {
     diagnostics = new PostgresDiagnosticStore(postgres.client);

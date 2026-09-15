@@ -279,6 +279,39 @@ export class PostgresPlayerRepository implements PlayerRepository {
     return this.pooled.find(playerId);
   }
 
+  async listPlayers(input: {
+    readonly query?: string;
+    readonly cursor?: string;
+    readonly limit: number;
+  }): Promise<
+    Result<
+      { readonly records: readonly PlayerRecord[]; readonly nextCursor: string | null },
+      Failure
+    >
+  > {
+    try {
+      const literalQuery = (input.query ?? '')
+        .replaceAll('\\', '\\\\')
+        .replaceAll('%', '\\%')
+        .replaceAll('_', '\\_');
+      const result = await this.client.query<Row>(
+        `SELECT player_id, schema_version, version, updated_at_ms, data
+           FROM player_records
+          WHERE player_id ILIKE $1 ESCAPE '\\' AND player_id > $2
+          ORDER BY player_id ASC LIMIT $3`,
+        [`%${literalQuery}%`, input.cursor ?? '', input.limit + 1],
+      );
+      const hasMore = result.rows.length > input.limit;
+      const records = result.rows.slice(0, input.limit).map(toRecord);
+      return ok({
+        records,
+        nextCursor: hasMore ? (records.at(-1)?.playerId ?? null) : null,
+      });
+    } catch (error) {
+      return err(storageFailure('list players', error));
+    }
+  }
+
   async create(
     record: Omit<PlayerRecord, 'version' | 'updatedAtMs'>,
   ): Promise<Result<PlayerRecord, Failure>> {
