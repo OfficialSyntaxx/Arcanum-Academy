@@ -33,6 +33,7 @@ async function harness() {
     token: TOKEN,
     repository,
     logger: createLogger({ scope: 'admin-test', level: LogLevel.Info, sinks: [sink] }),
+    allowedOrigins: ['https://operations.example.test'],
     now: () => 1_000,
   });
   await app.ready();
@@ -57,6 +58,29 @@ describe('admin authentication', () => {
 });
 
 describe('read-only admin routes', () => {
+  it('allows only explicitly configured browser origins and answers preflight without the token', async () => {
+    const { app, sink } = await harness();
+    const allowed = await app.inject({
+      method: 'OPTIONS',
+      url: '/admin/players',
+      headers: {
+        origin: 'https://operations.example.test',
+        'access-control-request-method': 'GET',
+        'access-control-request-headers': 'authorization',
+      },
+    });
+    expect(allowed.statusCode).toBe(204);
+    expect(allowed.headers['access-control-allow-origin']).toBe('https://operations.example.test');
+    const refused = await app.inject({
+      method: 'GET',
+      url: '/admin/players',
+      headers: { ...auth, origin: 'https://untrusted.example.test' },
+    });
+    expect(refused.statusCode).toBe(404);
+    expect(sink.records.at(-1)?.message).toBe('admin browser origin refused');
+    await app.close();
+  });
+
   it('conceals the surface from unauthenticated requests and logs the refusal', async () => {
     const { app, sink } = await harness();
     const response = await app.inject({ method: 'GET', url: `/admin/players/${PLAYER}` });

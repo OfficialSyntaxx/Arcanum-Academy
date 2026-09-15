@@ -28,6 +28,11 @@
         │  persistence           │       │  config                 │
         │  core                  │       │                         │
         └────────────────────────┘       └─────────────────────────┘
+
+        ┌────────────────────────┐
+        │   @alderfell/admin     │  isolated read-only browser bundle
+        │   no workspace imports │  calls allowlisted /admin GET routes
+        └────────────────────────┘
 ```
 
 `shared` depends on nothing. `sim` depends only on `shared` and touches no DOM, no
@@ -47,6 +52,7 @@ violation. It is not advisory — it runs in CI ahead of the typecheck.
 | `sim`    | `shared`                   | three, react, zustand, fastify, ws |
 | `server` | `shared`, `sim`            | three, react, zustand              |
 | `client` | `shared`, `sim`            | fastify, ws                        |
+| `admin`  | nothing from the workspace | three, react, zustand, fastify, ws |
 
 **Client layer rules** — a layer may import itself and the layers listed:
 
@@ -69,6 +75,11 @@ violation. It is not advisory — it runs in CI ahead of the typecheck.
 
 The `admin` layer is a separately authenticated HTTP surface. Read routes may inspect the
 repository; any future mutation must call domain services and may never write raw persistence.
+
+`@alderfell/admin` is a separate Vite entry and output directory. It cannot import another workspace
+package. `npm run admin-isolation` additionally scans the player source and built PWA for admin
+imports, labels, route paths, and credential names; a clean architecture graph alone cannot prove a
+bundler did not admit operator code.
 
 Tests are exempt from layer rules; they legitimately reach across layers to assert.
 

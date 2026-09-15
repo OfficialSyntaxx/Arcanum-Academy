@@ -55,6 +55,7 @@ export function registerAdminRoutes(
     readonly token: string;
     readonly repository: PlayerRepository;
     readonly logger: Logger;
+    readonly allowedOrigins?: readonly string[];
     readonly now?: () => number;
   },
 ): void {
@@ -62,6 +63,23 @@ export function registerAdminRoutes(
   const now = options.now ?? (() => Date.now());
   app.register(async (admin) => {
     admin.addHook('onRequest', async (request, reply) => {
+      const origin = request.headers.origin?.replace(/\/$/, '');
+      if (origin !== undefined) {
+        if (!(options.allowedOrigins ?? []).includes(origin)) {
+          options.logger.warn('admin browser origin refused', {
+            ip: request.ip,
+            method: request.method,
+            route: request.routeOptions.url,
+          });
+          return reply.code(404).send({ error: 'not_found' });
+        }
+        reply.header('access-control-allow-origin', origin);
+        reply.header('vary', 'Origin');
+        reply.header('access-control-allow-methods', 'GET, OPTIONS');
+        reply.header('access-control-allow-headers', 'Authorization, Content-Type');
+        reply.header('access-control-max-age', '600');
+        if (request.method === 'OPTIONS') return reply.code(204).send();
+      }
       const at = now();
       const window = windows.get(request.ip);
       if (window === undefined || at - window.startedAtMs >= WINDOW_MS) {
@@ -94,6 +112,8 @@ export function registerAdminRoutes(
         route: request.routeOptions.url,
       });
     });
+
+    admin.options('/admin/*', async (_request, reply) => reply.code(204).send());
 
     admin.get('/admin/players', async (request, reply) => {
       const query = request.query as { q?: string; cursor?: string; limit?: string };

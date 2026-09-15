@@ -11,6 +11,7 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
+      '**/dist-types/**',
       '**/coverage/**',
       '**/*.tsbuildinfo',
       'packages/client/dev-dist/**',

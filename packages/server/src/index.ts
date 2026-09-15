@@ -207,6 +207,7 @@ async function main(): Promise<void> {
   if (config.ADMIN_READ_TOKEN !== undefined) {
     registerAdminRoutes(app, {
       token: config.ADMIN_READ_TOKEN,
+      allowedOrigins: config.adminAllowedOrigins,
       repository,
       logger: logger.child('admin'),
     });

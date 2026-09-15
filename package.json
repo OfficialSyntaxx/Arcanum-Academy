@@ -12,7 +12,7 @@
     "packages/*"
   ],
   "scripts": {
-    "typecheck": "tsc -b packages/shared packages/sim packages/server packages/client",
+    "typecheck": "tsc -b packages/shared packages/sim packages/server packages/client packages/admin",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -20,10 +20,11 @@
     "test:watch": "vitest",
     "boundaries": "node tools/scripts/check-boundaries.mjs",
     "asset-budget": "node tools/scripts/check-client-asset-budget.mjs",
-    "build": "npm run typecheck && npm run build --workspace @alderfell/client && npm run asset-budget && npm run build --workspace @alderfell/server",
+    "admin-isolation": "node tools/scripts/check-admin-isolation.mjs",
+    "build": "npm run typecheck && npm run build --workspace @alderfell/client && npm run asset-budget && npm run build --workspace @alderfell/admin && npm run admin-isolation && npm run build --workspace @alderfell/server",
     "dev": "npm run dev --workspace @alderfell/client --",
     "dev:server": "npm run dev --workspace @alderfell/server",
-    "verify": "npm run format:check && npm run lint && npm run boundaries && npm run typecheck && npm run test",
+    "verify": "npm run format:check && npm run lint && npm run boundaries && npm run typecheck && npm run test && npm run admin-isolation",
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo node_modules/.vite",
     "smoke": "npm run build && playwright test"
   },

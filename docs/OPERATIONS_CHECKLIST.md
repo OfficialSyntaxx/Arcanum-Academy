@@ -43,3 +43,22 @@ checks; never use a production player as an experiment.
 - [ ] Make 31 requests inside one minute from one test address; confirm request 31 is rate-limited.
 - [ ] Review structured logs: accepted/refused/rate-limited attempts include IP, method, and route
       pattern, but never the token or raw query text.
+
+## G6-C — isolated operations console
+
+- [ ] Build the game and operations console independently; confirm `npm run admin-isolation` passes
+      after the production game build.
+- [ ] Search the player PWA source and output for `@alderfell/admin`, `Alderfell Operations`,
+      `/admin/players`, and `ADMIN_READ_TOKEN`; confirm every marker is absent.
+- [ ] Host only `packages/admin/dist` on a private HTTPS origin; do not link it from the game.
+- [ ] Set that exact origin in `ADMIN_ALLOWED_ORIGINS`; confirm an unlisted Origin receives concealed
+      404 and the listed origin receives a successful OPTIONS preflight.
+- [ ] Reload and reopen the console; confirm endpoint and token must be entered again.
+- [ ] Connect, then inspect browser local storage, session storage, cookies, URL, page source, and
+      network request URL; confirm the token appears only in the request Authorization header.
+- [ ] Disconnect; confirm subsequent searches require the token again.
+- [ ] At 320px portrait width, test connect, search, save detail, snapshot detail, audit, back, and
+      disconnect without horizontal page overflow or controls smaller than 44px.
+- [ ] Inspect fields containing HTML-like player text; confirm it renders as text, never markup.
+- [ ] Attempt POST/PUT/PATCH/DELETE against every visible resource; confirm 404 and no save change.
+- [ ] Confirm snapshot and restore-audit views remain readable for empty and populated histories.

@@ -48,3 +48,12 @@
   can contain sensitive data. Log the matched route pattern and method instead.
 - Escape SQL `LIKE` metacharacters for an ID search advertised as literal. Parameterization prevents
   injection, but it does not stop `%` and `_` from silently changing search semantics.
+
+# G6-C rules learned
+
+- A separate browser bundle still needs an explicit server-origin contract. Bearer authentication
+  does not make wildcard CORS safe; allowlist the exact operations origins and conceal refusals.
+- Client separation must be executable, not a folder naming convention. Check both player source and
+  the built PWA for admin imports, route markers, labels, and server credential names.
+- An admin read token is session material, not a preference. Never persist it, prefill it through a
+  build variable, append it to a URL, or keep it after disconnect/navigation.

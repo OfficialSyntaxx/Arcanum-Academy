@@ -63,3 +63,9 @@ services:
       # Render dashboard; it is deliberately never checked into this file.
       - key: DIAGNOSTICS_READ_KEY
         sync: false
+      # Separate credential and browser allowlist for the read-only operations
+      # console. Leave the token absent to keep every /admin route unregistered.
+      - key: ADMIN_READ_TOKEN
+        sync: false
+      - key: ADMIN_ALLOWED_ORIGINS
+        sync: false

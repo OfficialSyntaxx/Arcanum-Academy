@@ -26,6 +26,7 @@ const FORBIDDEN_RUNTIME = {
   sim: ['three', 'react', 'react-dom', 'zustand', 'fastify', 'ws'],
   server: ['three', 'react', 'react-dom', 'zustand'],
   client: ['fastify', 'ws'],
+  admin: ['three', 'react', 'react-dom', 'zustand', 'fastify', 'ws'],
 };
 
 /** Workspace packages each package may import. */
@@ -34,6 +35,7 @@ const ALLOWED_WORKSPACE = {
   sim: ['@alderfell/shared'],
   server: ['@alderfell/shared', '@alderfell/sim'],
   client: ['@alderfell/shared', '@alderfell/sim'],
+  admin: [],
 };
 
 /**

@@ -19,6 +19,8 @@ const schema = z.object({
   DIAGNOSTICS_READ_KEY: z.string().min(16).optional(),
   /** Separate read-only operations credential. When absent, /admin routes do not exist. */
   ADMIN_READ_TOKEN: z.string().trim().min(32).optional(),
+  /** Comma-separated browser origins allowed to call the separate operations API. */
+  ADMIN_ALLOWED_ORIGINS: z.string().default(''),
   /** Hard cap on concurrent sockets per process. Protects memory under load. */
   MAX_CONNECTIONS: z.coerce.number().int().positive().default(2_000),
   /** Seconds a disconnected session stays resumable. */
@@ -58,7 +60,10 @@ const schema = z.object({
 });
 
 export type ServerConfig = Readonly<
-  z.infer<typeof schema> & { readonly allowedOrigins: readonly string[] }
+  z.infer<typeof schema> & {
+    readonly allowedOrigins: readonly string[];
+    readonly adminAllowedOrigins: readonly string[];
+  }
 >;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -72,5 +77,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   const allowedOrigins = parsed.data.ALLOWED_ORIGINS.split(',')
     .map((origin) => origin.trim())
     .filter((origin) => origin.length > 0);
-  return Object.freeze({ ...parsed.data, allowedOrigins });
+  const adminAllowedOrigins = parsed.data.ADMIN_ALLOWED_ORIGINS.split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter((origin) => origin.length > 0);
+  return Object.freeze({ ...parsed.data, allowedOrigins, adminAllowedOrigins });
 }
