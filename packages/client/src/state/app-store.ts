@@ -89,6 +89,7 @@ export interface EconomyState {
   readonly quests: Readonly<Record<string, QuestProgress>>;
   /** Server-confirmed first-time discoveries, keyed by authored discovery id. */
   readonly discoveries: Readonly<Record<string, { readonly unlockedAtMs: number }>>;
+  readonly diaryRewards: Readonly<Record<string, { readonly paidAtMs: number }>>;
   /** Durable no-expiry item recovery at the position where the player fell. */
   readonly grave: {
     readonly position: { readonly x: number; readonly z: number };
@@ -137,6 +138,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   cards: [],
   quests: {},
   discoveries: {},
+  diaryRewards: {},
   grave: null,
   combat: null,
   lastCombatStrikeAtMs: 0,
