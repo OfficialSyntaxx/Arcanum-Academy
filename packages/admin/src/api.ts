@@ -59,7 +59,7 @@ export class AdminApi {
   constructor(
     private readonly endpoint: string,
     private readonly token: string,
-    private readonly fetcher: Fetcher = fetch,
+    private readonly fetcher: Fetcher = globalThis.fetch.bind(globalThis),
   ) {}
 
   searchPlayers(query = '', cursor?: string) {
