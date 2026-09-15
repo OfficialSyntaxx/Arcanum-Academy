@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { postgresSslConfiguration } from '../persistence/postgres-repository.js';
+import {
+  CREATE_SNAPSHOT_TABLES,
+  postgresSslConfiguration,
+} from '../persistence/postgres-repository.js';
 
 describe('postgresSslConfiguration', () => {
   it('does not use TLS for a local database', () => {
@@ -18,5 +21,13 @@ describe('postgresSslConfiguration', () => {
     expect(postgresSslConfiguration('postgresql://user:password@db.example.com/alderfell')).toEqual(
       { rejectUnauthorized: true },
     );
+  });
+});
+
+describe('Postgres snapshot schema', () => {
+  it('defines separate immutable snapshot and restore-audit tables', () => {
+    expect(CREATE_SNAPSHOT_TABLES).toContain('player_save_snapshots');
+    expect(CREATE_SNAPSHOT_TABLES).toContain('player_restore_audit');
+    expect(CREATE_SNAPSHOT_TABLES).toContain('PRE_RESTORE');
   });
 });

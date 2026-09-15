@@ -9,7 +9,14 @@ import {
   type PlayerId,
   type Result,
 } from '@alderfell/shared';
-import type { PlayerRecord, PlayerRepository, PlayerStore } from './repository.js';
+import {
+  SAVE_SNAPSHOT_RETENTION,
+  type PlayerRecord,
+  type PlayerRepository,
+  type PlayerStore,
+  type RestoreAuditReceipt,
+  type SaveSnapshot,
+} from './repository.js';
 
 /**
  * Postgres adapter for the persistence port.
@@ -36,6 +43,32 @@ const CREATE_TABLE = `
     updated_at_ms  BIGINT  NOT NULL,
     data           JSONB   NOT NULL
   )
+`;
+
+export const CREATE_SNAPSHOT_TABLES = `
+  CREATE TABLE IF NOT EXISTS player_save_snapshots (
+    id              BIGSERIAL PRIMARY KEY,
+    player_id       TEXT NOT NULL,
+    source_version  INTEGER NOT NULL,
+    schema_version  INTEGER NOT NULL,
+    created_at_ms   BIGINT NOT NULL,
+    reason          TEXT NOT NULL CHECK (reason IN ('SAVE', 'PRE_RESTORE')),
+    data            JSONB NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS player_save_snapshots_owner_idx
+    ON player_save_snapshots (player_id, id DESC);
+  CREATE TABLE IF NOT EXISTS player_restore_audit (
+    id              BIGSERIAL PRIMARY KEY,
+    player_id       TEXT NOT NULL,
+    snapshot_id     BIGINT NOT NULL,
+    actor           TEXT NOT NULL,
+    reason          TEXT NOT NULL,
+    before_version  INTEGER NOT NULL,
+    after_version   INTEGER NOT NULL,
+    restored_at_ms  BIGINT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS player_restore_audit_owner_idx
+    ON player_restore_audit (player_id, id ASC)
 `;
 
 interface Row {
@@ -146,6 +179,14 @@ class PostgresPlayerStore implements PlayerStore {
   ): Promise<Result<PlayerRecord, Failure>> {
     const updatedAtMs = this.now();
     try {
+      await this.client.query(
+        `INSERT INTO player_save_snapshots
+          (player_id, source_version, schema_version, created_at_ms, reason, data)
+         SELECT player_id, version, schema_version, $3, 'SAVE', data
+           FROM player_records
+          WHERE player_id = $1 AND version = $2`,
+        [record.playerId, expectedVersion, updatedAtMs],
+      );
       const result = await this.client.query<Row>(
         `UPDATE player_records
             SET schema_version = $2, version = version + 1, updated_at_ms = $3, data = $4
@@ -154,7 +195,17 @@ class PostgresPlayerStore implements PlayerStore {
         [record.playerId, record.schemaVersion, updatedAtMs, record.data, expectedVersion],
       );
       const row = result.rows[0];
-      if (row !== undefined) return ok(toRecord(row));
+      if (row !== undefined) {
+        await this.client.query(
+          `DELETE FROM player_save_snapshots
+            WHERE player_id = $1 AND id NOT IN (
+              SELECT id FROM player_save_snapshots
+               WHERE player_id = $1 ORDER BY id DESC LIMIT $2
+            )`,
+          [record.playerId, SAVE_SNAPSHOT_RETENTION],
+        );
+        return ok(toRecord(row));
+      }
 
       const current = await this.client.query<{ version: number }>(
         'SELECT version FROM player_records WHERE player_id = $1',
@@ -206,14 +257,14 @@ export class PostgresPlayerRepository implements PlayerRepository {
   /**
    * Creates the table if it is absent.
    *
-   * Adequate while there is exactly one table and no column has ever changed.
-   * The moment a second table or a destructive alteration appears this must
-   * graduate to ordered migration files - `createMigrationRunner` in
-   * `@alderfell/shared` already models the forward-only chain to follow.
+   * These additive, idempotent tables are adequate while no deployed column is
+   * changed or removed. The first destructive alteration must graduate to ordered
+   * migration files; `createMigrationRunner` already models that forward-only chain.
    */
   async initialise(): Promise<Result<true, Failure>> {
     try {
       await this.client.query(CREATE_TABLE);
+      await this.client.query(CREATE_SNAPSHOT_TABLES);
       return ok(true);
     } catch (error) {
       return err(storageFailure('initialise', error));
@@ -238,7 +289,190 @@ export class PostgresPlayerRepository implements PlayerRepository {
     record: Omit<PlayerRecord, 'version' | 'updatedAtMs'>,
     expectedVersion: number,
   ): Promise<Result<PlayerRecord, Failure>> {
-    return this.pooled.save(record, expectedVersion);
+    return this.transaction((tx) => tx.save(record, expectedVersion));
+  }
+
+  async listSnapshots(playerId: PlayerId): Promise<Result<readonly SaveSnapshot[], Failure>> {
+    try {
+      const result = await this.client.query<{
+        id: string;
+        player_id: string;
+        source_version: number;
+        schema_version: number;
+        created_at_ms: string;
+        reason: 'SAVE' | 'PRE_RESTORE';
+        data: Record<string, unknown>;
+      }>(
+        `SELECT id, player_id, source_version, schema_version, created_at_ms, reason, data
+           FROM player_save_snapshots WHERE player_id = $1 ORDER BY id DESC LIMIT $2`,
+        [playerId, SAVE_SNAPSHOT_RETENTION],
+      );
+      return ok(
+        result.rows.map((row) => ({
+          id: row.id,
+          playerId: row.player_id as PlayerId,
+          sourceVersion: row.source_version,
+          schemaVersion: row.schema_version,
+          createdAtMs: Number(row.created_at_ms),
+          reason: row.reason,
+          data: row.data,
+        })),
+      );
+    } catch (error) {
+      return err(storageFailure('list snapshots', error));
+    }
+  }
+
+  async restoreSnapshot(input: {
+    readonly playerId: PlayerId;
+    readonly snapshotId: string;
+    readonly expectedVersion: number;
+    readonly actor: string;
+    readonly reason: string;
+  }): Promise<
+    Result<{ readonly record: PlayerRecord; readonly audit: RestoreAuditReceipt }, Failure>
+  > {
+    if (input.actor.trim() === '' || input.reason.trim() === '')
+      return err(failure(FailureCode.Validation, 'snapshot.restore_context_required'));
+    let client: pg.PoolClient;
+    try {
+      client = await this.client.connect();
+    } catch (error) {
+      return err(storageFailure('open restore transaction', error));
+    }
+    try {
+      await client.query('BEGIN');
+      const snapshotResult = await client.query<{
+        id: string;
+        schema_version: number;
+        data: Record<string, unknown>;
+      }>(
+        `SELECT id, schema_version, data FROM player_save_snapshots
+          WHERE id = $1 AND player_id = $2`,
+        [input.snapshotId, input.playerId],
+      );
+      const snapshot = snapshotResult.rows[0];
+      if (!snapshot) {
+        await client.query('ROLLBACK');
+        return err(failure(FailureCode.NotFound, 'snapshot.not_found'));
+      }
+      const currentResult = await client.query<Row>(
+        `SELECT player_id, schema_version, version, updated_at_ms, data
+           FROM player_records WHERE player_id = $1 FOR UPDATE`,
+        [input.playerId],
+      );
+      const current = currentResult.rows[0];
+      if (!current) {
+        await client.query('ROLLBACK');
+        return err(failure(FailureCode.NotFound, 'repository.not_found'));
+      }
+      if (current.version !== input.expectedVersion) {
+        await client.query('ROLLBACK');
+        return err(failure(FailureCode.Conflict, 'repository.version_conflict'));
+      }
+      const restoredAtMs = this.now();
+      await client.query(
+        `INSERT INTO player_save_snapshots
+          (player_id, source_version, schema_version, created_at_ms, reason, data)
+         VALUES ($1, $2, $3, $4, 'PRE_RESTORE', $5)`,
+        [input.playerId, current.version, current.schema_version, restoredAtMs, current.data],
+      );
+      const restored = await client.query<Row>(
+        `UPDATE player_records
+            SET schema_version = $2, version = version + 1, updated_at_ms = $3, data = $4
+          WHERE player_id = $1
+      RETURNING player_id, schema_version, version, updated_at_ms, data`,
+        [input.playerId, snapshot.schema_version, restoredAtMs, snapshot.data],
+      );
+      const record = toRecord(restored.rows[0]!);
+      const auditResult = await client.query<{
+        id: string;
+        player_id: string;
+        snapshot_id: string;
+        actor: string;
+        reason: string;
+        before_version: number;
+        after_version: number;
+        restored_at_ms: string;
+      }>(
+        `INSERT INTO player_restore_audit
+          (player_id, snapshot_id, actor, reason, before_version, after_version, restored_at_ms)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [
+          input.playerId,
+          snapshot.id,
+          input.actor.trim(),
+          input.reason.trim(),
+          current.version,
+          record.version,
+          restoredAtMs,
+        ],
+      );
+      await client.query(
+        `DELETE FROM player_save_snapshots
+          WHERE player_id = $1 AND id NOT IN (
+            SELECT id FROM player_save_snapshots
+             WHERE player_id = $1 ORDER BY id DESC LIMIT $2
+          )`,
+        [input.playerId, SAVE_SNAPSHOT_RETENTION],
+      );
+      await client.query('COMMIT');
+      const row = auditResult.rows[0]!;
+      return ok({
+        record,
+        audit: {
+          id: row.id,
+          playerId: row.player_id as PlayerId,
+          snapshotId: row.snapshot_id,
+          actor: row.actor,
+          reason: row.reason,
+          beforeVersion: row.before_version,
+          afterVersion: row.after_version,
+          restoredAtMs: Number(row.restored_at_ms),
+        },
+      });
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {
+        // The original restore failure remains the useful error if the connection is already lost.
+      }
+      return err(storageFailure('restore snapshot', error));
+    } finally {
+      client.release();
+    }
+  }
+
+  async listRestoreAudit(
+    playerId: PlayerId,
+  ): Promise<Result<readonly RestoreAuditReceipt[], Failure>> {
+    try {
+      const result = await this.client.query<{
+        id: string;
+        player_id: string;
+        snapshot_id: string;
+        actor: string;
+        reason: string;
+        before_version: number;
+        after_version: number;
+        restored_at_ms: string;
+      }>('SELECT * FROM player_restore_audit WHERE player_id = $1 ORDER BY id ASC', [playerId]);
+      return ok(
+        result.rows.map((row) => ({
+          id: row.id,
+          playerId: row.player_id as PlayerId,
+          snapshotId: row.snapshot_id,
+          actor: row.actor,
+          reason: row.reason,
+          beforeVersion: row.before_version,
+          afterVersion: row.after_version,
+          restoredAtMs: Number(row.restored_at_ms),
+        })),
+      );
+    } catch (error) {
+      return err(storageFailure('list restore audit', error));
+    }
   }
 
   /**

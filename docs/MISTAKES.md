@@ -30,3 +30,12 @@
   prove whether an interrupted settlement paid, while a receipt makes retries unambiguous.
 - A trail marker is a hint, not authority. The server must validate prerequisite, order, zone,
   latest presence, and range independently of what the client displays.
+
+# G6-A rules learned
+
+- Run lint after adding defensive rollback catches. An intentionally ignored rollback failure still
+  needs a comment body; an empty `catch` violates the repository's lint gate.
+- Snapshot insertion and live-save replacement must share one transaction. A snapshot written before
+  a rejected version check is false history unless the surrounding transaction rolls it back.
+- Restoration must move the live version forward and snapshot the displaced state first. Rewinding a
+  version breaks optimistic concurrency; overwriting without a backup defeats the feature's purpose.

@@ -31,6 +31,29 @@ export interface PlayerRecord {
   readonly data: Readonly<Record<string, unknown>>;
 }
 
+export const SAVE_SNAPSHOT_RETENTION = 20;
+
+export interface SaveSnapshot {
+  readonly id: string;
+  readonly playerId: PlayerId;
+  readonly sourceVersion: number;
+  readonly schemaVersion: number;
+  readonly createdAtMs: number;
+  readonly reason: 'SAVE' | 'PRE_RESTORE';
+  readonly data: Readonly<Record<string, unknown>>;
+}
+
+export interface RestoreAuditReceipt {
+  readonly id: string;
+  readonly playerId: PlayerId;
+  readonly snapshotId: string;
+  readonly actor: string;
+  readonly reason: string;
+  readonly beforeVersion: number;
+  readonly afterVersion: number;
+  readonly restoredAtMs: number;
+}
+
 /** The reads and writes available both inside and outside a transaction. */
 export interface PlayerStore {
   find(playerId: PlayerId): Promise<Result<PlayerRecord | null, Failure>>;
@@ -63,10 +86,25 @@ export interface PlayerRepository extends PlayerStore {
   transaction<T>(
     work: (tx: PlayerStore) => Promise<Result<T, Failure>>,
   ): Promise<Result<T, Failure>>;
+  listSnapshots(playerId: PlayerId): Promise<Result<readonly SaveSnapshot[], Failure>>;
+  restoreSnapshot(input: {
+    readonly playerId: PlayerId;
+    readonly snapshotId: string;
+    readonly expectedVersion: number;
+    readonly actor: string;
+    readonly reason: string;
+  }): Promise<
+    Result<{ readonly record: PlayerRecord; readonly audit: RestoreAuditReceipt }, Failure>
+  >;
+  listRestoreAudit(playerId: PlayerId): Promise<Result<readonly RestoreAuditReceipt[], Failure>>;
 }
 
 export class InMemoryPlayerRepository implements PlayerRepository {
   private records = new Map<PlayerId, PlayerRecord>();
+  private snapshots: SaveSnapshot[] = [];
+  private restoreAudit: RestoreAuditReceipt[] = [];
+  private nextSnapshotId = 1;
+  private nextAuditId = 1;
   /**
    * Serialises transactions.
    *
@@ -88,10 +126,19 @@ export class InMemoryPlayerRepository implements PlayerRepository {
       // not swapping, so a failed transaction cannot leave a partial write.
       const scratch = new InMemoryPlayerRepository(this.now);
       scratch.records = new Map(this.records);
+      scratch.snapshots = this.snapshots.slice();
+      scratch.restoreAudit = this.restoreAudit.slice();
+      scratch.nextSnapshotId = this.nextSnapshotId;
+      scratch.nextAuditId = this.nextAuditId;
       try {
         const result = await work(scratch);
-        if (result.ok) this.records = scratch.records;
-        else this.records = snapshot;
+        if (result.ok) {
+          this.records = scratch.records;
+          this.snapshots = scratch.snapshots;
+          this.restoreAudit = scratch.restoreAudit;
+          this.nextSnapshotId = scratch.nextSnapshotId;
+          this.nextAuditId = scratch.nextAuditId;
+        } else this.records = snapshot;
         return result;
       } catch (error) {
         this.records = snapshot;
@@ -141,6 +188,7 @@ export class InMemoryPlayerRepository implements PlayerRepository {
         }),
       );
     }
+    this.capture(existing, 'SAVE');
     const stored: PlayerRecord = {
       ...record,
       version: existing.version + 1,
@@ -150,8 +198,85 @@ export class InMemoryPlayerRepository implements PlayerRepository {
     return ok(stored);
   }
 
+  async listSnapshots(playerId: PlayerId): Promise<Result<readonly SaveSnapshot[], Failure>> {
+    return ok(
+      this.snapshots
+        .filter((snapshot) => snapshot.playerId === playerId)
+        .slice()
+        .reverse(),
+    );
+  }
+
+  async restoreSnapshot(input: {
+    readonly playerId: PlayerId;
+    readonly snapshotId: string;
+    readonly expectedVersion: number;
+    readonly actor: string;
+    readonly reason: string;
+  }): Promise<
+    Result<{ readonly record: PlayerRecord; readonly audit: RestoreAuditReceipt }, Failure>
+  > {
+    if (input.actor.trim() === '' || input.reason.trim() === '')
+      return err(failure(FailureCode.Validation, 'snapshot.restore_context_required'));
+    const snapshot = this.snapshots.find(
+      (candidate) => candidate.id === input.snapshotId && candidate.playerId === input.playerId,
+    );
+    if (!snapshot) return err(failure(FailureCode.NotFound, 'snapshot.not_found'));
+    const current = this.records.get(input.playerId);
+    if (!current) return err(failure(FailureCode.NotFound, 'repository.not_found'));
+    if (current.version !== input.expectedVersion)
+      return err(failure(FailureCode.Conflict, 'repository.version_conflict'));
+    this.capture(current, 'PRE_RESTORE');
+    const record: PlayerRecord = {
+      playerId: current.playerId,
+      schemaVersion: snapshot.schemaVersion,
+      version: current.version + 1,
+      updatedAtMs: this.now(),
+      data: structuredClone(snapshot.data),
+    };
+    this.records.set(input.playerId, record);
+    const audit: RestoreAuditReceipt = {
+      id: `audit-${this.nextAuditId++}`,
+      playerId: input.playerId,
+      snapshotId: snapshot.id,
+      actor: input.actor.trim(),
+      reason: input.reason.trim(),
+      beforeVersion: current.version,
+      afterVersion: record.version,
+      restoredAtMs: record.updatedAtMs,
+    };
+    this.restoreAudit.push(audit);
+    return ok({ record, audit });
+  }
+
+  async listRestoreAudit(
+    playerId: PlayerId,
+  ): Promise<Result<readonly RestoreAuditReceipt[], Failure>> {
+    return ok(this.restoreAudit.filter((receipt) => receipt.playerId === playerId));
+  }
+
+  private capture(record: PlayerRecord, reason: SaveSnapshot['reason']): void {
+    this.snapshots.push({
+      id: `snapshot-${this.nextSnapshotId++}`,
+      playerId: record.playerId,
+      sourceVersion: record.version,
+      schemaVersion: record.schemaVersion,
+      createdAtMs: this.now(),
+      reason,
+      data: structuredClone(record.data),
+    });
+    const owned = this.snapshots.filter((snapshot) => snapshot.playerId === record.playerId);
+    if (owned.length <= SAVE_SNAPSHOT_RETENTION) return;
+    const remove = new Set(
+      owned.slice(0, owned.length - SAVE_SNAPSHOT_RETENTION).map((item) => item.id),
+    );
+    this.snapshots = this.snapshots.filter((snapshot) => !remove.has(snapshot.id));
+  }
+
   /** Test and local-development helper. Not part of the port. */
   clear(): void {
     this.records.clear();
+    this.snapshots = [];
+    this.restoreAudit = [];
   }
 }

@@ -5,10 +5,11 @@
 **Written:** 2026-09-09 · **Updated:** 2026-09-15 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G5-F is implemented. Reliable skilling/economy, persistence, quest and diary
+**Code state:** G6-A is implemented. Reliable skilling/economy, persistence, quest and diary
 progression, combat/death recovery, the three-room Saltwake dungeon, its Drowned Warden boss,
 production GLB creature presentation, and the first persisted treasure-clue trail are live. The
-next focus is G6 operations: safe save snapshots before any admin mutation surface.
+save now retains bounded immutable history, and restore is backup-first and audited. The next focus is
+G6-B: separately authenticated, rate-limited, read-only account inspection before mutation tooling.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -50,7 +51,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of G5-F on 2026-09-15 it reports **436 tests across 49 files**.
+afterwards is yours. As of G6-A on 2026-09-15 it reports **444 tests across 50 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -236,6 +237,14 @@ presence, and range are checked at every step. The Tidepool Cache pays 45 coins 
 the global currency cap. Procedural gold markers and a compact combat-safe clue card provide mobile
 guidance without adding an asset dependency. Manual acceptance is listed in
 `docs/IPHONE_ACCEPTANCE_CHECKLIST.md`; automated evidence is in `docs/G5_F_RETURN.md`.
+
+**G6-A operations update (2026-09-15):** every successful player save now retains the exact prior
+record in an immutable per-account snapshot history, bounded to the newest 20 versions. In-memory
+and Postgres adapters share the same contract. Restoration requires an expected live version, named
+operator, and written reason; it snapshots the displaced live record first, advances the live
+version, and appends a before/after audit receipt in the same transaction. No admin HTTP mutation
+route exists yet. Automated evidence is in `docs/G6_A_RETURN.md`; the durable operations regression
+list is `docs/OPERATIONS_CHECKLIST.md`.
 
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
@@ -1628,6 +1637,10 @@ shipping §9.1, add **point-in-time save snapshots**: on every save, retain the 
 versions (or a daily snapshot) in a separate table. Cheap, and it converts "I broke someone's
 account" from a catastrophe into a click. This also covers save-corruption bugs, which are the
 single worst class of bug this game can have.
+
+**Implemented in G6-A:** retain the newest 20 versions per account. A restore always writes a
+`PRE_RESTORE` snapshot and immutable audit receipt atomically before replacing live data. The live
+record version only advances. See `docs/G6_A_RETURN.md`.
 
 ### 9.5 Also worth having
 
