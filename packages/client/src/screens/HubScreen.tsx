@@ -14,7 +14,7 @@ import {
 import { useAppStore } from '../state/app-store.js';
 import { NoticeBoard } from '../ui/NoticeBoard.js';
 import { NpcDialogue } from '../ui/NpcDialogue.js';
-import { CombatHud, GravestoneHud } from '../ui/CombatHud.js';
+import { CombatHud, DungeonHud, GravestoneHud } from '../ui/CombatHud.js';
 import { QuestJournal } from '../ui/QuestJournal.js';
 import { CollectionLog } from '../ui/CollectionLog.js';
 
@@ -138,6 +138,7 @@ export function HubScreen({
       <InteractionPrompt onEngage={onEngage} />
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
       <CollectionToast />
+      <DungeonHud />
       <CommandError />
       <CombatHud onAttack={onAttackEncounter} onRecover={onRecoverCombat} onEat={onEatCombatFood} />
       <GravestoneHud onReclaim={onReclaimCombatGrave} />

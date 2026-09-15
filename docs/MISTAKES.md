@@ -10,3 +10,14 @@
 - Decoration must not participate in ground raycasts. Ground picking must select terrain
   explicitly rather than choosing any triangle below a magic height.
 - Keep model texture atlases intact; all three imported assets contain 512px WebP atlases.
+
+# G5-E rules learned
+
+- A second zone cannot reuse coordinate-only interaction validation. Persist the authoritative
+  zone and require it before resolving dungeon combat or recovery.
+- A gravestone position without a zone is ambiguous. Every durable world-space recovery record
+  must include its zone and reject cross-zone retrieval.
+- Public Google Drive source packs can hit shared quota even when their license is valid. Prefer
+  creator-linked Poly Pizza model endpoints for reproducible GLB admission and record both URLs.
+- Use `npm run asset-budget` (or the production `npm run build`, which includes it); do not assume
+  a convenience script named `check:assets` exists.

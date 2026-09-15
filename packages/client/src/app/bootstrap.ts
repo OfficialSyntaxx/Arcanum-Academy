@@ -219,13 +219,19 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
   // Owns the economy commands and applies the server's patches. Constructed
   // here rather than in the UI so the hub can be handed a way to start a
   // harvest without ever learning what a socket is.
-  const economy = new EconomyController(transport);
-  container.register('economy', () => economy);
-
   // The travel callback needs to call back into the hub it is itself being
   // constructed for; a mutable ref set right after `create()` breaks that
   // cycle without giving HubController a self-reference of its own.
   const hubRef: { current: HubController | undefined } = { current: undefined };
+  const switchToAuthoritativeZone = (targetZoneId: string) => {
+    if (useAppStore.getState().currentZoneId === targetZoneId) return;
+    const zone = zoneById(targetZoneId as ZoneId);
+    if (!zone || hubRef.current === undefined) return;
+    const switched = hubRef.current.switchZone(zone);
+    if (!switched.ok) store.setFault(switched.error.detail ?? switched.error.reason);
+  };
+  const economy = new EconomyController(transport, switchToAuthoritativeZone);
+  container.register('economy', () => economy);
   const hubResult = HubController.create({
     render,
     input,
@@ -240,7 +246,10 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
     onEngageCraftingStation: (interactableId) => store.setOpenStation(interactableId),
     onEngageBankChest: (interactableId) => store.setOpenBank(interactableId),
     onEngageMerchantStall: (interactableId) => store.setOpenMerchant(interactableId),
-    onEngageQuestBoard: (interactableId) => store.setOpenNotice(interactableId),
+    onEngageQuestBoard: (interactableId) => {
+      if (interactableId === 'int.saltwake.vault_chest') economy.claimTideglass();
+      else store.setOpenNotice(interactableId);
+    },
     onEngageCombatEncounter: (interactableId) => economy.attackEncounter(interactableId),
     onPresence: (position) => transport.send(ClientOpcode.PresenceUpdate, position),
     onEngageNpc: (npc) =>
@@ -251,19 +260,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
         line: npc.line,
       }),
     onEngageZonePortal: (targetZoneId) => {
-      const zone = zoneById(targetZoneId as ZoneId);
-      if (!zone) {
-        logger.warn('portal targets an unknown zone', { targetZoneId });
-        return;
-      }
-      const switched = hubRef.current?.switchZone(zone);
-      if (switched && !switched.ok) {
-        logger.error('zone failed validation on travel', {
-          reason: switched.error.reason,
-          detail: switched.error.detail ?? '',
-        });
-        store.setFault(switched.error.detail ?? switched.error.reason);
-      }
+      economy.travel(targetZoneId);
     },
   });
   if (!hubResult.ok) {

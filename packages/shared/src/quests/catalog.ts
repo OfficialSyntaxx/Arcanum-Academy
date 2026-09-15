@@ -9,6 +9,8 @@ export interface QuestItemObjectiveDefinition {
   readonly itemIds: readonly ItemDefinitionId[];
   readonly requiredQuantity: number;
   readonly label: string;
+  /** Defaults true. Permanent proof items remain in the satchel on turn-in. */
+  readonly consume?: boolean;
 }
 export interface QuestKillObjectiveDefinition {
   readonly kind: 'KILL';
@@ -119,6 +121,39 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
       },
     ],
     rewardCoins: 35,
+  },
+  {
+    id: 'quest.beneath_the_saltline',
+    title: 'Beneath the Saltline',
+    description:
+      'Archivist Onn has restored the coast survey. Its final mark points below the Library shore, where the Saltwake Warden still guards a drowned vault.',
+    hint: 'Enter the Saltwake Ruins from the Library shore, defeat a Drowned Sentinel and the Drowned Warden, open the Tideglass Reliquary, then return here.',
+    prerequisites: ['quest.clear_copy'],
+    objectives: [
+      {
+        kind: 'KILL',
+        id: 'saltline.sentinel',
+        encounterIds: [asId<InteractableId>('int.combat.drowned_sentinel')],
+        requiredQuantity: 1,
+        label: 'Defeat a Drowned Sentinel',
+      },
+      {
+        kind: 'KILL',
+        id: 'saltline.warden',
+        encounterIds: [asId<InteractableId>('int.combat.drowned_warden')],
+        requiredQuantity: 1,
+        label: 'Defeat the Drowned Warden',
+      },
+      {
+        kind: 'ITEM',
+        id: 'saltline.tideglass',
+        itemIds: [asId<ItemDefinitionId>('item.charm.tideglass')],
+        requiredQuantity: 1,
+        label: 'Claim the Tideglass Charm',
+        consume: false,
+      },
+    ],
+    rewardCoins: 100,
   },
 ];
 

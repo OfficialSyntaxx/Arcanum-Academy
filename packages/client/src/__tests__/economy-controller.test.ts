@@ -190,6 +190,29 @@ describe('EconomyController activity cleanup', () => {
     expect(useAppStore.getState().economy.combat).toBeNull();
     expect(send).not.toHaveBeenCalled();
   });
+
+  it('switches zones only after the server confirms authoritative travel', () => {
+    const { transport, send } = transportHarness();
+    const arrived = vi.fn();
+    const economy = new EconomyController(transport, arrived);
+    economy.travel('zone.saltwake_ruins');
+    expect(send).toHaveBeenCalledWith(ClientOpcode.Command, {
+      kind: 'world.travel',
+      targetZoneId: 'zone.saltwake_ruins',
+    });
+    expect(arrived).not.toHaveBeenCalled();
+    transport.events.emit('frame', {
+      v: 1,
+      op: ServerOpcode.Patch,
+      seq: 1,
+      t: 0,
+      p: {
+        kind: 'world.travel',
+        state: { location: { zoneId: 'zone.saltwake_ruins', roomId: 'wp.saltwake.antechamber' } },
+      },
+    });
+    expect(arrived).toHaveBeenCalledWith('zone.saltwake_ruins');
+  });
 });
 
 describe('crafting station presentation', () => {

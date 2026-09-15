@@ -18,7 +18,7 @@ describe('Shorelands diaries', () => {
   });
 
   it('keeps every starter diary at the approved reward', () => {
-    expect(DIARY_CATALOG).toHaveLength(3);
+    expect(DIARY_CATALOG).toHaveLength(4);
     expect(DIARY_CATALOG.every((diary) => diary.rewardCoins === 15)).toBe(true);
   });
 });

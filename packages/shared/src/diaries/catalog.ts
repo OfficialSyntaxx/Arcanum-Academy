@@ -47,6 +47,18 @@ export const DIARY_CATALOG: readonly DiaryDefinition[] = [
     ],
     rewardCoins: 15,
   },
+  {
+    id: 'diary.saltwake.first_descent',
+    title: 'The Saltwake Remembers',
+    description: 'Enter the ruins, clear its guardians, and recover the Tideglass Charm.',
+    requiredDiscoveryIds: [
+      'discovery.dungeon.saltwake_entered',
+      'discovery.dungeon.sentinel',
+      'discovery.dungeon.warden',
+      'discovery.dungeon.tideglass',
+    ],
+    rewardCoins: 15,
+  },
 ];
 
 export function diaryIsComplete(

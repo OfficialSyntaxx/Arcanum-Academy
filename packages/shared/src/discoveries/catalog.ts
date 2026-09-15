@@ -5,6 +5,7 @@ export const DiscoveryCategory = {
   Crafting: 'CRAFTING',
   Combat: 'COMBAT',
   Recovery: 'RECOVERY',
+  Dungeon: 'DUNGEON',
 } as const;
 export type DiscoveryCategory = (typeof DiscoveryCategory)[keyof typeof DiscoveryCategory];
 
@@ -80,6 +81,30 @@ export const DISCOVERY_CATALOG: readonly DiscoveryDefinition[] = [
     title: 'Returned to the Shore',
     description: 'Recover your items from a gravestone.',
   },
+  {
+    id: 'discovery.dungeon.saltwake_entered',
+    category: DiscoveryCategory.Dungeon,
+    title: 'Below the Saltline',
+    description: 'Enter the Saltwake Ruins.',
+  },
+  {
+    id: 'discovery.dungeon.sentinel',
+    category: DiscoveryCategory.Dungeon,
+    title: 'Gallery Unbound',
+    description: 'Defeat a Drowned Sentinel in the Broken Gallery.',
+  },
+  {
+    id: 'discovery.dungeon.warden',
+    category: DiscoveryCategory.Dungeon,
+    title: 'The Tide Recedes',
+    description: 'Defeat the Drowned Warden.',
+  },
+  {
+    id: 'discovery.dungeon.tideglass',
+    category: DiscoveryCategory.Dungeon,
+    title: 'Light Beneath Water',
+    description: 'Claim the Tideglass Charm from the reliquary.',
+  },
 ];
 
 const DISCOVERY_BY_SOURCE: Readonly<Record<string, string>> = {
@@ -96,6 +121,10 @@ const DISCOVERY_BY_SOURCE: Readonly<Record<string, string>> = {
   'int.combat.shore_wolf': 'discovery.combat.shore_wolf',
   'int.combat.emberwing_armabee': 'discovery.combat.emberwing',
   'event.grave.reclaimed': 'discovery.recovery.grave',
+  'event.saltwake.entered': 'discovery.dungeon.saltwake_entered',
+  'int.combat.drowned_sentinel': 'discovery.dungeon.sentinel',
+  'int.combat.drowned_warden': 'discovery.dungeon.warden',
+  'event.saltwake.tideglass_claimed': 'discovery.dungeon.tideglass',
 };
 
 export function discoveryForSource(sourceId: string): string | undefined {

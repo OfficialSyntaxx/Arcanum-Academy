@@ -104,6 +104,8 @@ function project(state: PlayerState) {
     diaryRewards: state.diaryRewards,
     gathering: state.gathering,
     grave: state.grave,
+    location: state.location,
+    saltwake: state.saltwake,
   };
 }
 

@@ -45,3 +45,11 @@ commit `3edfde7af1f0a5bf6e378fc0ec2fff22d16258ae`. It contains 86 GLB
 files (maps, buildings, creatures, and characters) and 59 project images.
 The source repository did not include per-file licence metadata, so these
 files must not be treated as independently verified third-party CC0 content.
+# Quaternius Ultimate Monsters — Saltwake creatures
+
+- **Files:** `assets/quaternius/ultimate-monsters/ghost.glb`, `ghost-skull.glb`
+- **In game:** Drowned Sentinel and Drowned Warden
+- **Creator:** Quaternius
+- **Sources:** https://poly.pizza/m/Iip30bDHmu (Ghost), https://poly.pizza/m/TX8r9WBXpe (Ghost Skull)
+- **License:** CC0 1.0 / Public Domain
+- **Admission:** Downloaded as GLB from Poly Pizza's creator-published bundle; no paid dependency.

@@ -18,6 +18,8 @@ import type { Session } from '../session/session-store.js';
 const PLAYER = asId<PlayerId>('combat-player');
 const SHORE_WOLF = 'int.combat.shore_wolf';
 const EMBERWING_ARMABEE = 'int.combat.emberwing_armabee';
+const DROWNED_SENTINEL = 'int.combat.drowned_sentinel';
+const DROWNED_WARDEN = 'int.combat.drowned_warden';
 function session(): Session {
   return {
     id: asId<SessionId>('combat-session'),
@@ -107,6 +109,37 @@ function harness() {
             quests: {
               ...state.quests,
               'quest.first_hunt': {
+                status: QuestStatus.Active,
+                acceptedAtMs: clock,
+                completedAtMs: null,
+                objectiveCounts: {},
+              },
+            },
+          },
+          value: undefined,
+        }),
+      );
+      if (!r.ok) throw Error(r.error.reason);
+    },
+    async enterSaltwake() {
+      const progress = { level: 50, xp: 500_000 };
+      const r = await players.update(PLAYER, (state) =>
+        ok({
+          state: {
+            ...state,
+            location: { zoneId: 'zone.saltwake_ruins', roomId: 'wp.saltwake.antechamber' },
+            saltwake: { ...state.saltwake, enteredAtMs: clock },
+            hitpoints: { current: 59, max: 59, respawnAtMs: null },
+            skills: {
+              ...state.skills,
+              'skill.attack': progress,
+              'skill.strength': progress,
+              'skill.defence': progress,
+              'skill.hitpoints': progress,
+            },
+            quests: {
+              ...state.quests,
+              'quest.beneath_the_saltline': {
                 status: QuestStatus.Active,
                 acceptedAtMs: clock,
                 completedAtMs: null,
@@ -293,5 +326,52 @@ describe('Shore Wolf combat handlers', () => {
     const result = await h.eat('item.meat.raw_shore_wolf');
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.reason).toBe('combat.not_food');
+  });
+});
+
+describe('Saltwake combat lifecycle', () => {
+  it('gates the Warden behind a confirmed gallery clear and persists both defeats', async () => {
+    const h = harness();
+    h.moveTo({ x: 0, z: -5 });
+    await h.enterSaltwake();
+
+    h.moveTo({ x: 0, z: 6.5 });
+    const earlyBoss = await h.dispatch(DROWNED_WARDEN);
+    expect(earlyBoss.ok).toBe(false);
+    if (!earlyBoss.ok) expect(earlyBoss.error.reason).toBe('combat.gallery_not_cleared');
+
+    h.moveTo({ x: 0, z: -5 });
+    let sentinelDefeated = false;
+    while (!sentinelDefeated) {
+      const strike = await h.dispatch(DROWNED_SENTINEL, 'DEFENSIVE');
+      expect(strike.ok).toBe(true);
+      if (strike.ok)
+        sentinelDefeated = (strike.value as { combat: { defeated: boolean } }).combat.defeated;
+      h.advance(DEFAULT_TUNABLES.combat.tickMs);
+    }
+    expect((await h.state()).saltwake.galleryCleared).toBe(true);
+
+    h.moveTo({ x: 0, z: 6.5 });
+    let bossDefeated = false;
+    let sawSecondPhase = false;
+    while (!bossDefeated) {
+      const strike = await h.dispatch(DROWNED_WARDEN, 'DEFENSIVE');
+      expect(strike.ok).toBe(true);
+      if (strike.ok) {
+        const combat = (strike.value as { combat: { defeated: boolean; bossPhase?: number } })
+          .combat;
+        bossDefeated = combat.defeated;
+        sawSecondPhase ||= combat.bossPhase === 2;
+      }
+      h.advance(DEFAULT_TUNABLES.combat.tickMs);
+    }
+    const state = await h.state();
+    expect(sawSecondPhase).toBe(true);
+    expect(state.saltwake.bossDefeated).toBe(true);
+    expect(state.quests['quest.beneath_the_saltline']?.objectiveCounts).toMatchObject({
+      'saltline.sentinel': 1,
+      'saltline.warden': 1,
+    });
+    expect(state.discoveries).toHaveProperty('discovery.dungeon.warden');
   });
 });

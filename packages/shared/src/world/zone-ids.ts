@@ -14,3 +14,4 @@ export const COURTYARD_ZONE_ID = 'zone.courtyard' as ZoneId;
 export const FOREST_ZONE_ID = 'zone.forest' as ZoneId;
 export const MOUNTAINS_ZONE_ID = 'zone.mountains' as ZoneId;
 export const SNOW_ZONE_ID = 'zone.snow' as ZoneId;
+export const SALTWAKE_ZONE_ID = 'zone.saltwake_ruins' as ZoneId;

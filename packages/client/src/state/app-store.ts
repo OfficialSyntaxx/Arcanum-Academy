@@ -90,8 +90,17 @@ export interface EconomyState {
   /** Server-confirmed first-time discoveries, keyed by authored discovery id. */
   readonly discoveries: Readonly<Record<string, { readonly unlockedAtMs: number }>>;
   readonly diaryRewards: Readonly<Record<string, { readonly paidAtMs: number }>>;
+  readonly location: { readonly zoneId: string; readonly roomId: string };
+  readonly saltwake: {
+    readonly enteredAtMs: number | null;
+    readonly galleryCleared: boolean;
+    readonly bossDefeated: boolean;
+    readonly chestClaimed: boolean;
+    readonly shortcutUnlocked: boolean;
+  };
   /** Durable no-expiry item recovery at the position where the player fell. */
   readonly grave: {
+    readonly zoneId: string;
     readonly position: { readonly x: number; readonly z: number };
     readonly stacks: readonly { readonly definitionId: string; readonly quantity: number }[];
     readonly createdAtMs: number;
@@ -117,6 +126,7 @@ export interface EconomyState {
     readonly styleSkillId?: string;
     readonly style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
     readonly foodConsumed?: { readonly itemId: string; readonly healAmount: number };
+    readonly bossPhase?: number;
   } | null;
   /** Local receipt time of the latest server-confirmed combat hit. Presentation only. */
   readonly lastCombatStrikeAtMs: number;
@@ -139,6 +149,14 @@ export const EMPTY_ECONOMY: EconomyState = {
   quests: {},
   discoveries: {},
   diaryRewards: {},
+  location: { zoneId: 'zone.courtyard', roomId: 'wp.plaza.center' },
+  saltwake: {
+    enteredAtMs: null,
+    galleryCleared: false,
+    bossDefeated: false,
+    chestClaimed: false,
+    shortcutUnlocked: false,
+  },
   grave: null,
   combat: null,
   lastCombatStrikeAtMs: 0,

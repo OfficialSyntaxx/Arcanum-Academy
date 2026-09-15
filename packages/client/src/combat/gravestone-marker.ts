@@ -8,6 +8,7 @@ import { CylinderGeometry, Group, Mesh, MeshStandardMaterial, RingGeometry } fro
 import { heightAt, type Zone } from '@alderfell/shared';
 
 export interface GraveProjection {
+  readonly zoneId: string;
   readonly position: { readonly x: number; readonly z: number };
 }
 
@@ -38,7 +39,7 @@ export class GravestoneMarker {
   }
 
   update(grave: GraveProjection | null, nowMs: number): void {
-    if (grave === null) {
+    if (grave === null || grave.zoneId !== this.zone.id) {
       this.root.visible = false;
       return;
     }

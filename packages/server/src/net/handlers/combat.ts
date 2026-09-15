@@ -79,6 +79,7 @@ function gravePatch(grave: GravestoneState | null) {
   return grave === null
     ? null
     : {
+        zoneId: grave.zoneId,
         position: grave.position,
         stacks: grave.stacks,
         createdAtMs: grave.createdAtMs,
@@ -146,6 +147,15 @@ export function registerCombatHandlers(
       return err(failure(FailureCode.Conflict, 'combat.out_of_range'));
     const now = options.now();
     return options.players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      if (encounter.zoneId !== undefined && state.location.zoneId !== encounter.zoneId)
+        return err(failure(FailureCode.Conflict, 'combat.wrong_zone'));
+      if (
+        encounter.requiredQuestId !== undefined &&
+        state.quests[encounter.requiredQuestId]?.status === undefined
+      )
+        return err(failure(FailureCode.Conflict, 'combat.encounter_locked'));
+      if (encounter.boss && !state.saltwake.galleryCleared)
+        return err(failure(FailureCode.Conflict, 'combat.gallery_not_cleared'));
       if (state.hitpoints.respawnAtMs !== null)
         return err(failure(FailureCode.Conflict, 'combat.player_recovering'));
       const attackProgress = skillProgress(state, ATTACK_SKILL);
@@ -175,7 +185,11 @@ export function registerCombatHandlers(
       // source of truth for damage once equipment and levels raise max hit;
       // this authored floor only protects the level-one Shore Wolf lesson.
       const playerDamage = Math.max(encounter.playerDamage, roll.damage);
-      const enemyDamage = Math.max(0, encounter.enemyDamage - (style === 'DEFENSIVE' ? 1 : 0));
+      const enraged = encounter.boss === true && target.hitpoints <= encounter.maxHitpoints / 2;
+      const enemyDamage = Math.max(
+        0,
+        encounter.enemyDamage + (enraged ? 1 : 0) - (style === 'DEFENSIVE' ? 1 : 0),
+      );
       const outcome = resolveSparringAttack(
         target,
         now,
@@ -241,6 +255,7 @@ export function registerCombatHandlers(
           : deathSplit.lost.length === 0 && state.grave === null
             ? null
             : {
+                zoneId: state.location.zoneId,
                 position: { x: position.x, z: position.z },
                 stacks: mergedStacks(state.grave?.stacks ?? [], deathSplit.lost),
                 createdAtMs: now,
@@ -252,6 +267,13 @@ export function registerCombatHandlers(
       const coins = defeated
         ? Math.min(encounter.rewardCoins, options.currencyCap - state.coins)
         : 0;
+      const saltwake = defeated
+        ? id === 'int.combat.drowned_sentinel'
+          ? { ...state.saltwake, galleryCleared: true }
+          : id === 'int.combat.drowned_warden'
+            ? { ...state.saltwake, bossDefeated: true }
+            : state.saltwake
+        : state.saltwake;
       const base = {
         ...state,
         inventory: deathSplit === null ? inventory : { ...inventory, stacks: deathSplit.kept },
@@ -261,6 +283,7 @@ export function registerCombatHandlers(
         skills,
         grave,
         quests,
+        saltwake,
         lastSeenAtMs: now,
       };
       const next = defeated ? applyDiscovery(base, id!, now, options.currencyCap) : base;
@@ -275,6 +298,7 @@ export function registerCombatHandlers(
           quests: next.quests,
           discoveries: next.discoveries,
           diaryRewards: next.diaryRewards,
+          saltwake: next.saltwake,
           combat: {
             interactableId: id,
             label: encounter.label,
@@ -293,6 +317,11 @@ export function registerCombatHandlers(
             hitpointsXpGained: hitpointsXp,
             styleSkillId,
             style,
+            bossPhase: encounter.boss
+              ? nextTarget.hitpoints <= encounter.maxHitpoints / 2
+                ? 2
+                : 1
+              : undefined,
           },
         },
       });
@@ -397,6 +426,8 @@ export function registerCombatHandlers(
       if (grave === null) return err(failure(FailureCode.NotFound, 'combat.grave_missing'));
       if (grave.expiresAtMs !== null && now >= grave.expiresAtMs)
         return err(failure(FailureCode.NotFound, 'combat.grave_expired'));
+      if (grave.zoneId !== state.location.zoneId)
+        return err(failure(FailureCode.Conflict, 'combat.grave_wrong_zone'));
       const dx = position.x - grave.position.x;
       const dz = position.z - grave.position.z;
       if (dx * dx + dz * dz > options.interactionRadius ** 2)

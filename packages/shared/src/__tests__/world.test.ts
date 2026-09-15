@@ -5,6 +5,7 @@ import { COURTYARD } from '../world/courtyard.js';
 import { FOREST } from '../world/forest.js';
 import { MOUNTAINS } from '../world/mountains.js';
 import { SNOW } from '../world/snow.js';
+import { SALTWAKE_RUINS } from '../world/saltwake.js';
 import { zoneById, ZONES_BY_ID } from '../world/zone-catalog.js';
 import { heightAt, type Waypoint, type Zone } from '../world/types.js';
 import type { WaypointId, ZoneId } from '../ids.js';
@@ -51,6 +52,7 @@ describe('buildNavGraph', () => {
     ['Emberwood Reach', FOREST],
     ['Cindermark Heights', MOUNTAINS],
     ['Frostgate Reaches', SNOW],
+    ['Saltwake Ruins', SALTWAKE_RUINS],
   ])('compiles the %s without validation errors', (_name, zone) => {
     const result = buildNavGraph(zone);
     expect(result.ok, result.ok ? '' : result.error.detail).toBe(true);
@@ -60,11 +62,12 @@ describe('buildNavGraph', () => {
   });
 
   it('resolves every real zone id through the catalog, and an unknown id to null', () => {
-    expect(ZONES_BY_ID.size).toBe(4);
+    expect(ZONES_BY_ID.size).toBe(5);
     expect(zoneById(COURTYARD.id)).toBe(COURTYARD);
     expect(zoneById(FOREST.id)).toBe(FOREST);
     expect(zoneById(MOUNTAINS.id)).toBe(MOUNTAINS);
     expect(zoneById(SNOW.id)).toBe(SNOW);
+    expect(zoneById(SALTWAKE_RUINS.id)).toBe(SALTWAKE_RUINS);
     expect(zoneById('zone.nonexistent' as ZoneId)).toBeNull();
   });
 

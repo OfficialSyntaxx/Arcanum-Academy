@@ -61,6 +61,27 @@ describe('resource quest catalog', () => {
     expect(progress['quest.first_hunt']?.objectiveCounts).toEqual({ 'hunt.shore_wolves': 1 });
   });
 
+  it('unlocks the Saltwake expedition after A Clear Copy and preserves its proof item', () => {
+    const quest = questById('quest.beneath_the_saltline');
+    expect(quest).toMatchObject({ rewardCoins: 100, prerequisites: ['quest.clear_copy'] });
+    expect(
+      questIsUnlocked(quest!, {
+        'quest.clear_copy': {
+          status: QuestStatus.Completed,
+          acceptedAtMs: 1,
+          completedAtMs: 2,
+          objectiveCounts: {},
+        },
+      }),
+    ).toBe(true);
+    expect(
+      quest?.objectives.find((objective) => objective.id === 'saltline.tideglass'),
+    ).toMatchObject({
+      kind: 'ITEM',
+      consume: false,
+    });
+  });
+
   it('has positive rewards and objectives for every shipped quest', () => {
     for (const quest of QUEST_CATALOG) {
       expect(quest.rewardCoins).toBeGreaterThan(0);

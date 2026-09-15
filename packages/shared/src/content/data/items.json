@@ -188,6 +188,36 @@
       "iconKey": "armabee-wax"
     },
     {
+      "id": "item.material.saltworn_fragment",
+      "name": "Saltworn Fragment",
+      "description": "A pale shard left behind by a Drowned Sentinel. Brine still beads along its carved edge.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 20,
+      "iconKey": "saltworn-fragment"
+    },
+    {
+      "id": "item.material.warden_scale",
+      "name": "Warden Scale",
+      "description": "A dark tideglass scale shed by the Drowned Warden. It resonates with the sealed coast.",
+      "category": "MATERIAL",
+      "rarity": "RARE",
+      "stackCap": 999,
+      "baseValue": 65,
+      "iconKey": "warden-scale"
+    },
+    {
+      "id": "item.charm.tideglass",
+      "name": "Tideglass Charm",
+      "description": "Proof that the Saltwake vault opened for you. Its light answers the restored shore passage.",
+      "category": "MATERIAL",
+      "rarity": "RARE",
+      "stackCap": 1,
+      "baseValue": 0,
+      "iconKey": "tideglass-charm"
+    },
+    {
       "id": "item.dust.resonant",
       "name": "Resonant Dust",
       "description": "Ground crystal, fine enough to suspend in ink without clouding it.",

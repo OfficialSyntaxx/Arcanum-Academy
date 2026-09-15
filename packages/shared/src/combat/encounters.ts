@@ -14,6 +14,9 @@ export interface CombatEncounterDefinition {
   readonly respawnMs: number;
   readonly playerRecoveryMs: number;
   readonly requiredCombatLevel: number;
+  readonly zoneId?: string;
+  readonly requiredQuestId?: string;
+  readonly boss?: boolean;
 }
 
 export const SHORE_WOLF: CombatEncounterDefinition = Object.freeze({
@@ -50,7 +53,49 @@ export const EMBERWING_ARMABEE: CombatEncounterDefinition = Object.freeze({
   requiredCombatLevel: 1,
 });
 
-export const COMBAT_ENCOUNTERS = Object.freeze([SHORE_WOLF, EMBERWING_ARMABEE]);
+export const DROWNED_SENTINEL: CombatEncounterDefinition = Object.freeze({
+  interactableId: asId<InteractableId>('int.combat.drowned_sentinel'),
+  label: 'Drowned Sentinel',
+  position: { x: 0, z: -5 },
+  maxHitpoints: 9,
+  playerDamage: 1,
+  enemyDamage: 2,
+  rewardCoins: 12,
+  drops: Object.freeze([
+    { itemId: asId<ItemDefinitionId>('item.material.saltworn_fragment'), quantity: 1 },
+  ]),
+  respawnMs: 8_000,
+  playerRecoveryMs: 5_000,
+  requiredCombatLevel: 2,
+  zoneId: 'zone.saltwake_ruins',
+  requiredQuestId: 'quest.beneath_the_saltline',
+});
+
+export const DROWNED_WARDEN: CombatEncounterDefinition = Object.freeze({
+  interactableId: asId<InteractableId>('int.combat.drowned_warden'),
+  label: 'Drowned Warden',
+  position: { x: 0, z: 6.5 },
+  maxHitpoints: 18,
+  playerDamage: 1,
+  enemyDamage: 2,
+  rewardCoins: 24,
+  drops: Object.freeze([
+    { itemId: asId<ItemDefinitionId>('item.material.warden_scale'), quantity: 1 },
+  ]),
+  respawnMs: 15_000,
+  playerRecoveryMs: 5_000,
+  requiredCombatLevel: 3,
+  zoneId: 'zone.saltwake_ruins',
+  requiredQuestId: 'quest.beneath_the_saltline',
+  boss: true,
+});
+
+export const COMBAT_ENCOUNTERS = Object.freeze([
+  SHORE_WOLF,
+  EMBERWING_ARMABEE,
+  DROWNED_SENTINEL,
+  DROWNED_WARDEN,
+]);
 
 export function combatEncounterByInteractable(id: string): CombatEncounterDefinition | undefined {
   return COMBAT_ENCOUNTERS.find((encounter) => encounter.interactableId === id);

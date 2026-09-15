@@ -11,6 +11,7 @@ const headings: Readonly<Record<DiscoveryCategory, string>> = {
   [DiscoveryCategory.Crafting]: 'Crafting',
   [DiscoveryCategory.Combat]: 'Combat',
   [DiscoveryCategory.Recovery]: 'Recovery',
+  [DiscoveryCategory.Dungeon]: 'Dungeon',
 };
 
 /** Read-only ledger of milestones the server has already confirmed. */

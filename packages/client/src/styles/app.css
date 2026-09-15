@@ -1110,6 +1110,37 @@
   min-height: 2.35rem;
   font: 0.85rem var(--font-label);
 }
+
+.combat-hud__phase {
+  color: #9ee8df;
+  font-weight: 650;
+}
+
+.dungeon-hud {
+  position: fixed;
+  top: 5.25rem;
+  left: 50%;
+  z-index: 8;
+  width: min(28rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgb(75 198 187 / 55%);
+  border-radius: 0.75rem;
+  background: rgb(9 26 31 / 88%);
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 35%);
+  pointer-events: none;
+}
+
+.dungeon-hud strong,
+.dungeon-hud span {
+  display: block;
+}
+
+.dungeon-hud span {
+  margin-top: 0.25rem;
+  color: #a9c8c5;
+  font-size: 0.78rem;
+}
 @media (orientation: landscape) and (max-height: 500px) {
   .hub-hud {
     max-width: 21rem;

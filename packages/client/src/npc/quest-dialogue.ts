@@ -14,6 +14,9 @@ const complete = (quests: QuestRecord, id: string) => quests[id]?.status === Que
 export function questDialogueForNpc(npcId: string, quests: QuestRecord, fallback: string): string {
   switch (npcId) {
     case 'npc.vosk':
+      if (active(quests, 'quest.beneath_the_saltline')) {
+        return 'Onn has the restored survey. Its last mark descends beneath the Library shore—take food before you follow it.';
+      }
       if (active(quests, 'quest.clear_copy')) {
         return 'Azure Ink needs Pale Caps, ground Crystal Shards, and a patient hand at the Scribing Hall. The old coast cannot wait.';
       }
@@ -44,6 +47,12 @@ export function questDialogueForNpc(npcId: string, quests: QuestRecord, fallback
       }
       return fallback;
     case 'npc.onn':
+      if (active(quests, 'quest.beneath_the_saltline')) {
+        return 'The Saltwake descent is beside the Library shore. Clear the gallery before you face its Warden, then bring the Tideglass Charm back to me.';
+      }
+      if (complete(quests, 'quest.clear_copy') && !complete(quests, 'quest.beneath_the_saltline')) {
+        return 'Vosk’s clear copy revealed a drowned stair. The notice board carries the expedition charter.';
+      }
       if (active(quests, 'quest.embers_for_the_archive')) {
         return 'The Archive needs Emberwood Branches from the east stand and Crystal Shards from the northwest seam.';
       }

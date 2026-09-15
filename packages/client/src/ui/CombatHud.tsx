@@ -80,6 +80,14 @@ export function CombatHud({
       <div className="combat-hud__track">
         <span style={{ width: `${pct}%` }} />
       </div>
+      {combat.bossPhase !== undefined && (
+        <p className="combat-hud__phase">
+          Warden phase {combat.bossPhase} ·{' '}
+          {combat.bossPhase === 1
+            ? 'The tideglass shell is holding.'
+            : 'Undertow empowered—Defensive style reduces the pressure.'}
+        </p>
+      )}
       <div className="combat-hud__title combat-hud__player">
         <span>You</span>
         <span>
@@ -157,6 +165,32 @@ export function CombatHud({
           ))}
         </div>
       )}
+    </section>
+  );
+}
+
+/** Persistent, server-confirmed room objective card for the first dungeon. */
+export function DungeonHud() {
+  const zoneId = useAppStore((state) => state.currentZoneId);
+  const progress = useAppStore((state) => state.economy.saltwake);
+  const combat = useAppStore((state) => state.economy.combat);
+  if (zoneId !== 'zone.saltwake_ruins' || combat !== null) return null;
+  const objective = !progress.galleryCleared
+    ? 'Clear the Drowned Sentinel from the Broken Gallery.'
+    : !progress.bossDefeated
+      ? 'The Warden’s Vault is open. Challenge the Drowned Warden.'
+      : !progress.chestClaimed
+        ? 'Open the Tideglass Reliquary in the vault.'
+        : 'The Tideglass Charm is yours. Return to Archivist Onn.';
+  return (
+    <section className="dungeon-hud" aria-label="Saltwake Ruins progress">
+      <p className="panel__eyebrow">The Saltwake Ruins</p>
+      <strong>{objective}</strong>
+      <span>
+        {progress.chestClaimed
+          ? 'Library shortcut restored'
+          : 'First-clear reward: Tideglass Charm'}
+      </span>
     </section>
   );
 }

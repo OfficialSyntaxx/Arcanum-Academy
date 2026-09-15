@@ -78,6 +78,16 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
     ambientColour: 0xb9cbdc,
     ambientIntensity: 0.75,
   },
+  'saltwake.submerged': {
+    sky: 0x102c35,
+    fog: 0x173d43,
+    fogNear: 28,
+    fogFar: 78,
+    sunColour: 0x8adbd0,
+    sunIntensity: 0.62,
+    ambientColour: 0x4f8f8c,
+    ambientIntensity: 0.72,
+  },
 };
 
 const FALLBACK: Atmosphere = PRESETS['courtyard.afternoon']!;

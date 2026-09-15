@@ -69,6 +69,32 @@ record the first failed item, a screenshot, and the device/OS version.
 - [ ] Refresh after a diary completes, repeat its final activity, and confirm it neither loses its
       completion nor pays another reward.
 
+## G5-E: The Saltwake Ruins
+
+- [ ] Complete **A Clear Copy**, accept **Beneath the Saltline**, and confirm Archivist Onn points
+      toward the new descent beside the Library shore.
+- [ ] Attempt the descent before accepting the quest on a fresh account. Confirm the server
+      refuses entry rather than switching zones locally.
+- [ ] Enter the Flooded Antechamber in portrait and landscape. Confirm the teal fog, water,
+      route, exit, room objective card, and safe-area placement remain readable.
+- [ ] Defeat the Drowned Sentinel in the Broken Gallery. Confirm its Ghost-based CC0 model plays
+      idle, hit, attack, defeat, and respawn animations and unlocks the Warden encounter.
+- [ ] Try to challenge the Drowned Warden before clearing the Sentinel. Confirm it is refused.
+- [ ] Fight the Drowned Warden. Confirm the boss HUD announces phase 2 below half health, incoming
+      damage increases visibly, and Defensive style reduces that damage by one.
+- [ ] Die in the gallery and again in the vault. Confirm the permanent gravestone appears only in
+      the Saltwake Ruins, retains all unprotected items across the second death, and cannot be
+      reclaimed from matching Shorelands coordinates.
+- [ ] Defeat the Warden with a full satchel and try the Tideglass Reliquary. Confirm the claim is
+      refused without marking the chest complete; free a slot and claim again.
+- [ ] Confirm the Reliquary grants exactly one Tideglass Charm, restores the Library shortcut,
+      reveals all four Saltwake discoveries, and does not grant a second charm after refresh.
+- [ ] Return to Archivist Onn and complete **Beneath the Saltline**. Confirm the 100-coin reward
+      pays once and the Tideglass Charm remains in the satchel.
+- [ ] Complete **The Saltwake Remembers** and confirm its 15-coin diary reward pays once.
+- [ ] Close and reopen the PWA while inside the ruins. Confirm the server-confirmed Saltwake zone
+      is restored safely at the antechamber rather than dropping the player into an invalid room.
+
 ## Report back
 
 For any issue, send: checklist section, exact step, what you expected, what happened, portrait or

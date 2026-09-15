@@ -25,6 +25,7 @@ import { registerSocialHandlers } from './net/handlers/social.js';
 import { registerEconomyHandlers } from './net/handlers/economy.js';
 import { registerQuestHandlers } from './net/handlers/quests.js';
 import { registerCombatHandlers } from './net/handlers/combat.js';
+import { registerDungeonHandlers } from './net/handlers/dungeons.js';
 import {
   DiagnosticBuffer,
   PostgresDiagnosticStore,
@@ -126,6 +127,12 @@ async function main(): Promise<void> {
     now: () => Date.now(),
   });
   registerQuestHandlers(router, { players, now: () => Date.now() });
+  registerDungeonHandlers(router, {
+    players,
+    now: () => Date.now(),
+    currencyCap: DEFAULT_TUNABLES.economy.currencyCap,
+    items: ITEM_CATALOG,
+  });
 
   // The multiplayer layer is built, tested and switched off.
   //

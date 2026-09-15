@@ -3,7 +3,14 @@
  * Combat state is never decided here. The server projection only selects the
  * idle/hit/defeated presentation, so an unloaded model cannot affect a fight.
  */
-import { AnimationMixer, Box3, Group, Mesh, type AnimationAction } from 'three';
+import {
+  AnimationMixer,
+  Box3,
+  Group,
+  Mesh,
+  MeshStandardMaterial,
+  type AnimationAction,
+} from 'three';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { heightAt, InteractableKind, type Zone } from '@alderfell/shared';
@@ -11,6 +18,10 @@ import { heightAt, InteractableKind, type Zone } from '@alderfell/shared';
 import shoreWolfUrl from '../../../../assets/quaternius/low-poly-animated-animals/wolf.glb?url';
 // PolyPizza, "Armabee Evolved", CC0 1.0: https://poly.pizza/m/GcttdvsqsQ
 import armabeeUrl from '../../../../assets/poly-pizza/armabee-evolved.glb?url';
+// Quaternius, "Ghost" and "Ghost Skull", CC0 1.0 (Ultimate Monsters):
+// https://poly.pizza/bundle/Ultimate-Monsters-Bundle-5oyGWAmOB6
+import drownedSentinelUrl from '../../../../assets/quaternius/ultimate-monsters/ghost.glb?url';
+import drownedWardenUrl from '../../../../assets/quaternius/ultimate-monsters/ghost-skull.glb?url';
 
 interface Avatar {
   readonly id: string;
@@ -18,6 +29,7 @@ interface Avatar {
   readonly mixer: AnimationMixer;
   readonly actions: Map<string, AnimationAction>;
   current: AnimationAction | null;
+  currentIntent: 'idle' | 'hit' | 'attack' | 'death';
   defeated: boolean;
   lastStrikeAtMs: number;
   retaliationAtMs: number | null;
@@ -27,6 +39,8 @@ interface Avatar {
 const models = {
   'int.combat.shore_wolf': new GLTFLoader().loadAsync(shoreWolfUrl),
   'int.combat.emberwing_armabee': new GLTFLoader().loadAsync(armabeeUrl),
+  'int.combat.drowned_sentinel': new GLTFLoader().loadAsync(drownedSentinelUrl),
+  'int.combat.drowned_warden': new GLTFLoader().loadAsync(drownedWardenUrl),
 } as const;
 
 export class CombatAvatarGroup {
@@ -81,16 +95,12 @@ export class CombatAvatarGroup {
         avatar.attackStartedAtMs = now;
         this.play(avatar, 'attack');
       }
-      if (
-        !defeated &&
-        avatar.current === avatar.actions.get('animalarmature|idle_hitreact_left') &&
-        now - avatar.lastStrikeAtMs > 380
-      ) {
+      if (!defeated && avatar.currentIntent === 'hit' && now - avatar.lastStrikeAtMs > 380) {
         this.play(avatar, 'idle');
       }
       if (
         !defeated &&
-        avatar.current === avatar.actions.get('animalarmature|attack') &&
+        avatar.currentIntent === 'attack' &&
         now - avatar.attackStartedAtMs > 1_100
       ) {
         this.play(avatar, 'idle');
@@ -101,7 +111,18 @@ export class CombatAvatarGroup {
 
   dispose(): void {
     this.disposed = true;
-    for (const avatar of this.avatars.values()) avatar.mixer.stopAllAction();
+    for (const avatar of this.avatars.values()) {
+      avatar.mixer.stopAllAction();
+      if (
+        avatar.id === 'int.combat.drowned_sentinel' ||
+        avatar.id === 'int.combat.drowned_warden'
+      ) {
+        avatar.root.traverse((node) => {
+          if (node instanceof Mesh && node.material instanceof MeshStandardMaterial)
+            node.material.dispose();
+        });
+      }
+    }
     this.avatars.clear();
     this.root.clear();
   }
@@ -124,6 +145,16 @@ export class CombatAvatarGroup {
       if (node instanceof Mesh) {
         node.castShadow = this.shadowsEnabled;
         node.receiveShadow = this.shadowsEnabled;
+        if (id === 'int.combat.drowned_sentinel' || id === 'int.combat.drowned_warden') {
+          const source = node.material;
+          if (source instanceof MeshStandardMaterial) {
+            const material = source.clone();
+            material.color.multiplyScalar(id === 'int.combat.drowned_warden' ? 0.62 : 0.78);
+            material.emissive.set(id === 'int.combat.drowned_warden' ? 0x166f72 : 0x124d58);
+            material.emissiveIntensity = id === 'int.combat.drowned_warden' ? 0.55 : 0.28;
+            node.material = material;
+          }
+        }
       }
     });
     const root = new Group();
@@ -140,6 +171,7 @@ export class CombatAvatarGroup {
       mixer,
       actions,
       current: null,
+      currentIntent: 'idle',
       defeated: false,
       lastStrikeAtMs: 0,
       retaliationAtMs: null,
@@ -159,14 +191,24 @@ export class CombatAvatarGroup {
           : intent === 'attack'
             ? 'animalarmature|attack'
             : 'animalarmature|idle';
-    const token = intent === 'hit' ? 'hit' : intent;
+    const tokens =
+      intent === 'hit'
+        ? ['hit']
+        : intent === 'attack'
+          ? ['attack', 'punch', 'headbutt']
+          : intent === 'idle'
+            ? ['idle']
+            : ['death'];
     const next =
       avatar.actions.get(exact) ??
-      [...avatar.actions.entries()].find(([name]) => name.includes(token))?.[1] ??
+      [...avatar.actions.entries()].find(([name]) =>
+        tokens.some((token) => name.includes(token)),
+      )?.[1] ??
       (intent === 'idle' ? [...avatar.actions.values()][0] : undefined);
     if (!next || next === avatar.current) return;
     next.reset().play();
     avatar.current?.crossFadeTo(next, 0.16, false);
     avatar.current = next;
+    avatar.currentIntent = intent;
   }
 }

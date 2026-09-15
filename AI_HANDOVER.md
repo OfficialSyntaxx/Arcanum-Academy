@@ -2,13 +2,13 @@
 
 ### Game design document and engineering handover — everything needed to build it from nothing
 
-**Written:** 2026-09-09 · **Updated:** 2026-09-12 · **Author:** Claude Code, with Codex implementation updates
+**Written:** 2026-09-09 · **Updated:** 2026-09-15 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G2 is in active vertical-slice development. Reliable skilling/economy,
-persistence, observability, quests, starter combat, and the first production GLB character
-presentation are live. The current focus is replacing temporary presentation with a coherent
-world art pass, beginning with named NPCs, then real tool sockets and creature visuals.
+**Code state:** G5-E is implemented. Reliable skilling/economy, persistence, quest and diary
+progression, combat/death recovery, the three-room Saltwake dungeon, its Drowned Warden boss,
+and production GLB creature presentation are live. The current focus after G5-E is the next
+content phase, selected from the remaining Shorelands launch gaps in §13.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -50,8 +50,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of the 2026-09-12 named-NPC visual work it reports **385 tests across
-37 files**.
+afterwards is yours. As of G5-E on 2026-09-15 it reports **431 tests across 47 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -206,9 +205,33 @@ grinder and Scribing Hall recipes—and rewards 35 coins. The authored catalog k
 prerequisite, inventory turn-in, and one-time reward server-authoritative; Professor Vosk gives
 quest-aware guidance without changing state.
 
-**Still in progress:** combat expansion/content, dialogue, the hold, wiki, account recovery,
-achievement/collection-log screens, distinctive NPC and creature assets, real tool sockets, and
-the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not oversights.
+**G5-D collection update (2026-09-14):** The Journey card now opens a read-only Collection Log
+for ten initial Shorelands discoveries. Gathering, crafting, confirmed creature defeats, and
+gravestone recovery record a discovery exactly once in the persisted player state; reconnects and
+command retries cannot duplicate it. These discoveries now feed the diary layer below.
+
+**G5-D diary update (2026-09-15):** Three Shorelands diaries are derived directly from the
+server-confirmed discovery ledger: A Shorelands Circuit, Hands to Work, and The Terrace Remembers.
+Each pays the owner-approved 15 coins exactly once. Only payment receipts are persisted, so diary
+completion cannot drift from discoveries; the mobile Collection Log shows task progress and paid
+status. Gathering, crafting, encounter, and grave-recovery settlement is atomic with the triggering
+player-state update.
+
+**G5-E dungeon update (2026-09-15):** **The Saltwake Ruins** is the first hand-authored dungeon:
+Flooded Antechamber → Broken Gallery → Warden's Vault. Travel is now server-confirmed and the
+authoritative zone persists for reconnect. The Drowned Sentinel gates the Drowned Warden; the
+Warden shifts to a stronger second phase below half health. Both use admitted Quaternius CC0 GLBs.
+The one-time Tideglass Reliquary grants the zero-sale-value **Tideglass Charm** and permanently
+records the restored Library shortcut. Chest and quest settlement are atomic and retry-safe.
+**Beneath the Saltline** follows A Clear Copy, pays 100 coins once, and preserves the charm on
+turn-in. Four dungeon discoveries feed **The Saltwake Remembers**, a 15-coin derived diary.
+Gravestones now persist their zone and cannot render or be reclaimed from matching coordinates in
+another zone. Mobile dungeon guidance and boss-phase feedback are included. Manual acceptance is
+listed in `docs/IPHONE_ACCEPTANCE_CHECKLIST.md`; automated evidence is in `docs/G5_E_RETURN.md`.
+
+**Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
+audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
+oversights.
 
 ---
 

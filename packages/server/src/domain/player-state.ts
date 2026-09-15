@@ -37,6 +37,8 @@ import {
   type DiaryRewardReceipt,
   type SkillId,
   type SkillProgress,
+  type SaltwakeProgress,
+  EMPTY_SALTWAKE_PROGRESS,
 } from '@alderfell/shared';
 import type { PlayerRecord } from '../persistence/repository.js';
 
@@ -82,10 +84,11 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 7;
+export const PLAYER_SCHEMA_VERSION = 8;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
 export interface GravestoneState {
+  readonly zoneId: string;
   readonly position: { readonly x: number; readonly z: number };
   readonly stacks: readonly ItemStack[];
   readonly createdAtMs: number;
@@ -93,6 +96,9 @@ export interface GravestoneState {
   readonly expiresAtMs: number | null;
 }
 export interface PlayerState {
+  /** Authoritative reconnect destination. Room progress is deliberately separate. */
+  readonly location: { readonly zoneId: string; readonly roomId: string };
+  readonly saltwake: SaltwakeProgress;
   readonly inventory: Inventory;
   /** Secure resource storage, accessed only through a world bank chest. */
   readonly bank: Inventory;
@@ -132,6 +138,8 @@ export interface PlayerState {
 
 export function createInitialState(slotCapacity: number, nowMs: number): PlayerState {
   return {
+    location: { zoneId: 'zone.courtyard', roomId: 'wp.plaza.center' },
+    saltwake: EMPTY_SALTWAKE_PROGRESS,
     inventory: createInventory(slotCapacity),
     bank: createInventory(BANK_SLOT_CAPACITY),
     coins: 0,
@@ -310,6 +318,7 @@ function readGrave(value: unknown): GravestoneState | null {
   }
   if (stacks.length === 0) return null;
   return {
+    zoneId: typeof value.zoneId === 'string' ? value.zoneId : 'zone.courtyard',
     position: { x, z },
     stacks,
     createdAtMs: Math.max(0, readNumber(value.createdAtMs, 0)),
@@ -375,6 +384,26 @@ function readDiaryRewards(value: unknown): Record<string, DiaryRewardReceipt> {
   return receipts;
 }
 
+function readLocation(value: unknown): PlayerState['location'] {
+  if (!isRecord(value) || typeof value.zoneId !== 'string' || typeof value.roomId !== 'string')
+    return { zoneId: 'zone.courtyard', roomId: 'wp.plaza.center' };
+  return { zoneId: value.zoneId, roomId: value.roomId };
+}
+
+function readSaltwake(value: unknown): SaltwakeProgress {
+  if (!isRecord(value)) return EMPTY_SALTWAKE_PROGRESS;
+  return {
+    enteredAtMs:
+      typeof value.enteredAtMs === 'number' && Number.isFinite(value.enteredAtMs)
+        ? Math.max(0, value.enteredAtMs)
+        : null,
+    galleryCleared: value.galleryCleared === true,
+    bossDefeated: value.bossDefeated === true,
+    chestClaimed: value.chestClaimed === true,
+    shortcutUnlocked: value.shortcutUnlocked === true,
+  };
+}
+
 /**
  * Reads a stored record into player state.
  *
@@ -391,6 +420,8 @@ export function parsePlayerState(
   const persistedHitpoints = readHitpoints(data.hitpoints);
   const maxHitpoints = maximumHitpoints(skills);
   return ok({
+    location: readLocation(data.location),
+    saltwake: readSaltwake(data.saltwake),
     inventory: readInventory(data.inventory, slotCapacity),
     bank: readInventory(data.bank, BANK_SLOT_CAPACITY),
     coins: Math.max(0, Math.floor(readNumber(data.coins, 0))),
@@ -417,6 +448,8 @@ export function parsePlayerState(
 /** The blob to hand back to the repository. */
 export function serialisePlayerState(state: PlayerState): Readonly<Record<string, unknown>> {
   return {
+    location: state.location,
+    saltwake: state.saltwake,
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     bank: { stacks: state.bank.stacks, slotCapacity: state.bank.slotCapacity },
     coins: state.coins,

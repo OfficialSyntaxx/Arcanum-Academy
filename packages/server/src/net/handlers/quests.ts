@@ -26,6 +26,8 @@ function project(state: PlayerState) {
     tools: state.tools,
     gathering: state.gathering,
     quests: state.quests,
+    location: state.location,
+    saltwake: state.saltwake,
   };
 }
 
@@ -76,7 +78,7 @@ function takeObjectives(state: PlayerState, questId: string): Result<PlayerState
   if (!quest) return err(failure(FailureCode.NotFound, 'quest.unknown'));
   let next = state;
   for (const objective of quest.objectives) {
-    if (objective.kind !== 'ITEM') continue;
+    if (objective.kind !== 'ITEM' || objective.consume === false) continue;
     const consumed = takeObjective(next, objective.itemIds, objective.requiredQuantity);
     if (!consumed.ok) return err(consumed.error);
     next = consumed.value;

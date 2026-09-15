@@ -16,3 +16,9 @@ The decoder licence is bundled beside its files.
 
 UI colour tokens adapted from Syntaxx's Oakenfall: amber, warm timber and parchment.
 New environment assembly and fallback geometry were authored for Alderfell.
+
+# Saltwake Ruins creatures
+
+“Ghost” and “Ghost Skull” from Quaternius’s Ultimate Monsters bundle, used as the
+Drowned Sentinel and Drowned Warden. CC0 1.0 / Public Domain.
+https://poly.pizza/m/Iip30bDHmu and https://poly.pizza/m/TX8r9WBXpe

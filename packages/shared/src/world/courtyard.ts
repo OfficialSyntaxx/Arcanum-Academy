@@ -21,7 +21,13 @@
 
 import type { InteractableId, NpcDefinitionId, WaypointId } from '../ids.js';
 import { BuildingDoorSide, InteractableKind, NpcActivity, NpcRole, type Zone } from './types.js';
-import { COURTYARD_ZONE_ID, FOREST_ZONE_ID, MOUNTAINS_ZONE_ID, SNOW_ZONE_ID } from './zone-ids.js';
+import {
+  COURTYARD_ZONE_ID,
+  FOREST_ZONE_ID,
+  MOUNTAINS_ZONE_ID,
+  SALTWAKE_ZONE_ID,
+  SNOW_ZONE_ID,
+} from './zone-ids.js';
 
 const wp = (id: string): WaypointId => id as WaypointId;
 const ix = (id: string): InteractableId => id as InteractableId;
@@ -457,6 +463,16 @@ export const COURTYARD: Zone = {
       label: 'Path to the Frostgate Reaches',
       verb: 'Travel',
       targetZone: SNOW_ZONE_ID,
+    },
+    {
+      id: ix('int.library.saltwake.portal'),
+      kind: InteractableKind.ZonePortal,
+      position: { x: 22.5, z: -17.5 },
+      approach: wp('wp.library.stacks'),
+      facing: Math.PI * 0.5,
+      label: 'Descent to the Saltwake Ruins',
+      verb: 'Descend',
+      targetZone: SALTWAKE_ZONE_ID,
     },
   ],
 

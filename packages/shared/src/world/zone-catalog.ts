@@ -12,6 +12,7 @@ import { COURTYARD } from './courtyard.js';
 import { FOREST } from './forest.js';
 import { MOUNTAINS } from './mountains.js';
 import { SNOW } from './snow.js';
+import { SALTWAKE_RUINS } from './saltwake.js';
 import type { Zone } from './types.js';
 
 export const ZONES_BY_ID: ReadonlyMap<ZoneId, Zone> = new Map([
@@ -19,6 +20,7 @@ export const ZONES_BY_ID: ReadonlyMap<ZoneId, Zone> = new Map([
   [FOREST.id, FOREST],
   [MOUNTAINS.id, MOUNTAINS],
   [SNOW.id, SNOW],
+  [SALTWAKE_RUINS.id, SALTWAKE_RUINS],
 ]);
 
 /** Resolves a portal's `targetZone` to real zone data, or `null` if unknown. */

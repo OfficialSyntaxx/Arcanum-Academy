@@ -46,6 +46,8 @@ interface HarvestPatch {
   readonly diaryRewards?: EconomyState['diaryRewards'];
   readonly grave?: EconomyState['grave'];
   readonly combat?: EconomyState['combat'];
+  readonly location?: EconomyState['location'];
+  readonly saltwake?: EconomyState['saltwake'];
 }
 
 /** Command kinds this controller owns, so unrelated patches are ignored. */
@@ -66,6 +68,8 @@ const OWNED = new Set([
   'combat.eat',
   'combat.recover',
   'combat.reclaim_grave',
+  'world.travel',
+  'dungeon.claim_tideglass',
 ]);
 
 export class EconomyController {
@@ -73,7 +77,10 @@ export class EconomyController {
   /** Kept only for an actionable diagnostic if the gateway rejects it. */
   private pendingCommand: string | null = null;
 
-  constructor(private readonly transport: Transport) {
+  constructor(
+    private readonly transport: Transport,
+    private readonly onLocation?: (zoneId: string) => void,
+  ) {
     this.transport.events.on('frame', (frame) => this.onFrame(frame));
   }
 
@@ -134,6 +141,14 @@ export class EconomyController {
 
   completeQuest(questId: string): void {
     this.send('quest.complete', { questId });
+  }
+
+  travel(targetZoneId: string): void {
+    this.send('world.travel', { targetZoneId });
+  }
+
+  claimTideglass(): void {
+    this.send('dungeon.claim_tideglass');
   }
 
   attackEncounter(
@@ -244,6 +259,8 @@ export class EconomyController {
       ...(patch.diaryRewards !== undefined ? { diaryRewards: patch.diaryRewards } : {}),
       ...(patch.grave !== undefined ? { grave: patch.grave } : {}),
       ...(patch.combat !== undefined ? { combat: patch.combat } : {}),
+      ...(patch.location !== undefined ? { location: patch.location } : {}),
+      ...(patch.saltwake !== undefined ? { saltwake: patch.saltwake } : {}),
       ...(envelope.kind === 'combat.attack' && patch.combat !== undefined
         ? { lastCombatStrikeAtMs: Date.now() }
         : {}),
@@ -252,6 +269,7 @@ export class EconomyController {
     const store = useAppStore.getState();
     this.pendingCommand = null;
     store.setEconomy(next);
+    if (patch.location !== undefined) this.onLocation?.(patch.location.zoneId);
     store.setLastCommandError(null);
     store.recordDiagnostic({
       level: 'info',
