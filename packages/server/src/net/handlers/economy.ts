@@ -29,8 +29,6 @@ import {
   err,
   failure,
   FailureCode,
-  discoveryForSource,
-  recordDiscovery,
   ItemCategory,
   ok,
   Rng,
@@ -51,6 +49,7 @@ import type { Session } from '../../session/session-store.js';
 import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import { nodeState, skillProgress, type PlayerState } from '../../domain/player-state.js';
 import type { Mutation, PlayerService } from '../../domain/player-service.js';
+import { applyDiscovery } from '../../domain/diaries.js';
 
 /**
  * The content these handlers rule against.
@@ -102,6 +101,7 @@ function project(state: PlayerState) {
     tools: state.tools,
     quests: state.quests,
     discoveries: state.discoveries,
+    diaryRewards: state.diaryRewards,
     gathering: state.gathering,
     grave: state.grave,
   };
@@ -149,16 +149,20 @@ function applyHarvest(
     };
   }
 
-  return {
-    ...state,
-    inventory: outcome.inventory,
-    skills: { ...state.skills, [skillId]: award.progress },
-    tools,
-    nodes: { ...state.nodes, [node.id]: outcome.nodeState },
-    gathering: outcome.session,
-    discoveries: recordDiscovery(state.discoveries, discoveryForSource(node.id), nowMs),
-    lastSeenAtMs: nowMs,
-  };
+  return applyDiscovery(
+    {
+      ...state,
+      inventory: outcome.inventory,
+      skills: { ...state.skills, [skillId]: award.progress },
+      tools,
+      nodes: { ...state.nodes, [node.id]: outcome.nodeState },
+      gathering: outcome.session,
+      lastSeenAtMs: nowMs,
+    },
+    node.id,
+    nowMs,
+    tunables.economy.currencyCap,
+  );
 }
 
 function equippedTool(state: PlayerState, skillId: SkillId, catalogs: EconomyCatalogs) {
@@ -341,13 +345,17 @@ export function registerEconomyHandlers(
         tunables.progression,
         catalogs.skills.get(recipe.requiredSkillId),
       );
-      const next: PlayerState = {
-        ...state,
-        inventory: outcome.value.inventory,
-        skills: { ...state.skills, [recipe.requiredSkillId]: award.progress },
-        discoveries: recordDiscovery(state.discoveries, discoveryForSource(recipe.id), nowMs),
-        lastSeenAtMs: nowMs,
-      };
+      const next = applyDiscovery(
+        {
+          ...state,
+          inventory: outcome.value.inventory,
+          skills: { ...state.skills, [recipe.requiredSkillId]: award.progress },
+          lastSeenAtMs: nowMs,
+        },
+        recipe.id,
+        nowMs,
+        tunables.economy.currencyCap,
+      );
       return ok({
         state: next,
         value: {
