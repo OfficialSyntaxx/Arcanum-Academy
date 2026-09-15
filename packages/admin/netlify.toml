@@ -1,0 +1,6 @@
+[build]
+  command = "npm ci --include=dev && npm run build --workspace @alderfell/admin"
+  publish = "packages/admin/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
