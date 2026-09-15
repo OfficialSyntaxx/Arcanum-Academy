@@ -15,8 +15,6 @@ import {
   FailureCode,
   ok,
   recordEncounterDefeat,
-  discoveryForSource,
-  recordDiscovery,
   Rng,
   type Failure,
   type ProgressionTunables,
@@ -28,6 +26,7 @@ import {
   type SkillTable,
 } from '@alderfell/shared';
 import type { PlayerService, Mutation } from '../../domain/player-service.js';
+import { applyDiscovery } from '../../domain/diaries.js';
 import {
   maximumHitpoints,
   skillProgress,
@@ -250,13 +249,10 @@ export function registerCombatHandlers(
       const quests = defeated
         ? recordEncounterDefeat(state.quests, id as Parameters<typeof recordEncounterDefeat>[1])
         : state.quests;
-      const discoveries = defeated
-        ? recordDiscovery(state.discoveries, discoveryForSource(id!), now)
-        : state.discoveries;
       const coins = defeated
         ? Math.min(encounter.rewardCoins, options.currencyCap - state.coins)
         : 0;
-      const next = {
+      const base = {
         ...state,
         inventory: deathSplit === null ? inventory : { ...inventory, stacks: deathSplit.kept },
         combatTargets: { ...state.combatTargets, [id!]: nextTarget },
@@ -265,9 +261,9 @@ export function registerCombatHandlers(
         skills,
         grave,
         quests,
-        discoveries,
         lastSeenAtMs: now,
       };
+      const next = defeated ? applyDiscovery(base, id!, now, options.currencyCap) : base;
       return ok({
         state: next,
         value: {
@@ -278,6 +274,7 @@ export function registerCombatHandlers(
           skills: next.skills,
           quests: next.quests,
           discoveries: next.discoveries,
+          diaryRewards: next.diaryRewards,
           combat: {
             interactableId: id,
             label: encounter.label,
@@ -410,19 +407,25 @@ export function registerCombatHandlers(
         if (!added.ok) return err(added.error);
         inventory = added.value;
       }
-      const next = {
-        ...state,
-        inventory,
-        grave: null,
-        discoveries: recordDiscovery(state.discoveries, 'discovery.recovery.grave', now),
-        lastSeenAtMs: now,
-      };
+      const next = applyDiscovery(
+        {
+          ...state,
+          inventory,
+          grave: null,
+          lastSeenAtMs: now,
+        },
+        'event.grave.reclaimed',
+        now,
+        options.currencyCap,
+      );
       return ok({
         state: next,
         value: {
           inventory: { stacks: next.inventory.stacks, slotCapacity: next.inventory.slotCapacity },
           grave: null,
           discoveries: next.discoveries,
+          diaryRewards: next.diaryRewards,
+          coins: next.coins,
         },
       });
     });
