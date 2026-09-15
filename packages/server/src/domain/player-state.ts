@@ -34,6 +34,7 @@ import {
   type Result,
   type Failure,
   type DiscoveryProgress,
+  type DiaryRewardReceipt,
   type SkillId,
   type SkillProgress,
 } from '@alderfell/shared';
@@ -81,7 +82,7 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 6;
+export const PLAYER_SCHEMA_VERSION = 7;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
 export interface GravestoneState {
@@ -119,6 +120,8 @@ export interface PlayerState {
   readonly quests: Readonly<Record<string, QuestProgress>>;
   /** First-time discoveries, earned from confirmed gameplay events only. */
   readonly discoveries: Readonly<Record<string, DiscoveryProgress>>;
+  /** Payment receipts only; diary completion is derived from discoveries. */
+  readonly diaryRewards: Readonly<Record<string, DiaryRewardReceipt>>;
   /**
    * Last moment the player was demonstrably present.
    *
@@ -138,6 +141,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     nodes: {},
     quests: {},
     discoveries: {},
+    diaryRewards: {},
     gathering: null,
     combatTargets: {},
     grave: null,
@@ -360,6 +364,17 @@ function readDiscoveries(value: unknown): Record<string, DiscoveryProgress> {
   );
 }
 
+function readDiaryRewards(value: unknown): Record<string, DiaryRewardReceipt> {
+  if (!isRecord(value)) return {};
+  const receipts: Record<string, DiaryRewardReceipt> = {};
+  for (const [id, raw] of Object.entries(value)) {
+    if (!isRecord(raw) || typeof raw.paidAtMs !== 'number' || !Number.isFinite(raw.paidAtMs))
+      continue;
+    receipts[id] = { paidAtMs: Math.max(0, Math.floor(raw.paidAtMs)) };
+  }
+  return receipts;
+}
+
 /**
  * Reads a stored record into player state.
  *
@@ -391,6 +406,7 @@ export function parsePlayerState(
     nodes: readNodes(data.nodes),
     quests: readQuests(data.quests),
     discoveries: readDiscoveries(data.discoveries),
+    diaryRewards: readDiaryRewards(data.diaryRewards),
     gathering: readGathering(data.gathering),
     combatTargets: readCombatTargets(data.combatTargets),
     grave: readGrave(data.grave),
@@ -410,6 +426,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     nodes: state.nodes,
     quests: state.quests,
     discoveries: state.discoveries,
+    diaryRewards: state.diaryRewards,
     gathering: state.gathering,
     combatTargets: state.combatTargets,
     grave: state.grave,
