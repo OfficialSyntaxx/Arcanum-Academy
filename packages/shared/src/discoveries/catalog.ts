@@ -95,6 +95,7 @@ const DISCOVERY_BY_SOURCE: Readonly<Record<string, string>> = {
   'recipe.ink.azure': 'discovery.craft.azure_ink',
   'int.combat.shore_wolf': 'discovery.combat.shore_wolf',
   'int.combat.emberwing_armabee': 'discovery.combat.emberwing',
+  'event.grave.reclaimed': 'discovery.recovery.grave',
 };
 
 export function discoveryForSource(sourceId: string): string | undefined {
