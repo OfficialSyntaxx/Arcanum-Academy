@@ -98,6 +98,12 @@ export interface EconomyState {
     readonly chestClaimed: boolean;
     readonly shortcutUnlocked: boolean;
   };
+  readonly tideglassTrail: {
+    readonly startedAtMs: number | null;
+    readonly step: number;
+    readonly completedAtMs: number | null;
+    readonly rewardClaimed: boolean;
+  };
   /** Durable no-expiry item recovery at the position where the player fell. */
   readonly grave: {
     readonly zoneId: string;
@@ -157,6 +163,7 @@ export const EMPTY_ECONOMY: EconomyState = {
     chestClaimed: false,
     shortcutUnlocked: false,
   },
+  tideglassTrail: { startedAtMs: null, step: 0, completedAtMs: null, rewardClaimed: false },
   grave: null,
   combat: null,
   lastCombatStrikeAtMs: 0,

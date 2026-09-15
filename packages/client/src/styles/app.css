@@ -890,6 +890,29 @@
   color: var(--haze);
   pointer-events: auto;
 }
+
+.clue-tracker {
+  position: absolute;
+  top: calc(var(--inset-top) + 10.5rem);
+  left: calc(var(--inset-left) + var(--space-3));
+  width: min(20rem, calc(100vw - var(--inset-left) - var(--inset-right) - 1.5rem));
+  padding: var(--space-3);
+  border: 1px solid rgba(228, 185, 95, 0.46);
+  border-radius: var(--radius-sm);
+  background: rgba(17, 22, 29, 0.86);
+  color: var(--haze);
+  backdrop-filter: blur(8px);
+}
+
+.clue-tracker strong,
+.clue-tracker span {
+  display: block;
+}
+
+.clue-tracker p {
+  margin: var(--space-2) 0;
+  color: var(--haze-dim);
+}
 .journey-tracker__eyebrow {
   display: block;
   margin-bottom: 0.1rem;

@@ -432,6 +432,33 @@ export const COURTYARD: Zone = {
       label: 'Shorelands Campfire',
       verb: 'Cook',
     },
+    {
+      id: ix('int.clue.library_plinth'),
+      kind: InteractableKind.ClueSite,
+      position: { x: 15.5, z: -17.5 },
+      approach: wp('wp.library.stacks'),
+      facing: Math.PI * 1.5,
+      label: 'Weathered Library Plinth',
+      verb: 'Inspect',
+    },
+    {
+      id: ix('int.clue.resonance_mark'),
+      kind: InteractableKind.ClueSite,
+      position: { x: -14, z: -14 },
+      approach: wp('wp.mines.entry'),
+      facing: Math.PI * 1.25,
+      label: 'Tideglass Mine Mark',
+      verb: 'Inspect',
+    },
+    {
+      id: ix('int.clue.tidepool_cache'),
+      kind: InteractableKind.ClueSite,
+      position: { x: 13, z: -5.5 },
+      approach: wp('wp.tidepool.bank'),
+      facing: Math.PI * 0.5,
+      label: 'Buried Tideglass Cache',
+      verb: 'Uncover',
+    },
 
     // --- World gates -------------------------------------------------------
     {

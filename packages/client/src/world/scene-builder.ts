@@ -73,6 +73,7 @@ const MARKER_COLOURS: Readonly<Record<string, number>> = {
   [InteractableKind.ZonePortal]: Palette.verdigris,
   [InteractableKind.QuestBoard]: Palette.haze,
   [InteractableKind.CombatEncounter]: 0xe85b45,
+  [InteractableKind.ClueSite]: 0xe4b95f,
 };
 
 export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeometry {
@@ -552,6 +553,16 @@ function buildMarker(interactable: Interactable, parts: MarkerParts): Object3D {
     arch.position.y = 1.8;
     arch.rotation.z = Math.PI;
     marker.add(arch);
+  } else if (interactable.kind === InteractableKind.ClueSite) {
+    const post = new Mesh(parts.post, parts.material);
+    post.position.y = 0.18;
+    post.scale.set(0.78, 0.28, 0.78);
+    marker.add(post);
+    const halo = new Mesh(parts.halo, parts.material);
+    halo.position.y = 0.72;
+    halo.rotation.x = Math.PI / 2;
+    halo.scale.setScalar(0.62);
+    marker.add(halo);
   } else {
     const post = new Mesh(parts.post, parts.material);
     post.position.y = 0.7;

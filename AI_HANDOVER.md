@@ -5,10 +5,10 @@
 **Written:** 2026-09-09 · **Updated:** 2026-09-15 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G5-E is implemented. Reliable skilling/economy, persistence, quest and diary
+**Code state:** G5-F is implemented. Reliable skilling/economy, persistence, quest and diary
 progression, combat/death recovery, the three-room Saltwake dungeon, its Drowned Warden boss,
-and production GLB creature presentation are live. The current focus after G5-E is the next
-content phase, selected from the remaining Shorelands launch gaps in §13.
+production GLB creature presentation, and the first persisted treasure-clue trail are live. The
+next focus is G6 operations: safe save snapshots before any admin mutation surface.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -50,7 +50,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of G5-E on 2026-09-15 it reports **431 tests across 47 files**.
+afterwards is yours. As of G5-F on 2026-09-15 it reports **436 tests across 49 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -228,6 +228,14 @@ turn-in. Four dungeon discoveries feed **The Saltwake Remembers**, a 15-coin der
 Gravestones now persist their zone and cannot render or be reclaimed from matching coordinates in
 another zone. Mobile dungeon guidance and boss-phase feedback are included. Manual acceptance is
 listed in `docs/IPHONE_ACCEPTANCE_CHECKLIST.md`; automated evidence is in `docs/G5_E_RETURN.md`.
+
+**G5-F clue update (2026-09-15):** **The Tideglass Trail** unlocks after Beneath the Saltline and
+leads through four ordered investigation sites from the Warden's Vault back across the Shorelands.
+Progress is schema-9 persisted and server-authoritative: prerequisite, expected site, zone, latest
+presence, and range are checked at every step. The Tidepool Cache pays 45 coins exactly once under
+the global currency cap. Procedural gold markers and a compact combat-safe clue card provide mobile
+guidance without adding an asset dependency. Manual acceptance is listed in
+`docs/IPHONE_ACCEPTANCE_CHECKLIST.md`; automated evidence is in `docs/G5_F_RETURN.md`.
 
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
@@ -2077,6 +2085,7 @@ multiplayer. If you find yourself building any of them, you are no longer on G1.
 | D28 | **A wiki generated from the game's own content JSON**, so it cannot drift. Static, free, mobile-first (§3.10). | 2026-09-09 |
 | D29 | **Mobile optimisation is a standing requirement with published budgets**, verified on a real iPhone at every gate — not an end-of-project pass (§6.8). | 2026-09-09 |
 | D30 | **Rename the GitHub repository too** — `Arcanum-Academy` → `alderfell`. Free now, and a repo whose name contradicts its game is permanent confusion (§10.3). | 2026-09-09 |
+| D32 | **Creative control for ordinary phases is delegated to Codex.** Plan and implement content, rewards, pacing, and presentation autonomously; pause only for foundational identity, monetisation, control philosophy, difficulty philosophy, licensing ambiguity, or paid dependencies. | 2026-09-15 |
 
 ### 14.2 Still open
 
@@ -2096,17 +2105,17 @@ usually arrives from playing, not planning — but do not lose the question eith
 
 ## 15. Working agreements
 
-### 15.1 Autonomy — build whole gates, stop on design
+### 15.1 Autonomy — build whole gates, escalate only foundational choices
 
 Owner decision, 2026-09-09. **Take a whole gate (§13), build it, verify it, push it, and
 report back short.** The owner reviews the result, not the plan. He works from a phone; a
 plan-approval round trip per step is the wrong shape.
 
-**Stop and ask the moment something would change gameplay, balance or feel.** That includes:
-a tunable that changes difficulty or pacing, a drop rate, an XP curve, anything touching the
-death penalty or Ironman's promise, a control or camera change, and any new player-facing
-system not already in §3. Engineering-quality decisions — refactors, test structure, file
-layout, naming — are yours to make; just record them.
+Owner update, 2026-09-15: ordinary content, reward, pacing, presentation, and phase-planning choices
+are delegated to Codex. Proceed autonomously and record material decisions. Stop only when work
+would change Alderfell's foundational identity, monetisation, control philosophy, difficulty
+philosophy, licensing posture, require a paid dependency, or contradict Ironman's promise or the
+death model. Engineering-quality decisions remain autonomous as before.
 
 **When you stop, stop usefully.** Do every part of the gate that does not depend on the
 answer, then ask a single specific question with options, and say what you have already

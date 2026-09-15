@@ -25,6 +25,7 @@ function project(state: PlayerState) {
     diaryRewards: state.diaryRewards,
     location: state.location,
     saltwake: state.saltwake,
+    tideglassTrail: state.tideglassTrail,
   };
 }
 

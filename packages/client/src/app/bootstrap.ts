@@ -251,6 +251,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
       else store.setOpenNotice(interactableId);
     },
     onEngageCombatEncounter: (interactableId) => economy.attackEncounter(interactableId),
+    onEngageClueSite: (interactableId) => economy.investigateClue(interactableId),
     onPresence: (position) => transport.send(ClientOpcode.PresenceUpdate, position),
     onEngageNpc: (npc) =>
       store.setOpenDialogue({

@@ -75,6 +75,8 @@ export interface HubControllerOptions {
   readonly onEngageQuestBoard?: (interactableId: string) => void;
   /** Called when the player attacks an in-world combat encounter. */
   readonly onEngageCombatEncounter?: (interactableId: string) => void;
+  /** Called when the player investigates an authored treasure-trail site. */
+  readonly onEngageClueSite?: (interactableId: string) => void;
   /** Reports movement to the gateway for authoritative interaction range checks. */
   readonly onPresence?: (position: {
     readonly x: number;
@@ -303,6 +305,8 @@ export class HubController {
       this.options.onEngageQuestBoard?.(prompt.id);
     } else if (prompt.kind === InteractableKind.CombatEncounter) {
       this.options.onEngageCombatEncounter?.(prompt.id);
+    } else if (prompt.kind === InteractableKind.ClueSite) {
+      this.options.onEngageClueSite?.(prompt.id);
     } else if (prompt.kind === InteractableKind.ZonePortal && prompt.targetZone) {
       this.options.onEngageZonePortal?.(prompt.targetZone);
     }
@@ -530,6 +534,8 @@ export class HubController {
       this.options.onEngageQuestBoard?.(target.id);
     } else if (target.kind === InteractableKind.CombatEncounter) {
       this.options.onEngageCombatEncounter?.(target.id);
+    } else if (target.kind === InteractableKind.ClueSite) {
+      this.options.onEngageClueSite?.(target.id);
     } else if (target.kind === InteractableKind.ZonePortal && target.targetZone) {
       this.options.onEngageZonePortal?.(target.targetZone);
     }

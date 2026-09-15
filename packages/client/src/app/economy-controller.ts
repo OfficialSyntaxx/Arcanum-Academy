@@ -48,6 +48,7 @@ interface HarvestPatch {
   readonly combat?: EconomyState['combat'];
   readonly location?: EconomyState['location'];
   readonly saltwake?: EconomyState['saltwake'];
+  readonly tideglassTrail?: EconomyState['tideglassTrail'];
 }
 
 /** Command kinds this controller owns, so unrelated patches are ignored. */
@@ -70,6 +71,7 @@ const OWNED = new Set([
   'combat.reclaim_grave',
   'world.travel',
   'dungeon.claim_tideglass',
+  'clue.investigate',
 ]);
 
 export class EconomyController {
@@ -149,6 +151,10 @@ export class EconomyController {
 
   claimTideglass(): void {
     this.send('dungeon.claim_tideglass');
+  }
+
+  investigateClue(interactableId: string): void {
+    this.send('clue.investigate', { interactableId });
   }
 
   attackEncounter(
@@ -261,6 +267,7 @@ export class EconomyController {
       ...(patch.combat !== undefined ? { combat: patch.combat } : {}),
       ...(patch.location !== undefined ? { location: patch.location } : {}),
       ...(patch.saltwake !== undefined ? { saltwake: patch.saltwake } : {}),
+      ...(patch.tideglassTrail !== undefined ? { tideglassTrail: patch.tideglassTrail } : {}),
       ...(envelope.kind === 'combat.attack' && patch.combat !== undefined
         ? { lastCombatStrikeAtMs: Date.now() }
         : {}),

@@ -106,6 +106,7 @@ function project(state: PlayerState) {
     grave: state.grave,
     location: state.location,
     saltwake: state.saltwake,
+    tideglassTrail: state.tideglassTrail,
   };
 }
 

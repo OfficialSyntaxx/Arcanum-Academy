@@ -39,6 +39,8 @@ import {
   type SkillProgress,
   type SaltwakeProgress,
   EMPTY_SALTWAKE_PROGRESS,
+  EMPTY_CLUE_PROGRESS,
+  type ClueProgress,
 } from '@alderfell/shared';
 import type { PlayerRecord } from '../persistence/repository.js';
 
@@ -84,7 +86,7 @@ function starterTools(acquiredAtMs: number): Record<string, ItemInstance> {
   );
 }
 
-export const PLAYER_SCHEMA_VERSION = 8;
+export const PLAYER_SCHEMA_VERSION = 9;
 /** Deliberately roomy, but still bounded so a malformed save cannot grow forever. */
 export const BANK_SLOT_CAPACITY = 400;
 export interface GravestoneState {
@@ -99,6 +101,7 @@ export interface PlayerState {
   /** Authoritative reconnect destination. Room progress is deliberately separate. */
   readonly location: { readonly zoneId: string; readonly roomId: string };
   readonly saltwake: SaltwakeProgress;
+  readonly tideglassTrail: ClueProgress;
   readonly inventory: Inventory;
   /** Secure resource storage, accessed only through a world bank chest. */
   readonly bank: Inventory;
@@ -140,6 +143,7 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
   return {
     location: { zoneId: 'zone.courtyard', roomId: 'wp.plaza.center' },
     saltwake: EMPTY_SALTWAKE_PROGRESS,
+    tideglassTrail: EMPTY_CLUE_PROGRESS,
     inventory: createInventory(slotCapacity),
     bank: createInventory(BANK_SLOT_CAPACITY),
     coins: 0,
@@ -404,6 +408,23 @@ function readSaltwake(value: unknown): SaltwakeProgress {
   };
 }
 
+function readClueProgress(value: unknown): ClueProgress {
+  if (!isRecord(value)) return EMPTY_CLUE_PROGRESS;
+  const step = Math.max(0, Math.min(4, Math.floor(readNumber(value.step, 0))));
+  return {
+    startedAtMs:
+      typeof value.startedAtMs === 'number' && Number.isFinite(value.startedAtMs)
+        ? Math.max(0, value.startedAtMs)
+        : null,
+    step,
+    completedAtMs:
+      typeof value.completedAtMs === 'number' && Number.isFinite(value.completedAtMs)
+        ? Math.max(0, value.completedAtMs)
+        : null,
+    rewardClaimed: value.rewardClaimed === true,
+  };
+}
+
 /**
  * Reads a stored record into player state.
  *
@@ -422,6 +443,7 @@ export function parsePlayerState(
   return ok({
     location: readLocation(data.location),
     saltwake: readSaltwake(data.saltwake),
+    tideglassTrail: readClueProgress(data.tideglassTrail),
     inventory: readInventory(data.inventory, slotCapacity),
     bank: readInventory(data.bank, BANK_SLOT_CAPACITY),
     coins: Math.max(0, Math.floor(readNumber(data.coins, 0))),
@@ -450,6 +472,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
   return {
     location: state.location,
     saltwake: state.saltwake,
+    tideglassTrail: state.tideglassTrail,
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     bank: { stacks: state.bank.stacks, slotCapacity: state.bank.slotCapacity },
     coins: state.coins,

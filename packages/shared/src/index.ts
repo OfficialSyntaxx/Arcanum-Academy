@@ -24,5 +24,6 @@ export * from './quests/catalog.js';
 export * from './discoveries/catalog.js';
 export * from './diaries/catalog.js';
 export * from './dungeons/catalog.js';
+export * from './clues/catalog.js';
 export * from './combat/encounters.js';
 export * from './content/index.js';

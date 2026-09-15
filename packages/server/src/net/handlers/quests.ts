@@ -28,6 +28,7 @@ function project(state: PlayerState) {
     quests: state.quests,
     location: state.location,
     saltwake: state.saltwake,
+    tideglassTrail: state.tideglassTrail,
   };
 }
 

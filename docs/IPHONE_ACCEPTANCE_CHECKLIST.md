@@ -95,6 +95,21 @@ record the first failed item, a screenshot, and the device/OS version.
 - [ ] Close and reopen the PWA while inside the ruins. Confirm the server-confirmed Saltwake zone
       is restored safely at the antechamber rather than dropping the player into an invalid room.
 
+## G5-F: The Tideglass Trail
+
+- [ ] Before completing **Beneath the Saltline**, inspect any gold clue marker. Confirm the server
+      refuses to start the trail or reveal progress.
+- [ ] After completing the quest, return to the Warden's Vault. Confirm the clue card names **The
+      Tideglass Trail** and points to the tide-cut bearings.
+- [ ] Inspect the Warden's Bearings, then follow the card to the Library Plinth, Resonance Mark, and
+      Tidepool Cache. Confirm later sites cannot be completed out of order.
+- [ ] At each step, refresh or close/reopen the PWA and confirm the same next clue remains active.
+- [ ] Confirm the gold ring/halo marker and clue card remain readable at dawn, night, and in rain,
+      in portrait and short landscape, without covering the combat controls.
+- [ ] Walk away before pressing Inspect/Uncover and confirm a remote interaction is refused.
+- [ ] Uncover the Tidepool Cache and confirm exactly 45 coins are added once. Revisit and refresh;
+      confirm no second reward is granted and the active clue card is gone.
+
 ## Report back
 
 For any issue, send: checklist section, exact step, what you expected, what happened, portrait or

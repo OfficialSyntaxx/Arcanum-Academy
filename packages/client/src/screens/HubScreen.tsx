@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { WorldMap } from '../ui/WorldMap.js';
-import { HubHud, InteractionPrompt, JourneyTracker } from '../ui/HubOverlay.js';
+import { ClueTracker, HubHud, InteractionPrompt, JourneyTracker } from '../ui/HubOverlay.js';
 import {
   CommandError,
   BankPanel,
@@ -128,6 +128,7 @@ export function HubScreen({
         onOpenJournal={() => setJournalOpen(true)}
         onOpenCollection={() => setCollectionOpen(true)}
       />
+      <ClueTracker />
       <button type="button" className="map-toggle" onClick={() => setMapOpen(true)}>
         Map
       </button>

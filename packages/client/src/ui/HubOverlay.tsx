@@ -2,6 +2,7 @@ import { useAppStore } from '../state/app-store.js';
 import {
   QUEST_CATALOG,
   QuestStatus,
+  TIDEGLASS_TRAIL,
   questIsUnlocked,
   type ItemDefinitionId,
 } from '@alderfell/shared';
@@ -29,6 +30,31 @@ export function InteractionPrompt({ onEngage }: { onEngage: () => void }) {
         {prompt.verb}
       </button>
     </div>
+  );
+}
+
+/** Server-confirmed guidance for the first ordered treasure trail. */
+export function ClueTracker() {
+  const progress = useAppStore((state) => state.economy.tideglassTrail);
+  const quests = useAppStore((state) => state.economy.quests);
+  const combat = useAppStore((state) => state.economy.combat);
+  if (
+    quests[TIDEGLASS_TRAIL.prerequisiteQuestId]?.status !== QuestStatus.Completed ||
+    combat !== null ||
+    progress.rewardClaimed
+  )
+    return null;
+  const step = TIDEGLASS_TRAIL.steps[progress.step];
+  if (step === undefined) return null;
+  return (
+    <aside className="clue-tracker" aria-label="Treasure trail clue">
+      <span className="journey-tracker__eyebrow">
+        {progress.startedAtMs === null ? 'New treasure trail' : `Clue ${progress.step + 1} of 4`}
+      </span>
+      <strong>{TIDEGLASS_TRAIL.title}</strong>
+      <p>{step.hint}</p>
+      <span>Reward: {TIDEGLASS_TRAIL.rewardCoins}-coin casket</span>
+    </aside>
   );
 }
 

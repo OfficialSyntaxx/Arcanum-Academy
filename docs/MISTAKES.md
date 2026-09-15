@@ -21,3 +21,12 @@
   creator-linked Poly Pizza model endpoints for reproducible GLB admission and record both URLs.
 - Use `npm run asset-budget` (or the production `npm run build`, which includes it); do not assume
   a convenience script named `check:assets` exists.
+
+# G5-F rules learned
+
+- An interactable can be inside the server's range but still fail authored-world geometry rules.
+  Check the distance from its approach waypoint immediately after placement, not only command range.
+- Persist both the current clue index and a final reward receipt. A completed index alone does not
+  prove whether an interrupted settlement paid, while a receipt makes retries unambiguous.
+- A trail marker is a hint, not authority. The server must validate prerequisite, order, zone,
+  latest presence, and range independently of what the client displays.

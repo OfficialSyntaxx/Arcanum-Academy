@@ -26,6 +26,7 @@ import { registerEconomyHandlers } from './net/handlers/economy.js';
 import { registerQuestHandlers } from './net/handlers/quests.js';
 import { registerCombatHandlers } from './net/handlers/combat.js';
 import { registerDungeonHandlers } from './net/handlers/dungeons.js';
+import { registerClueHandlers } from './net/handlers/clues.js';
 import {
   DiagnosticBuffer,
   PostgresDiagnosticStore,
@@ -165,6 +166,13 @@ async function main(): Promise<void> {
     // hitch does not make everyone flicker out of the courtyard.
     staleAfterMs: Math.ceil(2_000 / DEFAULT_TUNABLES.network.hubPresenceBroadcastHz) * 2,
     now: () => Date.now(),
+  });
+  registerClueHandlers(router, {
+    players,
+    now: () => Date.now(),
+    interactionRadius: DEFAULT_TUNABLES.world.interactionRadius,
+    currencyCap: DEFAULT_TUNABLES.economy.currencyCap,
+    positionFor: (sessionId) => presence.positionFor(sessionId),
   });
   registerCombatHandlers(router, {
     players,

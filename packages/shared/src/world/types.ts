@@ -49,6 +49,8 @@ export const InteractableKind = {
   QuestBoard: 'QUEST_BOARD',
   /** A server-authoritative practice or hostile encounter. */
   CombatEncounter: 'COMBAT_ENCOUNTER',
+  /** An ordered, server-validated treasure-trail investigation point. */
+  ClueSite: 'CLUE_SITE',
 } as const;
 
 export type InteractableKind = (typeof InteractableKind)[keyof typeof InteractableKind];
