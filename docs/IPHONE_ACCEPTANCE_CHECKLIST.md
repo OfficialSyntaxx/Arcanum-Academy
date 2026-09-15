@@ -60,6 +60,15 @@ record the first failed item, a screenshot, and the device/OS version.
 - [ ] Speak to Bram, Calla Dun, Archivist Onn, and Professor Vosk at relevant quest states. Their
       dialogue should guide the current task without accepting, completing, or changing quest state.
 
+## Collection log and diaries
+
+- [ ] Open **Log** from the Journey card. Confirm undiscovered entries remain hidden and newly
+      confirmed gathering, crafting, combat, and recovery entries reveal their real names.
+- [ ] Complete **A Shorelands Circuit**, **Hands to Work**, and **The Terrace Remembers**. Confirm
+      each diary awards exactly 15 coins once and displays its paid status.
+- [ ] Refresh after a diary completes, repeat its final activity, and confirm it neither loses its
+      completion nor pays another reward.
+
 ## Report back
 
 For any issue, send: checklist section, exact step, what you expected, what happened, portrait or
