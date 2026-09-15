@@ -43,6 +43,7 @@ interface HarvestPatch {
   readonly decks?: Readonly<Record<string, { name: string; cardDefinitionIds: readonly string[] }>>;
   readonly quests?: Readonly<Record<string, QuestProgress>>;
   readonly discoveries?: EconomyState['discoveries'];
+  readonly diaryRewards?: EconomyState['diaryRewards'];
   readonly grave?: EconomyState['grave'];
   readonly combat?: EconomyState['combat'];
 }
@@ -240,6 +241,7 @@ export class EconomyController {
       ...(patch.decks !== undefined ? { decks: patch.decks } : {}),
       ...(patch.quests !== undefined ? { quests: patch.quests } : {}),
       ...(patch.discoveries !== undefined ? { discoveries: patch.discoveries } : {}),
+      ...(patch.diaryRewards !== undefined ? { diaryRewards: patch.diaryRewards } : {}),
       ...(patch.grave !== undefined ? { grave: patch.grave } : {}),
       ...(patch.combat !== undefined ? { combat: patch.combat } : {}),
       ...(envelope.kind === 'combat.attack' && patch.combat !== undefined
