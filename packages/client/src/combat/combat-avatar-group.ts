@@ -71,7 +71,7 @@ interface Avatar {
 }
 
 /**
- * Presentation scale for each creature, held against a 1.8 m player.
+ * Presentation scale for each creature, held against the 2.05 m player.
  *
  * A bounding box alone lies: a wolf's box is mostly length, an armabee's is
  * mostly wingspan. Heights are authored so a wolf comes to the player's hip
@@ -90,21 +90,21 @@ interface CreatureDisplay {
 
 const DISPLAY: Readonly<Record<CreatureModel, CreatureDisplay>> = {
   wolf: {
-    height: 0.95,
-    shadowRadius: 0.62,
+    height: 1.1,
+    shadowRadius: 0.7,
     hover: 0,
     leash: 1.1,
     walkSpeed: 0.7,
   },
   armabee: {
-    height: 0.72,
-    shadowRadius: 0.4,
+    height: 0.85,
+    shadowRadius: 0.45,
     hover: 0.55,
     leash: 0.9,
     walkSpeed: 0.9,
   },
   ghost: {
-    height: 1.9,
+    height: 2.15,
     shadowRadius: 0.55,
     hover: 0.12,
     leash: 0.6,
@@ -112,7 +112,7 @@ const DISPLAY: Readonly<Record<CreatureModel, CreatureDisplay>> = {
     tint: { darken: 0.78, emissive: 0x124d58, glow: 0.28 },
   },
   'ghost-skull': {
-    height: 2.35,
+    height: 2.65,
     shadowRadius: 0.75,
     hover: 0.15,
     leash: 0.4,

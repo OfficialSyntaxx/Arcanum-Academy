@@ -229,14 +229,14 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     playerTurnRate: 9,
     waypointArrivalRadius: 0.35,
     interactionRadius: 2.2,
-    // Tuned against the dressed zones on a 390 px portrait phone: 18 m across
-    // the short axis puts a 1.8 m character at roughly 40 px, tall enough to
-    // read a fight, while a plaza or a den still fits in one screen. The old
-    // 26 m view showed a whole district and made every character a speck.
-    cameraViewSize: 9,
+    // Tuned against the dressed zones on a 390 px portrait phone: 15 m across
+    // the short axis puts a character at roughly 55 px, so people are people
+    // rather than figurines, while a den or a stall still fits in one screen.
+    // The original 26 m view showed a whole district and made everyone a speck.
+    cameraViewSize: 7.5,
     // Pinch in to inspect a fight, pinch out to read a route across a region.
-    cameraMinViewSize: 5,
-    cameraMaxViewSize: 22,
+    cameraMinViewSize: 4.5,
+    cameraMaxViewSize: 20,
     cameraBoomLength: 120,
     cameraHeight: 5.5,
     cameraSmoothing: 8,

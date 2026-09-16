@@ -45,8 +45,14 @@ export type CharacterOutfit = 'peasant-m' | 'peasant-f' | 'ranger-m';
 /** What the character is doing with its hands; locomotion is separate. */
 export type CharacterAction = 'none' | 'attack' | 'chop' | 'harvest' | 'eat' | 'flinch';
 
-/** Reference height. Everything else in the world is scaled against it. */
-export const CHARACTER_HEIGHT = 1.8;
+/**
+ * Reference height. Everything else in the world is scaled against it.
+ *
+ * Slightly over life size on purpose: props in the zones are authored broad
+ * (3 m paths, 20 m halls) and a strictly 1.8 m figure reads as a miniature
+ * beside them under the orthographic camera.
+ */
+export const CHARACTER_HEIGHT = 2.05;
 
 const OUTFIT_URL: Readonly<Record<CharacterOutfit, string>> = {
   'peasant-m': peasantMaleUrl,
