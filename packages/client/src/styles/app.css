@@ -1564,3 +1564,57 @@
   transform: translateX(-50%);
   width: min(24rem, calc(100vw - 1.5rem));
 }
+
+/* --- Worn gear ----------------------------------------------------------- */
+.equipment-panel__worn {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+.equipment-panel__worn li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(156, 111, 44, 0.45);
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+.equipment-panel__slot {
+  min-width: 4.5rem;
+  color: var(--haze-dim);
+  font: 0.7rem var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.equipment-panel__empty {
+  color: var(--haze-dim);
+  font: 0.78rem var(--font-label);
+  opacity: 0.6;
+}
+.equipment-panel__worn button {
+  margin-left: auto;
+  min-height: 1.9rem;
+  padding: 0 0.55rem;
+  font-size: 0.72rem;
+}
+.equipment-panel__bonuses {
+  margin: 0 0 0.75rem;
+  color: var(--amber);
+  font: 0.78rem var(--font-label);
+}
+.equipment-panel__heading {
+  margin: 0 0 0.35rem;
+  color: var(--haze-dim);
+  font: 0.72rem var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.inventory-panel__equip {
+  margin-left: auto;
+  min-height: 1.8rem;
+  padding: 0 0.5rem;
+  font-size: 0.7rem;
+}

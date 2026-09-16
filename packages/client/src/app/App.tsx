@@ -118,6 +118,8 @@ export function App() {
               onUpgradeTool={(toolId) => economy?.upgradeTool(toolId)}
               onAcceptQuest={(questId) => economy?.acceptQuest(questId)}
               onCompleteQuest={(questId) => economy?.completeQuest(questId)}
+              onEquip={(itemId) => economy?.equip(itemId)}
+              onUnequip={(slot) => economy?.unequip(slot)}
               onRecoverCombat={() => economy?.recoverCombat()}
               onReclaimCombatGrave={() => economy?.reclaimCombatGrave()}
               onEatCombatFood={(interactableId, itemId) =>

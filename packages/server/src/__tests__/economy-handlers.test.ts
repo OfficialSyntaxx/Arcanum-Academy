@@ -75,6 +75,30 @@ function harness(catalogOverrides: Partial<typeof SHIPPED_CATALOGS> = {}, startA
       if (!loaded.ok) throw new Error(`load failed: ${loaded.error.reason}`);
       return loaded.value;
     },
+    /** Puts items straight into the satchel, bypassing the gathering loop. */
+    async give(itemId: string, quantity: number) {
+      const updated = await players.update(PLAYER, (state) => {
+        const added = addItems(
+          state.inventory,
+          itemId as Parameters<typeof addItems>[1],
+          quantity,
+          SHIPPED_CATALOGS.items,
+        );
+        if (!added.ok) throw new Error(added.error.reason);
+        return ok({ state: { ...state, inventory: added.value }, value: undefined });
+      });
+      if (!updated.ok) throw new Error(updated.error.reason);
+    },
+    /** Sets one skill outright, so a level gate can be exercised either way. */
+    async setLevel(skillId: string, level: number, xp: number) {
+      const updated = await players.update(PLAYER, (state) =>
+        ok({
+          state: { ...state, skills: { ...state.skills, [skillId]: { level, xp } } },
+          value: undefined,
+        }),
+      );
+      if (!updated.ok) throw new Error(updated.error.reason);
+    },
   };
 }
 
@@ -461,5 +485,68 @@ describe('presence', () => {
       total += (result.value as HarvestPatch).ticksResolved;
     }
     expect(total).toBe(20);
+  });
+});
+
+describe('equipment', () => {
+  const BLADE = 'item.weapon.resonant_blade';
+  const SHIELD = 'item.armour.emberwood_shield';
+
+  it('refuses gear the player has not levelled for', async () => {
+    const h = harness();
+    await h.give(BLADE, 1);
+    const result = await h.dispatch('equipment.equip', { itemId: BLADE });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('equipment.skill_too_low');
+  });
+
+  it('moves gear out of the satchel and back again', async () => {
+    const h = harness();
+    await h.setLevel('skill.attack', 10, 2_000);
+    await h.give(BLADE, 1);
+    expect((await h.dispatch('equipment.equip', { itemId: BLADE })).ok).toBe(true);
+
+    let state = await h.state();
+    expect(state.equipment['WEAPON']?.definitionId).toBe(BLADE);
+    expect(state.inventory.stacks.some((stack) => stack.definitionId === BLADE)).toBe(false);
+
+    expect((await h.dispatch('equipment.unequip', { slot: 'WEAPON' })).ok).toBe(true);
+    state = await h.state();
+    expect(state.equipment['WEAPON']).toBeUndefined();
+    expect(state.inventory.stacks).toContainEqual({ definitionId: BLADE, quantity: 1 });
+  });
+
+  it('returns the displaced piece when swapping within one slot', async () => {
+    const h = harness();
+    await h.setLevel('skill.defence', 10, 2_000);
+    await h.give(SHIELD, 2);
+    expect((await h.dispatch('equipment.equip', { itemId: SHIELD })).ok).toBe(true);
+    expect((await h.dispatch('equipment.equip', { itemId: SHIELD })).ok).toBe(true);
+    const state = await h.state();
+    expect(state.equipment['SHIELD']?.definitionId).toBe(SHIELD);
+    // One worn, one still in the bag: a swap must never duplicate or destroy.
+    expect(state.inventory.stacks).toContainEqual({ definitionId: SHIELD, quantity: 1 });
+  });
+
+  it('refuses to unequip into a full satchel rather than losing the gear', async () => {
+    const h = harness();
+    await h.setLevel('skill.attack', 10, 2_000);
+    await h.give(BLADE, 1);
+    expect((await h.dispatch('equipment.equip', { itemId: BLADE })).ok).toBe(true);
+    // Gear does not stack, so a bag with every slot taken has no room for it.
+    await h.give('item.crystal.shard', SLOTS * 999);
+    const result = await h.dispatch('equipment.unequip', { slot: 'WEAPON' });
+    expect(result.ok).toBe(false);
+    expect((await h.state()).equipment['WEAPON']?.definitionId).toBe(BLADE);
+  });
+
+  it('rejects a slot nothing is worn in and an item that is not gear', async () => {
+    const h = harness();
+    const empty = await h.dispatch('equipment.unequip', { slot: 'BODY' });
+    expect(empty.ok).toBe(false);
+    if (!empty.ok) expect(empty.error.reason).toBe('equipment.slot_empty');
+    const material = await h.dispatch('equipment.equip', { itemId: 'item.crystal.shard' });
+    expect(material.ok).toBe(false);
+    if (!material.ok) expect(material.error.reason).toBe('equipment.not_equippable');
   });
 });

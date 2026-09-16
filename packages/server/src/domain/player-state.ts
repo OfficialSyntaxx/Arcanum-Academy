@@ -117,6 +117,8 @@ export interface PlayerState {
   readonly skills: Readonly<Record<string, SkillProgress>>;
   /** The tool equipped for each gathering skill, keyed by skill id. */
   readonly tools: Readonly<Record<string, ItemInstance>>;
+  /** Worn combat gear, keyed by equipment slot. Never occupies a bag slot. */
+  readonly equipment: Readonly<Record<string, ItemInstance>>;
   /** Depletion and regrowth per node, tracked per player rather than globally. */
   readonly nodes: Readonly<Record<string, NodeState>>;
   readonly gathering: GatheringSession | null;
@@ -150,6 +152,8 @@ export function createInitialState(slotCapacity: number, nowMs: number): PlayerS
     hitpoints: { current: 10, max: 10, respawnAtMs: null },
     skills: {},
     tools: starterTools(nowMs),
+    // You wash ashore with nothing worn; gear is forged, never granted.
+    equipment: {},
     nodes: {},
     quests: {},
     discoveries: {},
@@ -250,6 +254,23 @@ function readTools(value: unknown): Record<string, ItemInstance> {
     };
   }
   return tools;
+}
+
+function readEquipment(value: unknown): Record<string, ItemInstance> {
+  if (!isRecord(value)) return {};
+  const worn: Record<string, ItemInstance> = {};
+  for (const [slot, raw] of Object.entries(value)) {
+    if (!isRecord(raw)) continue;
+    const { instanceId, definitionId } = raw;
+    if (typeof instanceId !== 'string' || typeof definitionId !== 'string') continue;
+    worn[slot] = {
+      instanceId: instanceId as ItemInstance['instanceId'],
+      definitionId: definitionId as ItemDefinitionId,
+      durability: Math.max(0, Math.floor(readNumber(raw.durability, 0))),
+      acquiredAtMs: readNumber(raw.acquiredAtMs, 0),
+    };
+  }
+  return worn;
 }
 
 function readNodes(value: unknown): Record<string, NodeState> {
@@ -456,6 +477,8 @@ export function parsePlayerState(
     // Merge rather than replace so every pre-tool save receives the Academy
     // kit while preserving any future upgraded equipment it already owns.
     tools: { ...starterTools(record.updatedAtMs), ...readTools(data.tools) },
+    // A save written before gear existed simply has nothing worn.
+    equipment: readEquipment(data.equipment),
     nodes: readNodes(data.nodes),
     quests: readQuests(data.quests),
     discoveries: readDiscoveries(data.discoveries),
@@ -479,6 +502,7 @@ export function serialisePlayerState(state: PlayerState): Readonly<Record<string
     hitpoints: state.hitpoints,
     skills: state.skills,
     tools: state.tools,
+    equipment: state.equipment,
     nodes: state.nodes,
     quests: state.quests,
     discoveries: state.discoveries,

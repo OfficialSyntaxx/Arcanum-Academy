@@ -33,6 +33,7 @@ import {
   maximumHitpoints,
   skillProgress,
   type GravestoneState,
+  type PlayerState,
 } from '../../domain/player-state.js';
 import type { CommandHandler, RegistryCommandRouter } from '../gateway.js';
 import type { SessionId } from '@alderfell/shared';
@@ -75,6 +76,29 @@ function itemId(payload: unknown): ItemDefinitionId | null {
   if (typeof payload !== 'object' || payload === null) return null;
   const value = (payload as Record<string, unknown>).itemId;
   return typeof value === 'string' && value.length > 0 ? asId<ItemDefinitionId>(value) : null;
+}
+
+/**
+ * What the player's worn gear is worth this swing.
+ *
+ * Unknown or non-equipment ids contribute nothing rather than throwing: a save
+ * can outlive a content change, and a fight must never fail on one.
+ */
+function equipmentBonuses(
+  state: PlayerState,
+  items: ItemCatalog,
+): { readonly attack: number; readonly strength: number; readonly defence: number } {
+  let attack = 0;
+  let strength = 0;
+  let defence = 0;
+  for (const worn of Object.values(state.equipment)) {
+    const equipment = items.get(worn.definitionId)?.equipment;
+    if (equipment === undefined) continue;
+    attack += equipment.attackBonus;
+    strength += equipment.strengthBonus;
+    defence += equipment.defenceBonus;
+  }
+  return { attack, strength, defence };
 }
 
 function gravePatch(grave: GravestoneState | null) {
@@ -176,13 +200,15 @@ export function registerCombatHandlers(
       // back if it survived. Both are OSRS rolls, so every Attack, Strength
       // and Defence level changes how often a hit lands and how hard.
       const seed = `${session.playerId}:${id}:${target.defeats}:${target.nextAttackAtMs}`;
+      const worn = equipmentBonuses(state, options.items);
       const roll = resolveMeleeRoll(
         {
           attackLevel: effectiveLevel(attackProgress.level, style === 'ACCURATE' ? 3 : 0),
           strengthLevel: effectiveLevel(strengthProgress.level, style === 'AGGRESSIVE' ? 3 : 0),
           defenceLevel: effectiveLevel(encounter.defenceLevel),
-          attackBonus: 0,
-          strengthBonus: 0,
+          attackBonus: worn.attack,
+          strengthBonus: worn.strength,
+          // The creature wears nothing; its defence is its level alone.
           defenceBonus: 0,
         },
         Rng.fromSeed(seed),
@@ -199,7 +225,8 @@ export function registerCombatHandlers(
           defenceLevel: effectiveLevel(defenceProgress.level, style === 'DEFENSIVE' ? 3 : 0),
           attackBonus: 0,
           strengthBonus: 0,
-          defenceBonus: 0,
+          // Worn armour is what a creature has to swing through.
+          defenceBonus: worn.defence,
         },
         Rng.fromSeed(`${seed}:enemy`),
       );

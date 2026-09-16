@@ -99,6 +99,7 @@ function project(state: PlayerState) {
     hitpoints: state.hitpoints,
     skills: state.skills,
     tools: state.tools,
+    equipment: state.equipment,
     quests: state.quests,
     discoveries: state.discoveries,
     diaryRewards: state.diaryRewards,
@@ -507,6 +508,76 @@ export function registerEconomyHandlers(
       return ok({ state: next, value: { ...project(next), toolCost: definition.baseValue } });
     });
   };
+  /**
+   * Wears one piece of gear from the satchel.
+   *
+   * A swap is atomic: the new piece leaves the bag and the displaced piece
+   * returns to it inside one state build, so a full satchel refuses the swap
+   * rather than destroying what was worn.
+   */
+  const equip: CommandHandler = async (session: Session, payload: unknown) => {
+    const rawId = readString(payload, 'itemId');
+    if (rawId === null) return err(invalid('equipment.item_missing', 'itemId is required'));
+    const definition = catalogs.items.get(rawId as never);
+    if (definition?.equipment === undefined || definition.category !== ItemCategory.Equipment) {
+      return err(failure(FailureCode.NotFound, 'equipment.not_equippable'));
+    }
+    const gear = definition.equipment;
+    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      const level = skillProgress(state, gear.requiredSkillId).level;
+      if (level < gear.requiredSkillLevel) {
+        return err(
+          invalid(
+            'equipment.skill_too_low',
+            `requires ${gear.requiredSkillId} level ${gear.requiredSkillLevel}`,
+          ),
+        );
+      }
+      const removed = removeItems(state.inventory, definition.id, 1);
+      if (!removed.ok) return err(removed.error);
+      let inventory = removed.value;
+      const displaced = state.equipment[gear.slot];
+      if (displaced !== undefined) {
+        const returned = addItems(inventory, displaced.definitionId, 1, catalogs.items);
+        if (!returned.ok) return err(returned.error);
+        inventory = returned.value;
+      }
+      const next: PlayerState = {
+        ...state,
+        inventory,
+        equipment: {
+          ...state.equipment,
+          [gear.slot]: {
+            instanceId: `worn-${definition.id}-${now()}` as ItemInstanceId,
+            definitionId: definition.id,
+            durability: 0,
+            acquiredAtMs: now(),
+          },
+        },
+        lastSeenAtMs: now(),
+      };
+      return ok({ state: next, value: project(next) });
+    });
+  };
+  const unequip: CommandHandler = async (session: Session, payload: unknown) => {
+    const slot = readString(payload, 'slot');
+    if (slot === null) return err(invalid('equipment.slot_missing', 'slot is required'));
+    return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
+      const worn = state.equipment[slot];
+      if (worn === undefined) return err(failure(FailureCode.NotFound, 'equipment.slot_empty'));
+      const returned = addItems(state.inventory, worn.definitionId, 1, catalogs.items);
+      if (!returned.ok) return err(returned.error);
+      const equipment = { ...state.equipment };
+      delete equipment[slot];
+      const next: PlayerState = {
+        ...state,
+        inventory: returned.value,
+        equipment,
+        lastSeenAtMs: now(),
+      };
+      return ok({ state: next, value: project(next) });
+    });
+  };
   const sync: CommandHandler = async (session: Session) => {
     // Gathering is an attended activity. A fresh browser session must not show
     // an old pick/sickle animation or silently keep working while the player
@@ -548,5 +619,7 @@ export function registerEconomyHandlers(
     .register('bank.withdraw', moveBankItem('withdraw'))
     .register('merchant.sell', sell)
     .register('merchant.repair', repair)
-    .register('merchant.upgrade_tool', upgradeTool);
+    .register('merchant.upgrade_tool', upgradeTool)
+    .register('equipment.equip', equip)
+    .register('equipment.unequip', unequip);
 }

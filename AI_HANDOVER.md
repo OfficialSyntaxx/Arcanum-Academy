@@ -363,6 +363,17 @@ bar. Default camera is 15 m across the short axis with figures at 2.05 m, tuned 
 people rather than figurines on a phone. The connection readout is a single dot below the zone
 strip.
 
+**Gear update (2026-09-16, branch `Claudesep16`):** the first combat equipment tier exists.
+`EquipmentSlot` covers Weapon, Body and Shield (the §3.2 list extends as gear for each slot is
+authored). Three pieces are forged at the Foothill Forge from Resonant Ingots and Emberwood
+Planks, which is what gives the outer-zone production chain a sink: Resonant Blade, Emberwood
+Shield and Resonant Hauberk, each gated on a combat level to wear and a Refining level to make.
+`equipment.equip`/`equipment.unequip` are server-authoritative and atomic, so a full satchel
+refuses a swap rather than destroying worn gear. The combat handler sums worn bonuses into the
+OSRS rolls; before this every gear bonus in the game was zero. Note that the 640 divisor means a
+strength bonus rounds away at low levels, so early gear is deliberately sold on accuracy rather
+than damage, and there are tests pinning both halves of that.
+
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
 oversights.

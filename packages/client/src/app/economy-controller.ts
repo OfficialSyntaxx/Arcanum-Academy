@@ -30,6 +30,7 @@ interface HarvestPatch {
   readonly hitpoints?: EconomyState['hitpoints'];
   readonly skills?: Readonly<Record<string, { level: number; xp: number }>>;
   readonly tools?: Readonly<Record<string, { definitionId: string; durability: number }>>;
+  readonly equipment?: EconomyState['equipment'];
   readonly gathering?: { readonly nodeId?: string } | null;
   readonly yields?: readonly { itemId: string; quantity: number }[];
   readonly xpGained?: number;
@@ -63,6 +64,8 @@ const OWNED = new Set([
   'merchant.sell',
   'merchant.repair',
   'merchant.upgrade_tool',
+  'equipment.equip',
+  'equipment.unequip',
   'quest.accept',
   'quest.complete',
   'combat.attack',
@@ -135,6 +138,15 @@ export class EconomyController {
 
   upgradeTool(toolId: string): void {
     this.send('merchant.upgrade_tool', { toolId });
+  }
+
+  /** Wears one piece of gear from the satchel. The server owns the swap. */
+  equip(itemId: string): void {
+    this.send('equipment.equip', { itemId });
+  }
+
+  unequip(slot: string): void {
+    this.send('equipment.unequip', { slot });
   }
 
   acceptQuest(questId: string): void {
@@ -261,6 +273,7 @@ export class EconomyController {
       lastYields: patch.yields ?? [],
       lastXpGained: patch.xpGained ?? 0,
       overflowed: patch.overflowed ?? false,
+      ...(patch.equipment !== undefined ? { equipment: patch.equipment } : {}),
       ...(patch.cards !== undefined ? { cards: patch.cards } : {}),
       ...(patch.decks !== undefined ? { decks: patch.decks } : {}),
       ...(patch.quests !== undefined ? { quests: patch.quests } : {}),

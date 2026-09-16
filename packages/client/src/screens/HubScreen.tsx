@@ -51,6 +51,8 @@ export interface HubScreenProps {
   readonly onRecoverCombat: () => void;
   readonly onReclaimCombatGrave: () => void;
   readonly onEatCombatFood: (interactableId: string, itemId: string) => void;
+  readonly onEquip: (itemId: string) => void;
+  readonly onUnequip: (slot: string) => void;
 }
 
 /**
@@ -79,6 +81,8 @@ export function HubScreen({
   onRecoverCombat,
   onReclaimCombatGrave,
   onEatCombatFood,
+  onEquip,
+  onUnequip,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
@@ -178,9 +182,12 @@ export function HubScreen({
         <InventoryPanel
           onClose={() => setSatchelView(null)}
           onOpenEquipment={() => setSatchelView('equipment')}
+          onEquip={onEquip}
         />
       )}
-      {satchelView === 'equipment' && <EquipmentPanel onBack={() => setSatchelView('inventory')} />}
+      {satchelView === 'equipment' && (
+        <EquipmentPanel onBack={() => setSatchelView('inventory')} onUnequip={onUnequip} />
+      )}
       {openStationId !== null && (
         <CraftingPanel
           stationInteractableId={openStationId}

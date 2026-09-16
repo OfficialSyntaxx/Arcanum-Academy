@@ -71,6 +71,8 @@ export interface EconomyState {
   readonly skills: Readonly<Record<string, { level: number; xp: number }>>;
   /** Equipped gathering tool by skill, separate from the material satchel. */
   readonly tools: Readonly<Record<string, { definitionId: string; durability: number }>>;
+  /** Worn combat gear by equipment slot. Never occupies a satchel slot. */
+  readonly equipment: Readonly<Record<string, { definitionId: string }>>;
   /** The node being worked, or null when nothing is running. */
   readonly gatheringNodeId: string | null;
   /** Yields from the most recent collection, for a transient readout. */
@@ -151,6 +153,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   hitpoints: { current: 10, max: 10, respawnAtMs: null },
   skills: {},
   tools: {},
+  equipment: {},
   gatheringNodeId: null,
   lastYields: [],
   lastXpGained: 0,

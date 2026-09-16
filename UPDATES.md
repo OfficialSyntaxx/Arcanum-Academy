@@ -106,6 +106,31 @@ Do not reverse them without asking.
   The floating Satchel and Map buttons and the hint strip are gone. A fold control hides
   every fixed overlay; the connection readout collapses to a dot in play.
 
+### 5. Combat gear (this commit)
+
+The first equipment tier, which is what gives Resonant Ingots and Emberwood Planks a sink and
+makes the crafting chain pay into combat.
+
+- `EquipmentSlot` (Weapon, Body, Shield) and `EquipmentProperties` in
+  `packages/shared/src/items/types.ts`. Slots are added only as gear for them exists, so the
+  equipment screen never shows a row nothing can fill. The full launch list is §3.2.
+- Three pieces, all forged at the Foothill Forge from outer-zone materials: **Resonant Blade**
+  (Refining 10, Attack 5 to wear, +12 attack, +10 strength), **Emberwood Shield** (Refining 6,
+  Defence 5, +14 defence), **Resonant Hauberk** (Refining 14, Defence 8, +20 defence).
+- `equipment.equip` and `equipment.unequip` on the server. A swap is atomic inside one state
+  build, so **a full satchel refuses the swap rather than destroying what was worn**; there is
+  a test for exactly that.
+- The combat handler now sums worn bonuses into the rolls. Before this, every
+  `attackBonus`/`strengthBonus`/`defenceBonus` in the game was zero.
+- Equipment screen shows the three slots, the summed bonuses and the gathering tools below;
+  gear in the satchel gains a Wear button.
+
+**Worth knowing, and deliberate:** the OSRS max-hit divisor is 640, so at low levels a
+strength bonus rounds away entirely and changes nothing. Early gear is therefore sold on
+accuracy (+12 on a base of 64 is about a fifth more attack roll, felt immediately at any
+level). `packages/sim/src/__tests__/combat-rolls.test.ts` asserts both halves of this so
+nobody "fixes" it later by inflating the numbers.
+
 ---
 
 ## Things learned the hard way
@@ -126,12 +151,16 @@ Also recorded in `docs/MISTAKES.md`.
 - A merged glTF document carries a second buffer; a GLB may hold only one. Rebind every
   accessor before writing.
 - The local gateway process dies when a shell session ends unless started with `setsid`.
+- `serialisePlayerState` is a hand-written field list. A new `PlayerState` field added to the
+  interface, the initial state and the reader still silently fails to persist until it is
+  added there too. The equipment tests caught this; add a persistence assertion with any new
+  field.
 
 ---
 
 ## State at the stopping point
 
-`npm run verify` green: 472 tests across 56 files. Precache budget 2.9 MiB against a 3 MiB
+`npm run verify` green: 479 tests across 56 files. Precache budget 2.9 MiB against a 3 MiB
 ceiling. No merge to `main`.
 
 ### Open items, roughly by value
@@ -140,10 +169,9 @@ ceiling. No merge to `main`.
    correctly-sized human reads small beside them. The fix is a prop-scale pass on the
    authored zones, not another camera change. This is the owner's one remaining visual
    complaint.
-2. **No combat equipment exists.** Only gathering tools bound to skills. The combat rolls
-   already accept `attackBonus`, `strengthBonus` and `defenceBonus`, and every one of them
-   is currently zero except the style bonus. Resonant Ingots and Emberwood Planks have no
-   sink beyond sale and are the obvious inputs for a first gear tier.
+2. **Gear is one tier deep and melee only.** No head, legs, hands, feet, cape, neck, ring or
+   ammo slots, because no gear exists for them. Magic and Ranged are unbuilt (§3.4.3), so
+   there is no combat triangle yet.
 3. **The smoke test is unrun on this branch** and its clock-pinning may fail per the note
    above. CI on the branch will say.
 4. **The precache budget is nearly full.** A fourth outfit or another creature needs the

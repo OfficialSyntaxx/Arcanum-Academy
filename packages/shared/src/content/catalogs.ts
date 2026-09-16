@@ -21,7 +21,7 @@
 import { failure, type Failure } from '../errors.js';
 import { err, ok, type Result } from '../result.js';
 import type { InteractableId, ItemDefinitionId, NodeId, RecipeId, SkillId } from '../ids.js';
-import { ItemCategory, ItemRarity, type ItemDefinition } from '../items/types.js';
+import { EquipmentSlot, ItemCategory, ItemRarity, type ItemDefinition } from '../items/types.js';
 import { GatheringNodeKind, type NodeDefinition } from '../gathering/types.js';
 import type { RecipeDefinition } from '../crafting/types.js';
 import { SkillCategory, type SkillDefinition } from '../skills/types.js';
@@ -196,6 +196,25 @@ export function buildItemCatalog(
 
     // Tools carry per-copy wear, so they cannot share a slot with a copy that
     // has worn differently. A stacking tool would have to discard that state.
+    if (item.category === ItemCategory.Equipment) {
+      const equipment = item.equipment;
+      if (equipment === undefined) {
+        problems.push(`equipment "${item.id}" is missing its equipment block`);
+      } else {
+        const slots: string[] = Object.values(EquipmentSlot);
+        if (!slots.includes(equipment.slot)) {
+          problems.push(`equipment "${item.id}" has unknown slot "${equipment.slot}"`);
+        }
+        if (item.stackCap !== 1) {
+          problems.push(`equipment "${item.id}" must not stack`);
+        }
+        if (skills.get(equipment.requiredSkillId) === undefined) {
+          problems.push(`equipment "${item.id}" requires unknown skill`);
+        }
+      }
+    } else if (item.equipment !== undefined) {
+      problems.push(`item "${item.id}" carries an equipment block without the category`);
+    }
     if (item.category === ItemCategory.Tool) {
       if (item.tool === undefined) {
         problems.push(`item "${item.id}" is a tool but declares no tool properties`);

@@ -1,4 +1,5 @@
 import {
+  EquipmentSlot,
   DEFAULT_TUNABLES,
   ITEM_CATALOG,
   NODE_CATALOG,
@@ -175,9 +176,11 @@ function QuantityActions({
 export function InventoryPanel({
   onClose,
   onOpenEquipment,
+  onEquip,
 }: {
   onClose: () => void;
   onOpenEquipment: () => void;
+  onEquip: (itemId: string) => void;
 }) {
   const economy = useAppStore((state) => state.economy);
 
@@ -201,6 +204,15 @@ export function InventoryPanel({
             return (
               <li key={definitionId} data-rarity={definition?.rarity ?? 'COMMON'}>
                 <span className="inventory-panel__name">{itemName(definitionId)}</span>
+                {definition?.equipment === undefined ? null : (
+                  <button
+                    type="button"
+                    className="inventory-panel__equip"
+                    onClick={() => onEquip(definitionId)}
+                  >
+                    Wear
+                  </button>
+                )}
                 <span className="inventory-panel__count">{quantity}</span>
               </li>
             );
@@ -249,8 +261,21 @@ export function InventoryPanel({
 }
 
 /** Equipped tools live outside the satchel so material capacity stays legible. */
-export function EquipmentPanel({ onBack }: { onBack: () => void }) {
+const GEAR_SLOTS = [
+  [EquipmentSlot.Weapon, 'Weapon'],
+  [EquipmentSlot.Body, 'Body'],
+  [EquipmentSlot.Shield, 'Shield'],
+] as const;
+
+export function EquipmentPanel({
+  onBack,
+  onUnequip,
+}: {
+  onBack: () => void;
+  onUnequip: (slot: string) => void;
+}) {
   const tools = useAppStore((state) => state.economy.tools);
+  const worn = useAppStore((state) => state.economy.equipment);
   const equipped = Object.entries(tools)
     .map(([skillId, tool]) => ({
       skillId,
@@ -259,9 +284,47 @@ export function EquipmentPanel({ onBack }: { onBack: () => void }) {
     }))
     .filter((entry) => entry.definition?.tool !== undefined);
 
+  const bonusTotals = GEAR_SLOTS.reduce(
+    (totals, [slot]) => {
+      const definition = ITEM_CATALOG.get(worn[slot]?.definitionId as never)?.equipment;
+      if (definition === undefined) return totals;
+      return {
+        attack: totals.attack + definition.attackBonus,
+        strength: totals.strength + definition.strengthBonus,
+        defence: totals.defence + definition.defenceBonus,
+      };
+    },
+    { attack: 0, strength: 0, defence: 0 },
+  );
+
   return (
     <div className="panel inventory-panel equipment-panel">
-      <LabelStrip title="Gear" serial={`${equipped.length} equipped`} />
+      <LabelStrip title="Gear" serial={`${equipped.length} tools`} />
+      <ul className="equipment-panel__worn" aria-label="Worn combat gear">
+        {GEAR_SLOTS.map(([slot, label]) => {
+          const definition = ITEM_CATALOG.get(worn[slot]?.definitionId as never);
+          return (
+            <li key={slot}>
+              <span className="equipment-panel__slot">{label}</span>
+              {definition === undefined ? (
+                <span className="equipment-panel__empty">Empty</span>
+              ) : (
+                <>
+                  <span className="inventory-panel__name">{definition.name}</span>
+                  <button type="button" onClick={() => onUnequip(slot)}>
+                    Remove
+                  </button>
+                </>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="equipment-panel__bonuses">
+        Attack +{bonusTotals.attack} · Strength +{bonusTotals.strength} · Defence +
+        {bonusTotals.defence}
+      </p>
+      <h3 className="equipment-panel__heading">Gathering tools</h3>
       {equipped.length === 0 ? (
         <p className="inventory-panel__empty">No gathering tools equipped.</p>
       ) : (

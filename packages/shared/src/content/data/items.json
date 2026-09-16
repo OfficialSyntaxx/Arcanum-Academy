@@ -430,6 +430,60 @@
       "consumable": {
         "healAmount": 6
       }
+    },
+    {
+      "id": "item.weapon.resonant_blade",
+      "name": "Resonant Blade",
+      "description": "A short blade with a crystal core. It rings for a moment after every swing.",
+      "category": "EQUIPMENT",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 260,
+      "iconKey": "weapon-resonant-blade",
+      "equipment": {
+        "slot": "WEAPON",
+        "attackBonus": 12,
+        "strengthBonus": 10,
+        "defenceBonus": 0,
+        "requiredSkillId": "skill.attack",
+        "requiredSkillLevel": 5
+      }
+    },
+    {
+      "id": "item.armour.emberwood_shield",
+      "name": "Emberwood Shield",
+      "description": "Milled planks banded with resonant metal. Light enough to carry all day.",
+      "category": "EQUIPMENT",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 180,
+      "iconKey": "armour-emberwood-shield",
+      "equipment": {
+        "slot": "SHIELD",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 14,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 5
+      }
+    },
+    {
+      "id": "item.armour.resonant_hauberk",
+      "name": "Resonant Hauberk",
+      "description": "Ingot scales stitched over hide. Cold to put on, warm within a mile.",
+      "category": "EQUIPMENT",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 420,
+      "iconKey": "armour-resonant-hauberk",
+      "equipment": {
+        "slot": "BODY",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 20,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 8
+      }
     }
   ]
 }

@@ -55,6 +55,25 @@ describe('OSRS-shaped combat rolls', () => {
     expect(() => maxMeleeHit(1.5, 0)).toThrow('strengthLevel');
   });
 
+  it('turns worn gear into a better attack roll and a harder roll to hit through', () => {
+    const bare = resolveMeleeRoll(equalStats, scripted(0, 0, 0));
+    const geared = resolveMeleeRoll({ ...equalStats, attackBonus: 12 }, scripted(0, 0, 0));
+    // Accuracy is where early gear is felt: +12 on a base of 64 is about a
+    // fifth more attack roll, immediately, at any level.
+    expect(geared.attackRoll).toBeGreaterThan(bare.attackRoll);
+    // Armour is the same lever from the other side.
+    const armoured = resolveMeleeRoll({ ...equalStats, defenceBonus: 20 }, scripted(0, 0, 0));
+    expect(armoured.defenceRoll).toBeGreaterThan(bare.defenceRoll);
+  });
+
+  it('needs real Strength behind a strength bonus before the maximum hit moves', () => {
+    // The OSRS divisor is 640, so at low levels a strength bonus rounds away
+    // entirely. This is faithful, and it is why the first gear tier is sold on
+    // accuracy rather than damage.
+    expect(maxMeleeHit(10, 0)).toBe(maxMeleeHit(10, 10));
+    expect(maxMeleeHit(60, 10)).toBeGreaterThan(maxMeleeHit(60, 0));
+  });
+
   it('raises the effective level by eight plus the style bonus, so level one can hit', () => {
     expect(effectiveLevel(1)).toBe(9);
     expect(effectiveLevel(1, 3)).toBe(12);
