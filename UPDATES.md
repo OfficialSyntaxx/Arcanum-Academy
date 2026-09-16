@@ -288,6 +288,12 @@ The plaza medallion went from 11.6 m to 6.8 m and the Courtyard crowd from 18 to
   recipe its first customer. Melee stays free, which is what makes it the floor. Running dry
   drops the client back to melee with a line in the log rather than silently stalling an
   automatic fight.
+- **A weakness on every creature**, so the stance always matters. Shore Wolf and Emberwood
+  Wolves answer to melee, since both are fought long before a bow or staff is realistic; the
+  armabees and wisps want Ranged; the wolf packs and the Warden want Magic; the Sentinel wants
+  Aggressive. The Shore Wolf's weakness is deliberately **not** Accurate: that is the default
+  stance, so a weakness to it would be granted automatically and felt by nobody. The first
+  creature teaches the mechanic by making the player change something.
 - **Three quests extending the chain into the outer zones** (The Reach Pack, The Foothill
   Forge, The Long Winter), each ending further from the plaza than the last.
 
@@ -295,8 +301,8 @@ All gear bonuses and drop rates are **conservative placeholders and the owner's 
 
 ### Open items, roughly by value
 
-1. **Only four creatures carry a `weakTo`.** The rest are neutral, so the triangle matters in
-   some fights and not others. Deliberate for now - it wants a balance pass, not a blanket.
+1. **`DEFENSIVE` is never a weakness.** Every other style answers something; a creature "weak
+   to being blocked" did not read as a real idea. Harmless, but the shape is asymmetric.
 2. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
    for character scale than anything left, but it moves waypoints and changes how the hub feels
    to cross, so it was left as an owner decision rather than a tweak.

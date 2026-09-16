@@ -694,3 +694,21 @@ describe('kit styles cost ammunition', () => {
     expect(stacks.find((stack) => stack.definitionId === DUST)).toBeUndefined();
   });
 });
+
+describe('combat triangle coverage', () => {
+  it('gives every creature a weakness, so a stance always matters', () => {
+    const neutral = COMBAT_ENCOUNTERS.filter((e) => e.weakTo === undefined).map((e) => e.label);
+    expect(neutral).toEqual([]);
+  });
+
+  it('answers the earliest creatures with a stance that needs no kit', () => {
+    // A weakness a new player cannot exploit teaches nothing. Anything fought
+    // before a bow or staff is realistic has to have a melee answer.
+    const starters = ['Shore Wolf', 'Emberwood Wolf'];
+    for (const label of starters) {
+      const encounter = COMBAT_ENCOUNTERS.find((e) => e.label === label);
+      expect(encounter, label).toBeDefined();
+      expect(['ACCURATE', 'AGGRESSIVE', 'DEFENSIVE']).toContain(encounter?.weakTo);
+    }
+  });
+});

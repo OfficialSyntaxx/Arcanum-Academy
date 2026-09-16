@@ -69,6 +69,12 @@ export const SHORE_WOLF: CombatEncounterDefinition = Object.freeze({
   defenceLevel: 1,
   aggressive: true,
   rewardCoins: 6,
+  // The first creature teaches that the stance matters, and teaches it by
+  // making the player *change* something: Accurate is the default stance, so a
+  // weakness to it would be granted automatically and felt by nobody. Weight
+  // behind the swing is the answer to a lean coastal wolf, and switching to it
+  // is the lesson.
+  weakTo: 'AGGRESSIVE',
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.meat.raw_shore_wolf'), quantity: 1 },
   ]),
@@ -89,6 +95,9 @@ export const EMBERWING_ARMABEE: CombatEncounterDefinition = Object.freeze({
   defenceLevel: 2,
   aggressive: false,
   rewardCoins: 8,
+  // It hovers out of comfortable reach of a blade. Worth coming back for once
+  // there is a bow in the satchel.
+  weakTo: 'RANGED',
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.material.armabee_wax'), quantity: 1 },
   ]),
@@ -179,6 +188,10 @@ function emberwoodWolf(
     defenceLevel: 2,
     aggressive: true,
     rewardCoins: 7,
+    // A pack circles rather than charges; the opening is precision on whichever
+    // one commits. Still a melee answer, since the Reach comes before a bow or
+    // a staff is realistic.
+    weakTo: 'ACCURATE' as const,
     drops: Object.freeze([
       { itemId: asId<ItemDefinitionId>('item.meat.raw_shore_wolf'), quantity: 1 },
     ]),
@@ -203,6 +216,8 @@ export const GLADE_ARMABEE: CombatEncounterDefinition = Object.freeze({
   defenceLevel: 3,
   aggressive: false,
   rewardCoins: 9,
+  // Same body, same answer as its Shorelands cousin.
+  weakTo: 'RANGED',
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.material.armabee_wax'), quantity: 1 },
   ]),
