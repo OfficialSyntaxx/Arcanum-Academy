@@ -155,6 +155,104 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
     ],
     rewardCoins: 100,
   },
+  {
+    id: 'quest.the_reach_pack',
+    title: 'The Reach Pack',
+    description:
+      'Warden Ilya has had word of a pack working the Emberwood Reach. She wants the numbers thinned and a bundle of heartwood brought back to prove you got that far in.',
+    hint: 'Travel to the Emberwood Reach. Defeat 3 Emberwood Wolves and fell 3 Heartwood, then return here.',
+    prerequisites: ['quest.first_hunt'],
+    objectives: [
+      {
+        kind: 'KILL',
+        id: 'reach.wolves',
+        encounterIds: [
+          asId<InteractableId>('int.combat.emberwood_wolf_a'),
+          asId<InteractableId>('int.combat.emberwood_wolf_b'),
+        ],
+        requiredQuantity: 3,
+        label: 'Defeat 3 Emberwood Wolves',
+      },
+      {
+        kind: 'ITEM',
+        id: 'reach.heartwood',
+        itemIds: [asId<ItemDefinitionId>('item.emberwood.heartwood')],
+        requiredQuantity: 3,
+        label: 'Fell 3 Heartwood',
+      },
+    ],
+    rewardCoins: 90,
+  },
+  {
+    id: 'quest.the_foothill_forge',
+    title: 'The Foothill Forge',
+    description:
+      'The forge above the ridge has been cold since the pack moved in below it. Clear the approach, then prove the fire still takes by drawing a resonant ingot from it.',
+    hint: 'Travel to the Cinderfell Ridge. Defeat 2 Ridge Wolves and a Cinder Wisp, then smelt 1 Resonant Ingot at the foothill forge.',
+    prerequisites: ['quest.the_reach_pack'],
+    objectives: [
+      {
+        kind: 'KILL',
+        id: 'forge.ridge_wolves',
+        encounterIds: [
+          asId<InteractableId>('int.combat.ridge_wolf_a'),
+          asId<InteractableId>('int.combat.ridge_wolf_b'),
+        ],
+        requiredQuantity: 2,
+        label: 'Defeat 2 Ridge Wolves',
+      },
+      {
+        kind: 'KILL',
+        id: 'forge.cinder_wisp',
+        encounterIds: [asId<InteractableId>('int.combat.cinder_wisp')],
+        requiredQuantity: 1,
+        label: 'Defeat a Cinder Wisp',
+      },
+      {
+        kind: 'ITEM',
+        id: 'forge.ingot',
+        itemIds: [asId<ItemDefinitionId>('item.ingot.resonant')],
+        requiredQuantity: 1,
+        label: 'Smelt 1 Resonant Ingot',
+      },
+    ],
+    rewardCoins: 120,
+  },
+  {
+    id: 'quest.the_long_winter',
+    title: 'The Long Winter',
+    description:
+      'Nothing keeps past the frostgate without help. Bring back preserve enough for a season, and the scale of whatever objects to you picking the berries.',
+    hint: 'Travel to the Frostgate. Defeat 2 Frost Wolves and a Rime Wisp, gather Frost Berries, and put up 2 Berry Preserve at the workshop.',
+    prerequisites: ['quest.the_foothill_forge'],
+    objectives: [
+      {
+        kind: 'KILL',
+        id: 'winter.frost_wolves',
+        encounterIds: [
+          asId<InteractableId>('int.combat.frost_wolf_a'),
+          asId<InteractableId>('int.combat.frost_wolf_b'),
+        ],
+        requiredQuantity: 2,
+        label: 'Defeat 2 Frost Wolves',
+      },
+      {
+        kind: 'KILL',
+        id: 'winter.rime_wisp',
+        encounterIds: [asId<InteractableId>('int.combat.rime_wisp')],
+        requiredQuantity: 1,
+        label: 'Defeat a Rime Wisp',
+      },
+      {
+        kind: 'ITEM',
+        id: 'winter.preserve',
+        itemIds: [asId<ItemDefinitionId>('item.food.berry_preserve')],
+        requiredQuantity: 2,
+        label: 'Put up 2 Berry Preserve',
+      },
+    ],
+    rewardCoins: 150,
+  },
 ];
 
 export function questById(id: string): QuestDefinition | undefined {

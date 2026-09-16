@@ -6,6 +6,8 @@ import {
   questById,
   questIsUnlocked,
   recordEncounterDefeat,
+  ITEM_CATALOG,
+  combatEncounterByInteractable,
   type InteractableId,
 } from '../index.js';
 
@@ -92,5 +94,50 @@ describe('resource quest catalog', () => {
         expect(objective.requiredQuantity).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('quest content references', () => {
+  it('names a real encounter and a real item in every objective', () => {
+    const problems: string[] = [];
+    for (const quest of QUEST_CATALOG) {
+      for (const objective of quest.objectives) {
+        if (objective.kind === 'KILL') {
+          for (const id of objective.encounterIds) {
+            if (combatEncounterByInteractable(id) === undefined) {
+              problems.push(`${quest.id}/${objective.id}: unknown encounter "${id}"`);
+            }
+          }
+        } else {
+          for (const id of objective.itemIds) {
+            if (ITEM_CATALOG.get(id) === undefined) {
+              problems.push(`${quest.id}/${objective.id}: unknown item "${id}"`);
+            }
+          }
+        }
+      }
+      for (const id of quest.prerequisites) {
+        if (questById(id) === undefined) {
+          problems.push(`${quest.id}: unknown prerequisite "${id}"`);
+        }
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('leaves every quest reachable from one with no prerequisites', () => {
+    // A quest whose chain never starts is content nobody can ever see.
+    const completed = new Set<string>();
+    let growing = true;
+    while (growing) {
+      growing = false;
+      for (const quest of QUEST_CATALOG) {
+        if (completed.has(quest.id)) continue;
+        if (!quest.prerequisites.every((id) => completed.has(id))) continue;
+        completed.add(quest.id);
+        growing = true;
+      }
+    }
+    expect(QUEST_CATALOG.filter((quest) => !completed.has(quest.id)).map((q) => q.id)).toEqual([]);
   });
 });
