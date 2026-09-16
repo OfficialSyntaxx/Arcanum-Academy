@@ -240,17 +240,49 @@ tickMs` is never true and the entire exchange freezes with both sides at full he
   3150 KiB (_over_ the 3072 KiB ceiling, which was failing the build) to 2248 KiB. Both character
   loaders now share one Draco-enabled `GLTFLoader` in the new `assets` layer.
 
+### What the phone screenshot found
+
+Screenshotting the built game instead of reasoning about it caught three things the
+numbers had not:
+
+- **Most of the crowd rendered as featureless capsules.** Two causes stacked. The crowd rig
+  pool was fixed at two per outfit, a trade made against a draw-call figure measured under
+  SwiftShader - which says nothing about a phone GPU, and 190 calls was under the §6.8.1
+  ceiling of 200 anyway, missing only the target of 100. Underneath that, **both peasant
+  outfits were failing to load entirely**: Draco corrupts the skin of any glTF assembled by
+  merging a second document, which is how `attachHead` builds a peasant. The pool is now sized
+  from the device tier and the real roster; Draco applies only where it is safe.
+- **`CharacterRig` swallowed the load failure**, so a corrupt asset looked like a deliberate
+  art choice with nothing in the console. It logs now. This is why the above hid for a build
+  cycle.
+- **The Scribing Hall roof filled the bottom third of the screen.** The occlusion fade never
+  fired because the camera-to-player segment passes above the roof: not blocking the player
+  and not eating the frame are different questions. Anything nearer the camera than the player
+  now fades too.
+
+The plaza medallion went from 11.6 m to 6.8 m and the Courtyard crowd from 18 to 14.
+
+### Content added after that
+
+- **Eight equipment slots** (Head, Cape, Hands, Legs, Feet joined Weapon, Body, Shield) and two
+  full armour sets: Emberwood from planks at low level, Resonant from ingots at the forge,
+  plus a Tideglass Cape. Every piece has a recipe at an authored station.
+- **Rolled rare drops.** Every drop was guaranteed, so no creature was worth killing twice.
+  `rareDrops` rolls server-side from the killing blow's own seed, so the outcome is fixed when
+  the creature falls and cannot be re-rolled by replaying it. Warden 1/24 cape, Sentinel 1/12
+  ingot, ridge and frost packs 1/16 crystal.
+- **Three quests extending the chain into the outer zones** (The Reach Pack, The Foothill
+  Forge, The Long Winter), each ending further from the plaza than the last.
+
+All gear bonuses and drop rates are **conservative placeholders and the owner's to revise**.
+
 ### Open items, roughly by value
 
-1. **The world still dwarfs its people,** though less than it did. The Scribing Hall is
-   resized and the camera is at spec; the remaining offenders are the 11.6 m plaza medallion
-   and the 8 m avenue spacing in `courtyard.ts`, which are layout rather than props and so
-   move waypoints when changed. Do this deliberately, not as a tweak. This is the owner's one
-   remaining visual complaint.
-2. **Gear is one tier deep and melee only.** No head, legs, hands, feet, cape, neck, ring or
-   ammo slots, because no gear exists for them. Magic and Ranged are unbuilt (§3.4.3), so
-   there is no combat triangle yet.
-3. Quest, diary and clue content still centres on the Courtyard; the three outer notice
-   boards surface the same catalog.
-4. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots; the owner's
-   home-screen launch is the gate.
+1. **Magic and Ranged are unbuilt** (§3.4.3), so there is still no combat triangle. Gear is
+   melee-only, and Neck, Ring and Ammo slots do not exist because nothing would fill them.
+2. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
+   for character scale than anything left, but it moves waypoints and changes how the hub feels
+   to cross, so it was left as an owner decision rather than a tweak.
+3. Diary and clue content still centres on the Courtyard, though the quest chain no longer does.
+4. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots. The owner
+   has said Codex will take the device checks.
