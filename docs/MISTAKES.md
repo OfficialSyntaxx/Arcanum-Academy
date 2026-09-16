@@ -5,8 +5,10 @@
 - The default branch still contains the old academy game. Locate the G0 branch before
   editing; do not reconstruct G0 from the default branch.
 - An npm workspace wrapper needs the trailing `--` to forward preview host/port flags.
-- This session's cloud browser reports `GL_RENDERER = Disabled`; WebGL rendering cannot
-  be verified there. Never present a build pass as proof that the world renders.
+- The cloud browser's default Chromium reports `GL_RENDERER = Disabled`, but the
+  pre-installed `/opt/pw-browsers/chromium` launched with the ANGLE + SwiftShader flags in
+  `playwright.config.ts` renders real WebGL. `tools/scripts/screenshot-phone.mjs` does this;
+  use it, and never present a build pass as proof that the world renders.
 - Decoration must not participate in ground raycasts. Ground picking must select terrain
   explicitly rather than choosing any triangle below a magic height.
 - Keep model texture atlases intact; all three imported assets contain 512px WebP atlases.
@@ -72,3 +74,14 @@
   Vite chunks otherwise look like deployable PWA weight and can be accidentally precached.
 - Type an admin read model from the actual server receipt. Empty production histories can conceal a
   mismatched timestamp or version field until the first real recovery event occurs.
+
+# Claudesep16 rules learned
+
+- Quaternius outfit glTFs are clothes only. A bare-headed outfit has no head until the base
+  body's head, hair and eyes are cropped and merged in; check a rendered frame, not the mesh list.
+- The free Universal Animation Library 2 sample has no plain idle or walk clip. Do not assume a
+  clip exists from the pack's name; list the clips in the GLB first.
+- `gltf-transform` `animation.dispose()` leaves the clip's channels, samplers and keyframes in
+  the buffer. Dispose channels and samplers explicitly, then prune, or the GLB stays huge.
+- A merged glTF document carries a second buffer; a GLB may hold only one. Rebind every
+  accessor to the first buffer before writing.

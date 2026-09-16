@@ -240,7 +240,7 @@ export class HubController {
       );
     }
     this.npcs.update(this.now(), dtSeconds * 1000);
-    this.npcAvatars.update(dtSeconds, this.npcs.namedPresentations());
+    this.npcAvatars.update(dtSeconds, this.npcs.presentations());
     this.combatAvatars.update(
       dtSeconds,
       economy.combat,
@@ -593,7 +593,7 @@ export class HubController {
     const avatars = new NpcAvatarGroup(
       this.world,
       this.options.quality.shadowsEnabled,
-      this.npcs.namedPresentations(),
+      this.npcs.presentations(),
     );
     this.world.root.add(avatars.root);
     return avatars;

@@ -25,6 +25,7 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import {
   dedup,
+  mergeDocuments,
   prune,
   quantize,
   resample,
@@ -38,18 +39,24 @@ import sharp from 'sharp';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
 const outfits = path.join(root, 'assets/quaternius/modular-character-outfits-fantasy/Outfits');
+const bodies = path.join(root, 'assets/quaternius/universal-base-characters');
 const library = path.join(root, 'assets/quaternius/universal-animation-library-2');
 const outDir = path.join(root, 'assets/derived/characters');
 
 /** Outfit files to build, and the runtime name each becomes. */
 const CHARACTERS = [
-  // [source outfit, runtime name, decimation ratio]. The rangers carry hoods,
-  // belts and bracers as separate dense meshes and need a harder cut to sit
+  // [source outfit, runtime name, decimation ratio, base body for the head].
+  // Outfits are clothes only; a bare-headed outfit borrows its head, hair and
+  // eyes from the matching base body. The rangers wear hoods and carry belts
+  // and bracers as separate dense meshes, so they need a harder cut to sit
   // inside the precache budget beside the peasants.
-  ['Male_Peasant', 'peasant-m', 0.45],
-  ['Female_Peasant', 'peasant-f', 0.45],
-  ['Male_Ranger', 'ranger-m', 0.16],
+  ['Male_Peasant', 'peasant-m', 0.45, 'Superhero_Male_FullBody'],
+  ['Female_Peasant', 'peasant-f', 0.45, 'Superhero_Female_FullBody'],
+  ['Male_Ranger', 'ranger-m', 0.16, null],
 ];
+
+/** Bind-pose height (metres) above which base-body skin counts as the head and neck. */
+const NECK_HEIGHT = 1.47;
 
 /**
  * Creature GLBs get the same grade: decimated, palette texture shrunk, no
@@ -111,16 +118,100 @@ function dropAnimations(document, shouldDrop) {
   }
 }
 
-async function buildCharacter(source, name, ratio) {
-  return grade(path.join(outfits, `${source}.gltf`), name, ratio, 384);
+async function buildCharacter(source, name, ratio, body) {
+  return grade(path.join(outfits, `${source}.gltf`), name, ratio, 384, null, body);
+}
+
+/**
+ * Copies the head from a base body into an outfit document.
+ *
+ * Both share the same 65-joint skeleton in the same joint order (checked), so
+ * the head's skin indices are valid against the outfit's skin as they are.
+ * The body skin mesh is cropped to triangles wholly above the neck; hair and
+ * eyes come across whole.
+ */
+async function attachHead(document, body) {
+  const base = await io.read(path.join(bodies, `${body}.gltf`));
+  const outfitSkin = document.getRoot().listSkins()[0];
+  const baseSkin = base.getRoot().listSkins()[0];
+  const names = (skin) => skin.listJoints().map((joint) => joint.getName());
+  if (JSON.stringify(names(outfitSkin)) !== JSON.stringify(names(baseSkin)))
+    throw new Error(`${body}: joint order differs from the outfit skeleton`);
+
+  for (const mesh of base.getRoot().listMeshes()) {
+    for (const primitive of mesh.listPrimitives()) {
+      const isSkin = primitive.getMaterial()?.getName().startsWith('MI_Superhero');
+      if (isSkin) cropAboveHeight(primitive, NECK_HEIGHT);
+    }
+  }
+
+  mergeDocuments(document, base);
+  const merged = document;
+  const root = merged.getRoot();
+  const [outfitScene, baseScene] = root.listScenes();
+  const skinInOutfit = root.listSkins()[0];
+  const baseNodes = [];
+  baseScene.traverse((node) => baseNodes.push(node));
+  for (const node of baseNodes) {
+    const mesh = node.getMesh();
+    if (!mesh) continue;
+    const head = merged.createNode(`head:${mesh.getName()}`).setMesh(mesh).setSkin(skinInOutfit);
+    outfitScene.addChild(head);
+  }
+  for (const node of baseNodes) node.dispose();
+  for (const skin of root.listSkins()) if (skin !== skinInOutfit) skin.dispose();
+  baseScene.dispose();
+  // Merging brings the base body's buffer along; a GLB may carry only one.
+  const [buffer, ...extra] = root.listBuffers();
+  for (const accessor of root.listAccessors()) accessor.setBuffer(buffer);
+  for (const stray of extra) stray.dispose();
+  return merged;
+}
+
+/** Keeps only the triangles whose three vertices sit above `height`, compacting attributes. */
+function cropAboveHeight(primitive, height) {
+  const position = primitive.getAttribute('POSITION');
+  const indices = primitive.getIndices();
+  const y = new Float32Array(position.getCount());
+  const element = [0, 0, 0];
+  for (let i = 0; i < position.getCount(); i += 1) y[i] = position.getElement(i, element)[1];
+  const oldIndex = indices.getArray();
+  const kept = [];
+  for (let t = 0; t < oldIndex.length; t += 3) {
+    const [a, b, c] = [oldIndex[t], oldIndex[t + 1], oldIndex[t + 2]];
+    if (y[a] > height && y[b] > height && y[c] > height) kept.push(a, b, c);
+  }
+  const remap = new Map();
+  const order = [];
+  for (const index of kept) {
+    if (!remap.has(index)) {
+      remap.set(index, order.length);
+      order.push(index);
+    }
+  }
+  for (const semantic of primitive.listSemantics()) {
+    const source = primitive.getAttribute(semantic);
+    const size = source.getElementSize();
+    const out = new Float32Array(order.length * size);
+    const scratch = new Array(size).fill(0);
+    order.forEach((from, to) => {
+      source.getElement(from, scratch);
+      out.set(scratch, to * size);
+    });
+    const target = source.clone().setArray(out).setNormalized(false);
+    primitive.setAttribute(semantic, target);
+  }
+  const newIndices = new Uint32Array(kept.map((index) => remap.get(index)));
+  primitive.setIndices(indices.clone().setArray(newIndices));
 }
 
 async function buildCreature(source, name, ratio, keepClips) {
   return grade(path.join(root, 'assets', source), name, ratio, 256, keepClips);
 }
 
-async function grade(file, name, ratio, textureSize, keepClips = null) {
-  const document = await io.read(file);
+async function grade(file, name, ratio, textureSize, keepClips = null, body = null) {
+  let document = await io.read(file);
+  if (body !== null) document = await attachHead(document, body);
   const root = document.getRoot();
   if (keepClips !== null) dropAnimations(document, (clip) => !keepClips.test(clip));
 
@@ -182,8 +273,8 @@ async function buildAnimations() {
 async function main() {
   await mkdir(outDir, { recursive: true });
   const outputs = [];
-  for (const [source, name, ratio] of CHARACTERS)
-    outputs.push(await buildCharacter(source, name, ratio));
+  for (const [source, name, ratio, body] of CHARACTERS)
+    outputs.push(await buildCharacter(source, name, ratio, body));
   for (const [source, name, ratio, keepClips] of CREATURES)
     outputs.push(await buildCreature(source, name, ratio, keepClips));
   outputs.push(await buildAnimations());

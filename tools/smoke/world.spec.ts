@@ -21,7 +21,7 @@ for (const [name, width, height] of [
     });
     await page.goto('/');
     await expect(page.locator('.hub')).toBeVisible();
-    await expect(page.locator('.status-bar')).toContainText('Connected');
+    await expect(page.locator('.status-bar__toggle')).toHaveAttribute('aria-label', /Connected/);
     await expect
       .poll(async () =>
         Number(await page.locator('canvas.app__canvas').getAttribute('data-render-calls')),
@@ -57,7 +57,7 @@ test('phone: walk to a resource, earn XP, inspect skills, and reach a crafting s
   await page.setViewportSize({ width: 390, height: 844 });
   await page.clock.setFixedTime(new Date('2026-09-09T12:30:00Z'));
   await page.goto('/');
-  await expect(page.locator('.status-bar')).toContainText('Connected');
+  await expect(page.locator('.status-bar__toggle')).toHaveAttribute('aria-label', /Connected/);
   await page.getByRole('button', { name: 'Map', exact: true }).click();
   await page.getByRole('button', { name: 'Resonance Seam' }).click();
   await expect(page.locator('.prompt__label')).toHaveText('Resonance Seam', { timeout: 30_000 });
@@ -99,7 +99,7 @@ test('phone: travel to the Shore Wolf and receive authoritative combat HUD feedb
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
-  await expect(page.locator('.status-bar')).toContainText('Connected');
+  await expect(page.locator('.status-bar__toggle')).toHaveAttribute('aria-label', /Connected/);
   await page.getByRole('button', { name: 'Map', exact: true }).click();
   await page.getByRole('button', { name: 'Shore Wolf', exact: true }).click();
   await expect(page.locator('.combat-hud')).toBeVisible({ timeout: 30_000 });

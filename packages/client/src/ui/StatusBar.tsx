@@ -34,7 +34,7 @@ export function StatusBar({
   const [reportOpen, setReportOpen] = useState(false);
   const hudCollapsed = useAppStore((state) => state.hudCollapsed);
   const phase = useAppStore((state) => state.phase);
-  const inGame = phase === GamePhase.SocialHub;
+  const inGame = phase === GamePhase.WorldExploration || phase === GamePhase.SocialHub;
   // In play the readout is a single dot; the numbers and tools are developer
   // information and live behind it. Outside the hub the full strip stays.
   const [expanded, setExpanded] = useState(false);

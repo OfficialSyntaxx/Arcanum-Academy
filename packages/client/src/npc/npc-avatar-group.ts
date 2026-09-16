@@ -1,10 +1,9 @@
 /**
- * Animated presentation for the authored NPC cast.
+ * Animated presentation for every character in the zone.
  *
- * Named characters deserve a readable silhouette and locomotion, while the
- * anonymous crowd remains in the instanced pool. This layer replaces only
- * those named pool slots once the small CC0 character asset is ready; until
- * then the existing procedural figures remain visible as a graceful fallback.
+ * Named cast and anonymous crowd alike are the shared humanoid rig; the
+ * instanced pool figure stands in only until a rig has loaded, so a cold
+ * mobile start never shows an empty plaza.
  */
 
 import { Group } from 'three';
@@ -25,6 +24,9 @@ const COLOURS: Readonly<Record<string, number>> = {
   'coat.umber': 0xd6b78f,
   'apron.moss': 0xb7d5a9,
   'sash.gilt': 0xf2d794,
+  'student.a': 0x9fb3c8,
+  'student.b': 0x9cc4bd,
+  'student.c': 0xb3aed0,
 };
 
 interface Avatar {
@@ -35,9 +37,15 @@ interface Avatar {
 }
 
 /** Which outfit a role wears. Scholars and wardens get the hooded ranger. */
-function outfitFor(role: NpcRole): CharacterOutfit {
+function outfitFor(role: NpcRole, id: string): CharacterOutfit {
   if (role === NpcRole.Merchant) return 'peasant-m';
   if (role === NpcRole.Groundskeeper) return 'peasant-f';
+  if (role === NpcRole.Student) {
+    // A stable split of the crowd between the two peasant bodies.
+    let hash = 0;
+    for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) | 0;
+    return (hash & 1) === 0 ? 'peasant-m' : 'peasant-f';
+  }
   return 'ranger-m';
 }
 
@@ -61,8 +69,7 @@ export class NpcAvatarGroup {
   ) {
     this.root.name = 'named-npc-avatars';
     for (const presentation of named) {
-      if (presentation.role === NpcRole.Student) continue;
-      const rig = new CharacterRig(outfitFor(presentation.role), {
+      const rig = new CharacterRig(outfitFor(presentation.role, presentation.id), {
         shadowsEnabled,
         ...(COLOURS[presentation.appearance] !== undefined
           ? { tint: COLOURS[presentation.appearance] }

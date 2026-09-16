@@ -87,25 +87,28 @@ export class NpcDirector {
   }
 
   namedPresentations(): readonly NamedNpcPresentation[] {
-    return this.actors
-      .filter((actor) => actor.agent.definition.role !== NpcRole.Student)
-      .map((actor) => {
-        const { position, facing, velocity } = actor.agent.mover;
-        return {
-          id: actor.agent.definition.id,
-          role: actor.agent.definition.role,
-          appearance: actor.agent.definition.appearance,
-          slot: actor.slot,
-          position,
-          elevation: this.world.heightAt(position),
-          facing,
-          gait: Math.min(1, velocity / this.locomotion.speed),
-          activity:
-            actor.agent.definition.schedule.find(
-              (entry) => entry.startMinute === actor.agent.servingMinute,
-            )?.activity ?? NpcActivity.Idle,
-        };
-      });
+    return this.presentations().filter((presentation) => presentation.role !== NpcRole.Student);
+  }
+
+  /** Frame-ready state for every directed actor, the anonymous crowd included. */
+  presentations(): readonly NamedNpcPresentation[] {
+    return this.actors.map((actor) => {
+      const { position, facing, velocity } = actor.agent.mover;
+      return {
+        id: actor.agent.definition.id,
+        role: actor.agent.definition.role,
+        appearance: actor.agent.definition.appearance,
+        slot: actor.slot,
+        position,
+        elevation: this.world.heightAt(position),
+        facing,
+        gait: Math.min(1, velocity / this.locomotion.speed),
+        activity:
+          actor.agent.definition.schedule.find(
+            (entry) => entry.startMinute === actor.agent.servingMinute,
+          )?.activity ?? NpcActivity.Idle,
+      };
+    });
   }
 
   /** Steps every agent and writes their transforms into the actor pool. */
