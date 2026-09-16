@@ -1,5 +1,6 @@
 import {
   Box3,
+  Color,
   BoxGeometry,
   ConeGeometry,
   CylinderGeometry,
@@ -19,6 +20,15 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { heightAt, type Zone } from '@alderfell/shared';
 import type { QualitySettings } from '../core/device.js';
+
+/** How far each region pulls the shared scenery models toward its own colour. */
+const SCENERY_GRADE: Readonly<Record<string, { readonly tint: number; readonly amount: number }>> =
+  {
+    'zone.courtyard': { tint: 0xffffff, amount: 0 },
+    'zone.forest': { tint: 0x2f5a33, amount: 0.25 },
+    'zone.mountains': { tint: 0x9aa392, amount: 0.35 },
+    'zone.snow': { tint: 0xe8f0f6, amount: 0.55 },
+  };
 
 export type EnvironmentPlacement = readonly [x: number, z: number, height: number, yaw: number];
 type Placement = EnvironmentPlacement;
@@ -90,7 +100,11 @@ export function environmentCollisionPlacements(
       homes: HOME_SPOTS,
     };
   }
-  if (zone.id === 'zone.forest') return forestPlacements(zone, quality);
+  if (zone.id === 'zone.forest')
+    return scatterPlacements(zone, quality, { tree: 0.73, rock: 0.09 });
+  if (zone.id === 'zone.mountains')
+    return scatterPlacements(zone, quality, { tree: 0.22, rock: 0.42 });
+  if (zone.id === 'zone.snow') return scatterPlacements(zone, quality, { tree: 0.4, rock: 0.16 });
   return null;
 }
 
@@ -111,7 +125,7 @@ function distanceToSegment(px: number, pz: number, ax: number, az: number, bx: n
 }
 
 /**
- * A forest, from routes.
+ * A region's scenery, from its routes.
  *
  * Trees are scattered on a jittered grid across the whole zone and then culled
  * wherever people need to walk or work: along every authored link, around every
@@ -120,7 +134,11 @@ function distanceToSegment(px: number, pz: number, ax: number, az: number, bx: n
  * grid is what keeps the cheap tier a sparser version of the same wood rather
  * than a different one.
  */
-function forestPlacements(zone: Zone, quality: QualitySettings): EnvironmentPlacements {
+function scatterPlacements(
+  zone: Zone,
+  quality: QualitySettings,
+  density: { readonly tree: number; readonly rock: number },
+): EnvironmentPlacements {
   const byId = new Map(zone.waypoints.map((waypoint) => [waypoint.id, waypoint]));
   const links: Array<readonly [number, number, number, number, number]> = [];
   for (const waypoint of zone.waypoints) {
@@ -179,9 +197,9 @@ function forestPlacements(zone: Zone, quality: QualitySettings): EnvironmentPlac
       const z = gz + (unit(seed, 2) - 0.5) * step * 0.9;
       if (!clear(x, z, 0)) continue;
       const roll = unit(seed, 3);
-      if (roll < 0.09) {
+      if (roll < density.rock) {
         rocks.push([x, z, 0.9 + unit(seed, 4) * 1.3, unit(seed, 5) * Math.PI * 2]);
-      } else if (roll < 0.82) {
+      } else if (roll < density.rock + density.tree) {
         trees.push([x, z, 4.2 + unit(seed, 4) * 2.4, unit(seed, 5) * Math.PI * 2]);
       }
     }
@@ -259,9 +277,23 @@ export function buildEnvironment(
         const placementsMatrices = matricesFor(placements);
         scene.traverse((node) => {
           if (!(node instanceof Mesh)) return;
+          // Pull the shared model into the region's palette: frosted in the
+          // snow, dusty on the scree, untouched on the coast.
+          const graded = (Array.isArray(node.material) ? node.material : [node.material]).map(
+            (material) => {
+              if (!(material instanceof MeshStandardMaterial) || grade.amount === 0)
+                return material;
+              // The models are vertex-coloured under a white material, so a
+              // colour lerp would do nothing; an emissive lift is what frosts
+              // or dusts them without touching their shading.
+              const copy = material.clone();
+              copy.emissive.set(grade.tint).multiplyScalar(grade.amount * 0.5);
+              return copy;
+            },
+          );
           batch(
             node.geometry,
-            node.material,
+            Array.isArray(node.material) ? graded : graded[0]!,
             placementsMatrices.map((m) => m.clone().multiply(normalize).multiply(node.matrixWorld)),
             loaded,
           );
@@ -279,9 +311,18 @@ export function buildEnvironment(
       });
   }
 
+  const grade = SCENERY_GRADE[zone.id] ?? SCENERY_GRADE['zone.courtyard']!;
   const bark = new MeshStandardMaterial({ color: 0x725038, roughness: 1 });
-  const leaves = new MeshStandardMaterial({ color: 0x759449, roughness: 1, flatShading: true });
-  const rock = new MeshStandardMaterial({ color: 0x9c9985, roughness: 1, flatShading: true });
+  const leaves = new MeshStandardMaterial({
+    color: new Color(0x759449).lerp(new Color(grade.tint), grade.amount),
+    roughness: 1,
+    flatShading: true,
+  });
+  const rock = new MeshStandardMaterial({
+    color: new Color(0x9c9985).lerp(new Color(grade.tint), grade.amount * 0.6),
+    roughness: 1,
+    flatShading: true,
+  });
   const plaster = new MeshStandardMaterial({ color: 0xe1c894, roughness: 1 });
   const roof = new MeshStandardMaterial({ color: 0x985c43, roughness: 1 });
   [bark, leaves, rock, plaster, roof].forEach((m) => resources.add(m));

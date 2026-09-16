@@ -36,20 +36,20 @@ export { MOUNTAINS_ZONE_ID } from './zone-ids.js';
 export const MOUNTAINS: Zone = {
   id: MOUNTAINS_ZONE_ID,
   name: 'The Cindermark Heights',
-  bounds: { minX: -60, maxX: 60, minZ: -60, maxZ: 60 },
+  bounds: { minX: -96, maxX: 96, minZ: -96, maxZ: 96 },
   terrain: {
     baseHeight: 0,
     terraces: [
       // The foothill camp works from a levelled shelf partway up the climb.
-      { minX: -9, maxX: 21, minZ: -39, maxZ: -27, height: 0.4 },
+      { minX: -14.4, maxX: 33.6, minZ: -62.4, maxZ: -43.2, height: 0.4 },
       // The mine cuts deep — deeper than the Courtyard's Resonance Mines.
-      { minX: -45, maxX: -24, minZ: -33, maxZ: -6, height: -1.0 },
+      { minX: -72, maxX: -38.4, minZ: -52.8, maxZ: -9.6, height: -1.0 },
       // The watchtower plateau is the highest ground in the academy's world.
-      { minX: -21, maxX: 21, minZ: 27, maxZ: 57, height: 2.6 },
+      { minX: -33.6, maxX: 33.6, minZ: 43.2, maxZ: 91.2, height: 2.6 },
     ],
     canals: [
       // A glacial pool along the trail, fed by meltwater. Still, for now.
-      { minX: -6, maxX: 6, minZ: -45, maxZ: -36, waterHeight: -0.05 },
+      { minX: -9.6, maxX: 9.6, minZ: -72, maxZ: -57.6, waterHeight: -0.05 },
     ],
   },
   spawn: wp('wp.mountains.gate'),
@@ -58,14 +58,14 @@ export const MOUNTAINS: Zone = {
   waypoints: [
     {
       id: wp('wp.mountains.gate'),
-      position: { x: 0, z: -48 },
+      position: { x: 0, z: -76.8 },
       radius: 3,
       links: [wp('wp.foothill.camp')],
       tags: ['portal'],
     },
     {
       id: wp('wp.foothill.camp'),
-      position: { x: 0, z: -33 },
+      position: { x: 0, z: -52.8 },
       radius: 3.5,
       links: [
         wp('wp.mountains.gate'),
@@ -77,7 +77,7 @@ export const MOUNTAINS: Zone = {
     },
     {
       id: wp('wp.foothill.forge'),
-      position: { x: 12, z: -33 },
+      position: { x: 19.2, z: -52.8 },
       radius: 2,
       links: [wp('wp.foothill.camp')],
       tags: ['crafting'],
@@ -86,26 +86,26 @@ export const MOUNTAINS: Zone = {
     // --- Cindermark Mine (west) ---------------------------------------------
     {
       id: wp('wp.mine.path'),
-      position: { x: -15, z: -27 },
+      position: { x: -24, z: -43.2 },
       radius: 2.5,
       links: [wp('wp.foothill.camp'), wp('wp.mine.entrance')],
     },
     {
       id: wp('wp.mine.entrance'),
-      position: { x: -30, z: -21 },
+      position: { x: -48, z: -33.6 },
       radius: 2.8,
       links: [wp('wp.mine.path'), wp('wp.mine.seam'), wp('wp.mine.crystal')],
     },
     {
       id: wp('wp.mine.seam'),
-      position: { x: -42, z: -27 },
+      position: { x: -67.2, z: -43.2 },
       radius: 2,
       links: [wp('wp.mine.entrance')],
       tags: ['gathering'],
     },
     {
       id: wp('wp.mine.crystal'),
-      position: { x: -42, z: -12 },
+      position: { x: -67.2, z: -19.2 },
       radius: 2,
       links: [wp('wp.mine.entrance')],
       tags: ['gathering', 'mystic'],
@@ -114,19 +114,19 @@ export const MOUNTAINS: Zone = {
     // --- The Ascent (north) --------------------------------------------------
     {
       id: wp('wp.ascent.path'),
-      position: { x: 15, z: -18 },
+      position: { x: 24, z: -28.8 },
       radius: 2.5,
       links: [wp('wp.foothill.camp'), wp('wp.ascent.switchback')],
     },
     {
       id: wp('wp.ascent.switchback'),
-      position: { x: 24, z: 0 },
+      position: { x: 38.4, z: 0 },
       radius: 2.5,
-      links: [wp('wp.ascent.path'), wp('wp.ascent.upper')],
+      links: [wp('wp.ascent.path'), wp('wp.ascent.upper'), wp('wp.scree.path')],
     },
     {
       id: wp('wp.ascent.upper'),
-      position: { x: 15, z: 21 },
+      position: { x: 24, z: 33.6 },
       radius: 2.5,
       links: [wp('wp.ascent.switchback'), wp('wp.watchtower.plateau')],
     },
@@ -134,24 +134,47 @@ export const MOUNTAINS: Zone = {
     // --- Watchtower Plateau ---------------------------------------------------
     {
       id: wp('wp.watchtower.plateau'),
-      position: { x: 0, z: 39 },
+      position: { x: 0, z: 62.4 },
       radius: 4,
       links: [wp('wp.ascent.upper'), wp('wp.watchtower.arena'), wp('wp.watchtower.board')],
       tags: ['plaza', 'social'],
     },
     {
       id: wp('wp.watchtower.arena'),
-      position: { x: -12, z: 51 },
+      position: { x: -19.2, z: 81.6 },
       radius: 2.5,
       links: [wp('wp.watchtower.plateau')],
       tags: ['duelling'],
     },
     {
       id: wp('wp.watchtower.board'),
-      position: { x: 12, z: 51 },
+      position: { x: 19.2, z: 81.6 },
       radius: 2,
       links: [wp('wp.watchtower.plateau')],
       tags: ['quests'],
+    },
+
+    // --- Scree slope (east) ---------------------------------------------
+    // A loose shelf below the ridge where the mountain wolves den.
+    {
+      id: wp('wp.scree.path'),
+      position: { x: 58, z: 10 },
+      radius: 2.5,
+      links: [wp('wp.ascent.switchback'), wp('wp.scree.den')],
+    },
+    {
+      id: wp('wp.scree.den'),
+      position: { x: 72, z: 34 },
+      radius: 3,
+      links: [wp('wp.scree.path'), wp('wp.scree.ledge')],
+      tags: ['wilds'],
+    },
+    {
+      id: wp('wp.scree.ledge'),
+      position: { x: 84, z: 48 },
+      radius: 2.5,
+      links: [wp('wp.scree.den')],
+      tags: ['wilds'],
     },
   ],
 
@@ -159,7 +182,7 @@ export const MOUNTAINS: Zone = {
     {
       id: ix('int.mountains.portal'),
       kind: InteractableKind.ZonePortal,
-      position: { x: 0, z: -50.4 },
+      position: { x: 0, z: -80.6 },
       approach: wp('wp.mountains.gate'),
       facing: 0,
       label: 'Trailhead Gate',
@@ -169,7 +192,7 @@ export const MOUNTAINS: Zone = {
     {
       id: ix('int.foothill.forge'),
       kind: InteractableKind.CraftingStation,
-      position: { x: 14.4, z: -33 },
+      position: { x: 23, z: -52.8 },
       approach: wp('wp.foothill.forge'),
       facing: Math.PI * 1.5,
       label: 'Highland Forge',
@@ -178,7 +201,7 @@ export const MOUNTAINS: Zone = {
     {
       id: ix('int.foothill.market'),
       kind: InteractableKind.MerchantStall,
-      position: { x: 0, z: -35.4 },
+      position: { x: 0, z: -56.6 },
       approach: wp('wp.foothill.camp'),
       facing: 0,
       label: 'Foothill Trading Post',
@@ -187,7 +210,7 @@ export const MOUNTAINS: Zone = {
     {
       id: ix('int.mine.seam'),
       kind: InteractableKind.GatheringNode,
-      position: { x: -44.4, z: -27 },
+      position: { x: -71, z: -43.2 },
       approach: wp('wp.mine.seam'),
       facing: Math.PI * 0.5,
       label: 'Deep Ore Seam',
@@ -196,7 +219,7 @@ export const MOUNTAINS: Zone = {
     {
       id: ix('int.mine.crystal'),
       kind: InteractableKind.GatheringNode,
-      position: { x: -44.4, z: -12 },
+      position: { x: -71, z: -19.2 },
       approach: wp('wp.mine.crystal'),
       facing: Math.PI * 0.5,
       label: 'Resonant Outcrop',
@@ -206,11 +229,40 @@ export const MOUNTAINS: Zone = {
     {
       id: ix('int.watchtower.board'),
       kind: InteractableKind.QuestBoard,
-      position: { x: 12, z: 53.4 },
+      position: { x: 19.2, z: 85.4 },
       approach: wp('wp.watchtower.board'),
       facing: 0,
       label: "Watch Captain's Board",
       verb: 'Read',
+    },
+
+    // --- The wilds ---------------------------------------------------------
+    {
+      id: ix('int.combat.ridge_wolf_a'),
+      kind: InteractableKind.CombatEncounter,
+      position: { x: 73, z: 35.6 },
+      approach: wp('wp.scree.den'),
+      facing: Math.PI * 1.25,
+      label: 'Ridge Wolf',
+      verb: 'Attack',
+    },
+    {
+      id: ix('int.combat.ridge_wolf_b'),
+      kind: InteractableKind.CombatEncounter,
+      position: { x: 85, z: 49.6 },
+      approach: wp('wp.scree.ledge'),
+      facing: Math.PI * 1.25,
+      label: 'Ridge Wolf',
+      verb: 'Attack',
+    },
+    {
+      id: ix('int.combat.cinder_wisp'),
+      kind: InteractableKind.CombatEncounter,
+      position: { x: -20.4, z: 83.2 },
+      approach: wp('wp.watchtower.arena'),
+      facing: Math.PI * 0.5,
+      label: 'Cinder Wisp',
+      verb: 'Attack',
     },
   ],
 
@@ -219,10 +271,10 @@ export const MOUNTAINS: Zone = {
     // a door, not an open shelf. It sits on a corner of the foothill camp's
     // existing platform.
     {
-      minX: 6,
-      maxX: 18,
-      minZ: -38,
-      maxZ: -28,
+      minX: 9.6,
+      maxX: 28.8,
+      minZ: -60.8,
+      maxZ: -44.8,
       wallHeight: 3.4,
       roofHeight: 2,
       doorSide: BuildingDoorSide.South,

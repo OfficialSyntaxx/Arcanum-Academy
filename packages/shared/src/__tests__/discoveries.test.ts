@@ -4,7 +4,7 @@ import { DISCOVERY_CATALOG, discoveryForSource, recordDiscovery } from '../index
 describe('discovery catalog', () => {
   it('has unique authored entries for every initial Shorelands discovery', () => {
     expect(new Set(DISCOVERY_CATALOG.map((entry) => entry.id)).size).toBe(DISCOVERY_CATALOG.length);
-    expect(DISCOVERY_CATALOG).toHaveLength(15);
+    expect(DISCOVERY_CATALOG).toHaveLength(18);
   });
 
   it('maps only known confirmed event sources and records them once', () => {

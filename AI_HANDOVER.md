@@ -333,6 +333,17 @@ forest-owned ids. Its lumber mill, ranger's cart and notice board are still holl
 wears the hooded ranger outfit. Aggressive creatures leave a fallen player alone for eight seconds
 after recovery.
 
+**Cindermark and Frostgate update (2026-09-16, branch `Claudesep16`):** the Cindermark Heights
+(192 m) and Frostgate Reaches (189 m) are enlarged the same way as the Reach, each with a wilds
+area off its main route: a Ridge Wolf pair (4/4/4, 10 HP) on the scree below the Cindermark ridge
+and a Frost Wolf pair (6/6/6, 12 HP) past the Frostgate creek, both aggressive, and a passive
+shrine wisp in each (Cinder Wisp at the watchtower arena, Rime Wisp at the spire clearing) that is
+hard-skinned, slow to kill and pays two crystal shards. Every region has its own ground palette
+(deep-shade forest floor, grey scree, snow) and grades the shared scenery models toward it by an
+emissive lift, since the models are vertex-coloured. Scenery density per region: forest tree-heavy,
+mountains rock-heavy, snow sparse. The content catalogs now validate against all four overworld
+zones. The mountain and snow gathering nodes, stations, merchants and boards remain hollow.
+
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
 oversights.

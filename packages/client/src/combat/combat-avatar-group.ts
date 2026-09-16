@@ -121,6 +121,12 @@ const DISPLAY: Readonly<Record<CreatureModel, CreatureDisplay>> = {
   },
 };
 
+/** Per-encounter looks layered over the creature defaults: a shrine wisp's colour, mostly. */
+const DISPLAY_OVERRIDES: Readonly<Record<string, Partial<CreatureDisplay>>> = {
+  'int.combat.cinder_wisp': { tint: { darken: 0.7, emissive: 0x9a3e12, glow: 0.6 } },
+  'int.combat.rime_wisp': { tint: { darken: 0.85, emissive: 0x6aa7c8, glow: 0.55 } },
+};
+
 const MODEL_URL: Readonly<Record<CreatureModel, string>> = {
   wolf: shoreWolfUrl,
   armabee: armabeeUrl,
@@ -257,7 +263,7 @@ export class CombatAvatarGroup {
 
   private create(id: string, creature: CreatureModel, x: number, z: number, gltf: GLTF): void {
     if (this.disposed || this.avatars.has(id)) return;
-    const display = DISPLAY[creature];
+    const display = { ...DISPLAY[creature], ...DISPLAY_OVERRIDES[id] };
     const model = clone(gltf.scene) as Group;
     model.updateMatrixWorld(true);
     const bounds = new Box3().setFromObject(model);

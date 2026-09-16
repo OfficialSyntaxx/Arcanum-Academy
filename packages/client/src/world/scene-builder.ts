@@ -76,6 +76,19 @@ const MARKER_COLOURS: Readonly<Record<string, number>> = {
   [InteractableKind.ClueSite]: 0xe4b95f,
 };
 
+/**
+ * Ground colours per region. Four close shades break the plane into a soft
+ * patchwork; the region decides whether that patchwork is meadow, deep-shade
+ * forest floor, grey scree or snow.
+ */
+const GROUND_PALETTES: Readonly<Record<string, readonly number[]>> = {
+  'zone.courtyard': [0x355f36, 0x426f3c, 0x4d7841, 0x3d6734],
+  'zone.forest': [0x2c4f30, 0x365c36, 0x3f6539, 0x30532f],
+  'zone.mountains': [0x5c6358, 0x66705f, 0x707867, 0x5f6a5a],
+  'zone.snow': [0xd9e2ea, 0xe4ebf1, 0xeef3f7, 0xdde6ed],
+  'zone.saltwake_ruins': [0x355f36, 0x426f3c, 0x4d7841, 0x3d6734],
+};
+
 export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeometry {
   const group = new Group();
   group.name = `zone:${zone.id}`;
@@ -922,7 +935,7 @@ export function buildBaseGround(zone: Zone): BufferGeometry {
   ].sort((a, b) => a - b);
   const vertices: number[] = [];
   const colours: number[] = [];
-  const grass = [0x355f36, 0x426f3c, 0x4d7841, 0x3d6734];
+  const grass = GROUND_PALETTES[zone.id] ?? GROUND_PALETTES['zone.courtyard']!;
   for (let i = 0; i < xs.length - 1; i++)
     for (let j = 0; j < zs.length - 1; j++) {
       const x0 = xs[i]!,

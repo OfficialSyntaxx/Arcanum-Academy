@@ -22,6 +22,8 @@ import { expect } from '../result.js';
 import { DEFAULT_TUNABLES } from '../config/tunables.js';
 import { COURTYARD } from '../world/courtyard.js';
 import { FOREST } from '../world/forest.js';
+import { MOUNTAINS } from '../world/mountains.js';
+import { SNOW } from '../world/snow.js';
 import type { ItemDefinition } from '../items/types.js';
 import type { NodeDefinition } from '../gathering/types.js';
 import type { RecipeDefinition } from '../crafting/types.js';
@@ -101,7 +103,7 @@ export const NODE_CATALOG: NodeCatalog = expect(
   buildNodeCatalog(nodeDefinitions, {
     items: ITEM_CATALOG,
     skills: SKILL_TABLE,
-    zones: [COURTYARD, FOREST],
+    zones: [COURTYARD, FOREST, MOUNTAINS, SNOW],
   }),
   'shipped gathering content is invalid',
 );
@@ -110,7 +112,7 @@ export const RECIPE_BOOK: RecipeBook = expect(
   buildRecipeBook(recipeDefinitions, {
     items: ITEM_CATALOG,
     skills: SKILL_TABLE,
-    zones: [COURTYARD, FOREST],
+    zones: [COURTYARD, FOREST, MOUNTAINS, SNOW],
   }),
   'shipped recipe content is invalid',
 );

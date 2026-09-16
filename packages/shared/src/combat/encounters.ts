@@ -171,6 +171,99 @@ export const GLADE_ARMABEE: CombatEncounterDefinition = Object.freeze({
   zoneId: 'zone.forest',
 });
 
+/** A wolf pack for a region, one rung of levels apart from the last. */
+function wolfPack(
+  prefix: string,
+  label: string,
+  zoneId: string,
+  level: number,
+  hitpoints: number,
+  coins: number,
+  positions: readonly { readonly x: number; readonly z: number }[],
+): readonly CombatEncounterDefinition[] {
+  return positions.map((position, index) =>
+    Object.freeze({
+      interactableId: asId<InteractableId>(`int.combat.${prefix}_${'ab'[index]}`),
+      label,
+      creature: 'wolf' as const,
+      position,
+      maxHitpoints: hitpoints,
+      attackLevel: level,
+      strengthLevel: level,
+      defenceLevel: level,
+      aggressive: true,
+      rewardCoins: coins,
+      drops: Object.freeze([
+        { itemId: asId<ItemDefinitionId>('item.meat.raw_shore_wolf'), quantity: 1 },
+      ]),
+      respawnMs: 6_000,
+      playerRecoveryMs: 5_000,
+      requiredCombatLevel: 1,
+      zoneId,
+    }),
+  );
+}
+
+/** The Cindermark ridge pack: bring food and a few levels. */
+export const RIDGE_WOLVES = wolfPack('ridge_wolf', 'Ridge Wolf', 'zone.mountains', 4, 10, 10, [
+  { x: 73, z: 35.6 },
+  { x: 85, z: 49.6 },
+]);
+
+/** The Frostgate pack: the strongest open-world fight so far. */
+export const FROST_WOLVES = wolfPack('frost_wolf', 'Frost Wolf', 'zone.snow', 6, 12, 13, [
+  { x: 67, z: 35.6 },
+  { x: 81, z: 53.6 },
+]);
+
+/** A passive, hard-skinned spirit that guards a shrine; slow to kill, rewards crystal. */
+function wisp(
+  id: string,
+  label: string,
+  zoneId: string,
+  position: { readonly x: number; readonly z: number },
+  levels: { readonly attack: number; readonly strength: number; readonly defence: number },
+  hitpoints: number,
+  coins: number,
+): CombatEncounterDefinition {
+  return Object.freeze({
+    interactableId: asId<InteractableId>(id),
+    label,
+    creature: 'ghost' as const,
+    position,
+    maxHitpoints: hitpoints,
+    attackLevel: levels.attack,
+    strengthLevel: levels.strength,
+    defenceLevel: levels.defence,
+    aggressive: false,
+    rewardCoins: coins,
+    drops: Object.freeze([{ itemId: asId<ItemDefinitionId>('item.crystal.shard'), quantity: 2 }]),
+    respawnMs: 9_000,
+    playerRecoveryMs: 5_000,
+    requiredCombatLevel: 1,
+    zoneId,
+  });
+}
+
+export const CINDER_WISP = wisp(
+  'int.combat.cinder_wisp',
+  'Cinder Wisp',
+  'zone.mountains',
+  { x: -20.4, z: 83.2 },
+  { attack: 5, strength: 4, defence: 7 },
+  9,
+  11,
+);
+export const RIME_WISP = wisp(
+  'int.combat.rime_wisp',
+  'Rime Wisp',
+  'zone.snow',
+  { x: -49.8, z: 7 },
+  { attack: 7, strength: 5, defence: 9 },
+  11,
+  14,
+);
+
 /** Extra effective Strength the Warden gains below half health. */
 export const BOSS_ENRAGE_STRENGTH_BONUS = 6;
 
@@ -180,6 +273,10 @@ export const COMBAT_ENCOUNTERS = Object.freeze([
   EMBERWOOD_WOLF_A,
   EMBERWOOD_WOLF_B,
   GLADE_ARMABEE,
+  ...RIDGE_WOLVES,
+  CINDER_WISP,
+  ...FROST_WOLVES,
+  RIME_WISP,
   DROWNED_SENTINEL,
   DROWNED_WARDEN,
 ]);
