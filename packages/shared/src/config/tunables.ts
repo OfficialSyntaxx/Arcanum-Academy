@@ -229,15 +229,14 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     playerTurnRate: 9,
     waypointArrivalRadius: 0.35,
     interactionRadius: 2.2,
-    // The old close, shallow opening framed one oversized academy roof and
-    // hid the paths, trees and landmarks that make the zone readable. Start
-    // high enough to show a living district on a portrait phone.
-    cameraViewSize: 13,
-    // Portrait phones need one closer inspection step. It keeps the player
-    // readable when a player deliberately pinches all the way in, while the
-    // default view remains wide enough to navigate the Shorelands.
-    cameraMinViewSize: 6,
-    cameraMaxViewSize: 26,
+    // Tuned against the dressed zones on a 390 px portrait phone: 18 m across
+    // the short axis puts a 1.8 m character at roughly 40 px, tall enough to
+    // read a fight, while a plaza or a den still fits in one screen. The old
+    // 26 m view showed a whole district and made every character a speck.
+    cameraViewSize: 9,
+    // Pinch in to inspect a fight, pinch out to read a route across a region.
+    cameraMinViewSize: 5,
+    cameraMaxViewSize: 22,
     cameraBoomLength: 120,
     cameraHeight: 5.5,
     cameraSmoothing: 8,
