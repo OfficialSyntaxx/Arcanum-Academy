@@ -274,6 +274,13 @@ The plaza medallion went from 11.6 m to 6.8 m and the Courtyard crowd from 18 to
 - **Ranged as a fourth combat style**, with its own skill and an Emberwood Shortbow strung at
   the timber saw. One level supplies both accuracy and maximum hit, as in OSRS, and the style is
   refused without a bow equipped so it is a choice of kit rather than a free extra stance.
+- **Magic as a fifth style, and the combat triangle itself.** A Magic skill and a Resonant
+  Staff socketed at the timber saw, gated on the staff exactly as Ranged is on a bow (a bow is
+  explicitly not accepted as a staff). Creatures now carry an optional `weakTo`, and matching
+  it is worth `TRIANGLE_ADVANTAGE` (6) effective levels of **accuracy only** - the damage roll
+  is untouched, so a good matchup lands more often rather than hitting harder, and a bad one is
+  slower rather than hopeless. Wisps are weak to Ranged, wolf packs to Magic, the Sentinel to
+  Aggressive and the Warden to Magic.
 - **Three quests extending the chain into the outer zones** (The Reach Pack, The Foothill
   Forge, The Long Winter), each ending further from the plaza than the last.
 
@@ -281,12 +288,15 @@ All gear bonuses and drop rates are **conservative placeholders and the owner's 
 
 ### Open items, roughly by value
 
-1. **Magic is unbuilt** (§3.4.3), so the triangle has two corners of three. There is also no
-   ammo system: the bow fires without arrows, and Neck, Ring and Ammo slots do not exist
-   because nothing would fill them.
-2. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
+1. **No ammo or rune system.** The bow fires without arrows and the staff channels without
+   runes, so neither kit style has an ongoing cost; Neck, Ring and Ammo slots do not exist
+   because nothing would fill them. This is the obvious next thing to give the triangle
+   economic weight.
+2. **Only four creatures carry a `weakTo`.** The rest are neutral, so the triangle matters in
+   some fights and not others. Deliberate for now - it wants a balance pass, not a blanket.
+3. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
    for character scale than anything left, but it moves waypoints and changes how the hub feels
    to cross, so it was left as an owner decision rather than a tweak.
-3. Diary and clue content still centres on the Courtyard, though the quest chain no longer does.
-4. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots. The owner
+4. Diary and clue content still centres on the Courtyard, though the quest chain no longer does.
+5. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots. The owner
    has said Codex will take the device checks.

@@ -43,6 +43,15 @@ export interface CombatEncounterDefinition {
     readonly quantity: number;
     readonly oneInChance: number;
   }[];
+  /**
+   * The style this creature struggles against, if any.
+   *
+   * The combat triangle, and the reason a stance is a decision rather than a
+   * label: matching it is worth `TRIANGLE_ADVANTAGE` effective levels of
+   * accuracy. Damage is untouched, so a good matchup means landing more often
+   * rather than hitting harder, and a bad one is slower rather than hopeless.
+   */
+  readonly weakTo?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' | 'MAGIC';
   readonly zoneId?: string;
   readonly requiredQuestId?: string;
   readonly boss?: boolean;
@@ -99,6 +108,8 @@ export const DROWNED_SENTINEL: CombatEncounterDefinition = Object.freeze({
   defenceLevel: 10,
   aggressive: true,
   rewardCoins: 12,
+  // A drowned thing in heavy plate: slow, and it dislikes being hit hard.
+  weakTo: 'AGGRESSIVE',
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.material.saltworn_fragment'), quantity: 1 },
   ]),
@@ -125,6 +136,8 @@ export const DROWNED_WARDEN: CombatEncounterDefinition = Object.freeze({
   defenceLevel: 12,
   aggressive: false,
   rewardCoins: 24,
+  // Scaled against steel, but the staff finds the gaps.
+  weakTo: 'MAGIC',
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.material.warden_scale'), quantity: 1 },
   ]),
@@ -224,6 +237,9 @@ function wolfPack(
       drops: Object.freeze([
         { itemId: asId<ItemDefinitionId>('item.meat.raw_shore_wolf'), quantity: 1 },
       ]),
+      // A pack that closes fast is hard to shoot and easy to catch with a
+      // channelled staff.
+      weakTo: 'MAGIC' as const,
       // Outer-zone packs are a second route to a resonant crystal, so a player
       // who would rather fight than mine is not locked out of the forge line.
       rareDrops: Object.freeze([
@@ -270,6 +286,9 @@ function wisp(
     defenceLevel: levels.defence,
     aggressive: false,
     rewardCoins: coins,
+    // A wisp barely has a body to swing at; an arrow through it works better
+    // than a blade that passes clean through.
+    weakTo: 'RANGED' as const,
     drops: Object.freeze([{ itemId: asId<ItemDefinitionId>('item.crystal.shard'), quantity: 2 }]),
     respawnMs: 9_000,
     playerRecoveryMs: 5_000,
@@ -298,6 +317,15 @@ export const RIME_WISP = wisp(
 );
 
 /** Extra effective Strength the Warden gains below half health. */
+/**
+ * Effective attack levels gained for matching a creature's weakness.
+ *
+ * Six is deliberately about twice a style bonus: enough that a player feels
+ * the right choice, small enough that the wrong one is still a fight rather
+ * than a wall. Owner's to tune.
+ */
+export const TRIANGLE_ADVANTAGE = 6;
+
 export const BOSS_ENRAGE_STRENGTH_BONUS = 6;
 
 export const COMBAT_ENCOUNTERS = Object.freeze([

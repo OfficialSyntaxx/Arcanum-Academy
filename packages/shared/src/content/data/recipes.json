@@ -523,6 +523,31 @@
       "baseWasteRateBasisPoints": 1200,
       "wasteReductionPerSkillLevelBasisPoints": 35,
       "xpPerCraft": 40
+    },
+    {
+      "id": "recipe.weapon.resonant_staff",
+      "name": "Socket Resonant Staff",
+      "stationInteractableId": "int.timber.saw",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 9,
+      "inputs": [
+        {
+          "itemId": "item.emberwood.heartwood",
+          "quantity": 1
+        },
+        {
+          "itemId": "item.crystal.resonant",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.weapon.resonant_staff",
+        "quantity": 1
+      },
+      "craftDurationMs": 9000,
+      "baseWasteRateBasisPoints": 1500,
+      "wasteReductionPerSkillLevelBasisPoints": 40,
+      "xpPerCraft": 60
     }
   ]
 }

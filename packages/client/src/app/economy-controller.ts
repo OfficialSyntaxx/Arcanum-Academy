@@ -172,7 +172,8 @@ export class EconomyController {
   /** One exchange of blows. The style defaults to the player's chosen stance. */
   attackEncounter(
     interactableId: string,
-    style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' = useAppStore.getState().combatStyle,
+    style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' | 'MAGIC' = useAppStore.getState()
+      .combatStyle,
   ): void {
     this.send('combat.attack', { interactableId, style });
   }

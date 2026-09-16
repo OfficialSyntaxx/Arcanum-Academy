@@ -664,6 +664,24 @@
         "requiredSkillId": "skill.ranged",
         "requiredSkillLevel": 1
       }
+    },
+    {
+      "id": "item.weapon.resonant_staff",
+      "name": "Resonant Staff",
+      "description": "A heartwood shaft socketed with a resonant crystal. It answers a steady hand and ignores a shaky one.",
+      "category": "EQUIPMENT",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 280,
+      "iconKey": "weapon-resonant-staff",
+      "equipment": {
+        "slot": "WEAPON",
+        "attackBonus": 16,
+        "strengthBonus": 3,
+        "defenceBonus": 0,
+        "requiredSkillId": "skill.magic",
+        "requiredSkillLevel": 1
+      }
     }
   ]
 }

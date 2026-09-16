@@ -9,7 +9,7 @@ import {
   type SessionId,
   ok,
 } from '@alderfell/shared';
-import { addItems } from '@alderfell/sim';
+import { addItems, effectiveLevel, resolveMeleeRoll } from '@alderfell/sim';
 import {
   COURTYARD,
   FOREST,
@@ -17,6 +17,7 @@ import {
   SNOW,
   SALTWAKE_RUINS,
   COMBAT_ENCOUNTERS,
+  TRIANGLE_ADVANTAGE,
   combatEncounterByInteractable,
 } from '@alderfell/shared';
 import { PlayerService } from '../domain/player-service.js';
@@ -66,7 +67,7 @@ function harness() {
   return {
     dispatch: (
       interactableId = SHORE_WOLF,
-      style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' = 'ACCURATE',
+      style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' | 'MAGIC' = 'ACCURATE',
     ) => router.dispatch(session(), 'combat.attack', { interactableId, style }),
     recover: () => router.dispatch(session(), 'combat.recover', {}),
     reclaimGrave: () => router.dispatch(session(), 'combat.reclaim_grave', {}),
@@ -81,7 +82,7 @@ function harness() {
     /** Attacks tick by tick until one strike lands for damage; returns that strike. */
     async strikeUntilDamage(
       interactableId: string,
-      style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' = 'ACCURATE',
+      style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' | 'MAGIC' = 'ACCURATE',
     ) {
       for (let i = 0; i < 200; i += 1) {
         const r = await router.dispatch(session(), 'combat.attack', { interactableId, style });
@@ -570,5 +571,70 @@ describe('ranged combat style', () => {
     expect(state.skills['skill.ranged']?.xp ?? 0).toBeGreaterThan(0);
     expect(state.skills['skill.attack']?.xp ?? 0).toBe(0);
     expect(state.skills['skill.strength']?.xp ?? 0).toBe(0);
+  });
+});
+
+describe('magic combat style and the triangle', () => {
+  const STAFF = 'item.weapon.resonant_staff';
+
+  it('refuses to channel without a staff equipped', async () => {
+    const h = harness();
+    const result = await h.dispatch(SHORE_WOLF, 'MAGIC');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('combat.magic_needs_staff');
+  });
+
+  it('will not accept a bow as a staff', async () => {
+    // Both are kit styles reading the same weapon slot, so the requirement has
+    // to be per style rather than "something ranged-ish is equipped".
+    const h = harness();
+    await h.equip('item.weapon.emberwood_shortbow');
+    const result = await h.dispatch(SHORE_WOLF, 'MAGIC');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('combat.magic_needs_staff');
+  });
+
+  it('awards Magic experience rather than Attack or Ranged', async () => {
+    const h = harness();
+    await h.equip(STAFF);
+    const landed = await h.strikeUntilDamage(SHORE_WOLF, 'MAGIC');
+    expect(landed.damage).toBeGreaterThan(0);
+    const state = await h.state();
+    expect(state.skills['skill.magic']?.xp ?? 0).toBeGreaterThan(0);
+    expect(state.skills['skill.attack']?.xp ?? 0).toBe(0);
+    expect(state.skills['skill.ranged']?.xp ?? 0).toBe(0);
+  });
+
+  it('gives a real accuracy edge for matching a creature weakness', () => {
+    // Asserted on the maths rather than through the RNG. The advantage is
+    // added to the attack level only, and the maximum hit is a function of the
+    // strength level, so a good matchup lands more often rather than hitting
+    // harder - the accuracy roll moves and the damage roll does not.
+    const stats = {
+      strengthLevel: effectiveLevel(10),
+      defenceLevel: effectiveLevel(10),
+      attackBonus: 0,
+      strengthBonus: 0,
+      defenceBonus: 0,
+    };
+    const rng = () => ({ nextInt: (_min: number, max: number) => max });
+    const unmatched = resolveMeleeRoll(
+      { ...stats, attackLevel: effectiveLevel(10, 3) },
+      rng() as never,
+    );
+    const matched = resolveMeleeRoll(
+      { ...stats, attackLevel: effectiveLevel(10, 3 + TRIANGLE_ADVANTAGE) },
+      rng() as never,
+    );
+    expect(matched.attackRoll).toBeGreaterThan(unmatched.attackRoll);
+    expect(matched.maxHit).toBe(unmatched.maxHit);
+  });
+
+  it('names a style every creature weakness can actually be fought with', () => {
+    const styles = new Set(['ACCURATE', 'AGGRESSIVE', 'DEFENSIVE', 'RANGED', 'MAGIC']);
+    for (const encounter of COMBAT_ENCOUNTERS) {
+      if (encounter.weakTo === undefined) continue;
+      expect(styles.has(encounter.weakTo)).toBe(true);
+    }
   });
 });

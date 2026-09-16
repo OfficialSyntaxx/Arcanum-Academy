@@ -11,6 +11,7 @@ import {
 import {
   asId,
   BOSS_ENRAGE_STRENGTH_BONUS,
+  TRIANGLE_ADVANTAGE,
   combatEncounterByInteractable,
   err,
   failure,
@@ -43,6 +44,7 @@ const STRENGTH_SKILL = asId<SkillId>('skill.strength');
 const DEFENCE_SKILL = asId<SkillId>('skill.defence');
 const HITPOINTS_SKILL = asId<SkillId>('skill.hitpoints');
 const RANGED_SKILL = asId<SkillId>('skill.ranged');
+const MAGIC_SKILL = asId<SkillId>('skill.magic');
 /**
  * RANGED is a fourth style rather than a separate combat system.
  *
@@ -51,7 +53,13 @@ const RANGED_SKILL = asId<SkillId>('skill.ranged');
  * the melee styles use. It is refused without a bow equipped, which is what
  * makes it a choice of kit rather than a free extra stance.
  */
-type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED';
+type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' | 'MAGIC';
+
+/** Which skill a style trains, and which weapon requirement it demands. */
+const STYLE_SKILL: Readonly<Record<'RANGED' | 'MAGIC', SkillId>> = {
+  RANGED: RANGED_SKILL,
+  MAGIC: MAGIC_SKILL,
+};
 export interface CombatHandlerOptions {
   readonly players: PlayerService;
   readonly skills: SkillTable;
@@ -80,7 +88,8 @@ function combatStyle(payload: unknown): CombatStyle {
   return style === 'AGGRESSIVE' ||
     style === 'DEFENSIVE' ||
     style === 'ACCURATE' ||
-    style === 'RANGED'
+    style === 'RANGED' ||
+    style === 'MAGIC'
     ? style
     : 'ACCURATE';
 }
@@ -204,13 +213,19 @@ export function registerCombatHandlers(
         encounter.requiredCombatLevel
       )
         return err(failure(FailureCode.Conflict, 'combat.level_required'));
-      // Ranged is a choice of kit: without a bow in hand there is nothing to
-      // fire, and allowing it would make it a strictly free fourth stance.
-      if (style === 'RANGED') {
+      // Ranged and Magic are choices of kit: without the weapon in hand there
+      // is nothing to fire or channel, and allowing either would make it a
+      // strictly free stance beside the three that cost nothing.
+      if (style === 'RANGED' || style === 'MAGIC') {
         const weapon = state.equipment['WEAPON'];
         const requires = weapon && options.items.get(weapon.definitionId)?.equipment;
-        if (requires?.requiredSkillId !== 'skill.ranged')
-          return err(failure(FailureCode.Conflict, 'combat.ranged_needs_bow'));
+        if (requires?.requiredSkillId !== STYLE_SKILL[style])
+          return err(
+            failure(
+              FailureCode.Conflict,
+              style === 'RANGED' ? 'combat.ranged_needs_bow' : 'combat.magic_needs_staff',
+            ),
+          );
       }
       const target = respawnSparringTarget(
         state.combatTargets[id!] ?? createSparringState(encounter.maxHitpoints, now),
@@ -221,16 +236,22 @@ export function registerCombatHandlers(
       // and Defence level changes how often a hit lands and how hard.
       const seed = `${session.playerId}:${id}:${target.defeats}:${target.nextAttackAtMs}`;
       const worn = equipmentBonuses(state, options.items);
-      const rangedProgress = skillProgress(state, RANGED_SKILL);
+      // A kit style trains and rolls off its own single skill, the way Ranged
+      // and Magic do in OSRS, rather than the Attack/Strength split melee uses.
+      const kitSkill = style === 'RANGED' || style === 'MAGIC' ? STYLE_SKILL[style] : null;
+      const kitProgress = kitSkill === null ? null : skillProgress(state, kitSkill);
+      // The triangle: a creature struggles against the style it is weak to.
+      // This is where picking a stance stops being cosmetic.
+      const matchup = encounter.weakTo === style ? TRIANGLE_ADVANTAGE : 0;
       const roll = resolveMeleeRoll(
         {
           attackLevel:
-            style === 'RANGED'
-              ? effectiveLevel(rangedProgress.level, 3)
-              : effectiveLevel(attackProgress.level, style === 'ACCURATE' ? 3 : 0),
+            kitProgress !== null
+              ? effectiveLevel(kitProgress.level, 3 + matchup)
+              : effectiveLevel(attackProgress.level, (style === 'ACCURATE' ? 3 : 0) + matchup),
           strengthLevel:
-            style === 'RANGED'
-              ? effectiveLevel(rangedProgress.level)
+            kitProgress !== null
+              ? effectiveLevel(kitProgress.level)
               : effectiveLevel(strengthProgress.level, style === 'AGGRESSIVE' ? 3 : 0),
           defenceLevel: effectiveLevel(encounter.defenceLevel),
           attackBonus: worn.attack,
@@ -290,13 +311,12 @@ export function registerCombatHandlers(
         }
       }
       const styleSkillId =
-        style === 'RANGED'
-          ? RANGED_SKILL
-          : style === 'ACCURATE'
-            ? ATTACK_SKILL
-            : style === 'AGGRESSIVE'
-              ? STRENGTH_SKILL
-              : DEFENCE_SKILL;
+        kitSkill ??
+        (style === 'ACCURATE'
+          ? ATTACK_SKILL
+          : style === 'AGGRESSIVE'
+            ? STRENGTH_SKILL
+            : DEFENCE_SKILL);
       const styleXp = playerDamage * options.combatXpPerDamage;
       const hitpointsXp = playerDamage * options.hitpointsXpPerDamage;
       const styleSkill = options.skills.get(styleSkillId);

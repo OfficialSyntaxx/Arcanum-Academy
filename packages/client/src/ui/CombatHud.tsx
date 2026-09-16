@@ -33,6 +33,7 @@ const STYLE_LABEL = {
   AGGRESSIVE: 'Aggressive',
   DEFENSIVE: 'Defensive',
   RANGED: 'Ranged',
+  MAGIC: 'Magic',
 } as const;
 
 /**
@@ -136,7 +137,7 @@ export function CombatHud({
       ) : (
         <div className="combat-hud__actions">
           <div className="combat-hud__styles" role="radiogroup" aria-label="Attack stance">
-            {(['ACCURATE', 'AGGRESSIVE', 'DEFENSIVE', 'RANGED'] as const).map((option) => (
+            {(['ACCURATE', 'AGGRESSIVE', 'DEFENSIVE', 'RANGED', 'MAGIC'] as const).map((option) => (
               <button
                 key={option}
                 type="button"

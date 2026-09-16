@@ -134,7 +134,7 @@ export interface EconomyState {
     readonly combatXpGained: number;
     readonly hitpointsXpGained?: number;
     readonly styleSkillId?: string;
-    readonly style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED';
+    readonly style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' | 'MAGIC';
     readonly foodConsumed?: { readonly itemId: string; readonly healAmount: number };
     readonly bossPhase?: number;
   } | null;
@@ -218,7 +218,7 @@ export interface AppState {
   /** Increments whenever movement begins, so contextual UI can dismiss together. */
   readonly travelRevision: number;
   /** The stance every automatic exchange is fought in until the player changes it. */
-  readonly combatStyle: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED';
+  readonly combatStyle: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' | 'MAGIC';
   /** True when the player has folded the fixed overlays away to see the world. */
   readonly hudCollapsed: boolean;
   /** Player position and heading, published a few times a second for the minimap. */
@@ -227,7 +227,7 @@ export interface AppState {
   readonly cameraYaw: number;
 
   setPhase(phase: GamePhase): void;
-  setCombatStyle(style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED'): void;
+  setCombatStyle(style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' | 'MAGIC'): void;
   setHudCollapsed(collapsed: boolean): void;
   setPlayerPosition(position: { x: number; z: number; facing: number }, cameraYaw: number): void;
   setBootStep(id: string, patch: Partial<Omit<BootStep, 'id'>>): void;

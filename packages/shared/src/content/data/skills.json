@@ -198,6 +198,17 @@
           "description": "Attack at a distance with a bow"
         }
       ]
+    },
+    {
+      "id": "skill.magic",
+      "name": "Magic",
+      "category": "COMBAT",
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Channel a staff against a distant target"
+        }
+      ]
     }
   ]
 }
