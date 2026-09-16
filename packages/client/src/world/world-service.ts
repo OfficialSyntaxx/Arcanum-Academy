@@ -360,12 +360,16 @@ export class WorldService {
     // Aim at the player's chest: a roof clipping their feet is not worth a fade.
     const targetY = playerY + 1.2;
     const rate = 1 - Math.exp(-9 * dtSeconds);
+    // The view direction along the ground, from the camera toward the player.
+    const viewX = player.x - camera.x;
+    const viewZ = player.z - camera.z;
+    const viewLength = Math.hypot(viewX, viewZ) || 1;
+    const dirX = viewX / viewLength;
+    const dirZ = viewZ / viewLength;
     for (const occluder of this.geometry.occluders) {
-      const blocking = segmentHitsBox(
-        camera,
-        { x: player.x, y: targetY, z: player.z },
-        occluder.box,
-      );
+      const blocking =
+        segmentHitsBox(camera, { x: player.x, y: targetY, z: player.z }, occluder.box) ||
+        this.crowdsForeground(camera, occluder.box, dirX, dirZ, viewLength);
       const target = blocking ? 0.22 : 1;
       for (const material of occluder.materials) {
         if (!('opacity' in material)) continue;
@@ -381,6 +385,41 @@ export class WorldService {
         }
       }
     }
+  }
+
+  /**
+   * Whether a building stands between the camera and the player in depth.
+   *
+   * The sight-line test alone is not enough under an orthographic camera. The
+   * Scribing Hall's roof passes comfortably below the camera->player segment
+   * and still filled the bottom third of a phone screen, because "not blocking
+   * the player" and "not eating the frame" are different questions. Anything
+   * nearer the camera than the player, and close enough to the view axis to be
+   * on screen, is foreground and fades for the same reason.
+   */
+  private crowdsForeground(
+    camera: { readonly x: number; readonly z: number },
+    box: {
+      readonly minX: number;
+      readonly maxX: number;
+      readonly minZ: number;
+      readonly maxZ: number;
+    },
+    dirX: number,
+    dirZ: number,
+    playerDepth: number,
+  ): boolean {
+    const centreX = (box.minX + box.maxX) / 2;
+    const centreZ = (box.minZ + box.maxZ) / 2;
+    const offsetX = centreX - camera.x;
+    const offsetZ = centreZ - camera.z;
+    const depth = offsetX * dirX + offsetZ * dirZ;
+    if (depth <= 0 || depth >= playerDepth) return false;
+    // Lateral distance from the view axis, against the building's own half
+    // width: a hall off to one side is scenery, not an obstruction.
+    const lateral = Math.abs(offsetX * dirZ - offsetZ * dirX);
+    const halfSpan = Math.max(box.maxX - box.minX, box.maxZ - box.minZ) / 2;
+    return lateral < halfSpan + FOREGROUND_MARGIN;
   }
 
   /**
@@ -476,6 +515,13 @@ export class WorldService {
     this.root.clear();
   }
 }
+
+/**
+ * How far beyond a building's own footprint still counts as blocking the view,
+ * in metres. Sized for the phone frustum, where the view is narrow enough that
+ * a building a few metres off the axis is still across the frame.
+ */
+const FOREGROUND_MARGIN = 3;
 
 /**
  * Slab method: does the segment from `a` to `b` pass through the box?

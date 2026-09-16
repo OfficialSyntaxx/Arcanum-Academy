@@ -103,3 +103,15 @@
   the server was told about. Publish presence immediately before the command rather than relying
   on the movement throttle, or a slow frame puts the player out of range of something they are
   standing next to.
+- Never swallow an asset load failure. `CharacterRig` caught its load error and fell back to a
+  pooled silhouette, so a corrupt skin looked like a deliberate art choice: every peasant in the
+  square rendered as a featureless capsule with nothing in the console. The catch now logs.
+- Draco corrupts the skin of a glTF assembled by merging a second document (`attachHead`).
+  three.js loads it and then dies on `matrixWorld` of undefined while cloning the skeleton.
+  Compress the models that merge nothing; quantize the rest.
+- A draw-call count measured under SwiftShader says nothing about a phone GPU. Trading visible
+  character quality for an fps number from a software renderer was the wrong call, and 190 draw
+  calls was under the 6.8.1 ceiling of 200 anyway - it only missed the target of 100.
+- A sight-line test is not a "does it eat the frame" test. The Scribing Hall roof passed below the
+  camera-to-player segment and still filled the bottom third of the phone screen. Fade whatever is
+  nearer the camera than the player and close to the view axis, not only what the ray pierces.

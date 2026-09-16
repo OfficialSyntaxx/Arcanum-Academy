@@ -616,6 +616,7 @@ export class HubController {
       this.world,
       this.options.quality.shadowsEnabled,
       this.npcs.presentations(),
+      this.options.quality.maxAmbientActors,
     );
     this.world.root.add(avatars.root);
     return avatars;

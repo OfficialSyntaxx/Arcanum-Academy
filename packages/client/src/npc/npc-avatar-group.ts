@@ -42,8 +42,8 @@ interface Avatar {
   hidden: boolean;
 }
 
-/** Crowd rigs per outfit. Two apiece reads as a populated square up close. */
-const CROWD_RIGS_PER_OUTFIT = 2;
+/** The two bodies the anonymous crowd is drawn from. */
+const CROWD_OUTFITS = ['peasant-m', 'peasant-f'] as const;
 
 /** A rig that follows whichever nearby crowd member is assigned to it. */
 interface CrowdRig {
@@ -84,10 +84,28 @@ export class NpcAvatarGroup {
     private readonly world: WorldService,
     shadowsEnabled: boolean,
     named: readonly NamedNpcPresentation[],
+    maxCrowdRigs: number,
   ) {
     this.root.name = 'named-npc-avatars';
-    for (const outfit of ['peasant-m', 'peasant-f'] as const) {
-      for (let i = 0; i < CROWD_RIGS_PER_OUTFIT; i += 1) {
+    // One rig per person the device's quality tier admits, so nobody in the
+    // square is ever drawn as a pooled silhouette. A weaker phone shows fewer
+    // people, which reads as a quiet morning; it must never show worse people,
+    // which reads as a broken game.
+    //
+    // The count per outfit comes from the actual roster, not an even split. A
+    // rig cannot change outfit without the person appearing to change clothes,
+    // so an even split leaves the majority body short and draws the remainder
+    // as silhouettes - which is exactly what it did.
+    const wanted = new Map<CharacterOutfit, number>(CROWD_OUTFITS.map((outfit) => [outfit, 0]));
+    for (const presentation of named) {
+      if (presentation.role !== NpcRole.Student) continue;
+      const outfit = outfitFor(presentation.role, presentation.id);
+      wanted.set(outfit, (wanted.get(outfit) ?? 0) + 1);
+    }
+    const budget = Math.max(0, maxCrowdRigs);
+    for (const outfit of CROWD_OUTFITS) {
+      const perOutfit = Math.min(wanted.get(outfit) ?? 0, budget);
+      for (let i = 0; i < perOutfit; i += 1) {
         const rig = new CharacterRig(outfit, { shadowsEnabled });
         rig.root.name = `crowd-rig:${outfit}:${i}`;
         rig.root.visible = false;

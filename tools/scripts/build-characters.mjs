@@ -246,10 +246,22 @@ async function grade(file, name, ratio, textureSize, keepClips = null, body = nu
       quality: 78,
     }),
     resample({ tolerance: 1e-3 }),
-    prune(),
-    // draco() quantizes as part of encoding, so it replaces quantize() here
-    // rather than following it.
-    draco(),
+    // keepLeaves matters: a skeleton's leaf bones have no mesh and no children,
+    // so an ordinary prune deletes them while the skin still lists them as
+    // joints. three.js then clones a skeleton with holes in it and every rig
+    // using this outfit dies on `matrixWorld` of undefined.
+    prune({ keepLeaves: true }),
+    // Draco where it is safe, quantize where it is not.
+    //
+    // draco() quantizes as part of encoding, so the two are alternatives, not a
+    // sequence. Draco corrupts the skin of any outfit assembled by attachHead:
+    // three.js loads it, then dies on `matrixWorld` of undefined while cloning
+    // the skeleton, and because the rig swallows load failures every peasant in
+    // the square silently fell back to a pooled silhouette. Verified by
+    // swapping one peasant back to a pre-Draco build: that body's rigs came
+    // alive and the failure moved to the other. The outfits that merge no
+    // second document compress fine and are where most of the saving was.
+    body === null ? draco() : quantize(),
   );
 
   const output = path.join(outDir, `${name}.glb`);

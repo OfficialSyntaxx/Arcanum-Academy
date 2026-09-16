@@ -261,12 +261,16 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   // The spawn needs an immediately recognisable place, not just another point
   // on the grass. This paved medallion also gives the lighter route material a
   // visual home in the first phone screen.
+  //
+  // Sized so a person crossing it is a clear fraction of it. At 11.6 m across
+  // a 1.8 m character covered a sixth of its width and read as a figurine
+  // standing on a plaza-sized coin, which was the owner's complaint.
   if (zone.waypoints.some((waypoint) => waypoint.tags?.includes('spawn'))) {
-    const medallion = new Mesh(track(new CylinderGeometry(5.8, 5.8, 0.1, 12)), plazaStone);
+    const medallion = new Mesh(track(new CylinderGeometry(3.4, 3.4, 0.1, 12)), plazaStone);
     medallion.position.set(0, heightAt(terrain, { x: 0, z: 0 }) + 0.04, 0);
     medallion.receiveShadow = quality.shadowsEnabled;
     group.add(medallion);
-    const inlay = new Mesh(track(new RingGeometry(3.7, 4.7, 12)), crystal);
+    const inlay = new Mesh(track(new RingGeometry(2.1, 2.7, 12)), crystal);
     inlay.rotation.x = -Math.PI / 2;
     inlay.position.set(0, heightAt(terrain, { x: 0, z: 0 }) + 0.1, 0);
     group.add(inlay);

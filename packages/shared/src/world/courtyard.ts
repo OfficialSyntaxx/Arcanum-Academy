@@ -55,7 +55,7 @@ export const COURTYARD: Zone = {
   },
   spawn: wp('wp.plaza.center'),
   atmosphere: 'courtyard.afternoon',
-  ambientPopulation: 18,
+  ambientPopulation: 14,
   waypoints: [
     // --- Central plaza ---------------------------------------------------
     {

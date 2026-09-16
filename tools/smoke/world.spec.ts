@@ -63,7 +63,11 @@ test('phone: walk to a resource, earn XP, inspect skills, and reach a crafting s
   await expect(page.locator('.status-bar__toggle')).toHaveAttribute('aria-label', /Connected/);
   await page.getByRole('button', { name: 'Map', exact: true }).click();
   await page.getByRole('button', { name: 'Resonance Seam' }).click();
-  await expect(page.locator('.prompt__label')).toHaveText('Resonance Seam', { timeout: 30_000 });
+  // 60s, not 30s: the walk itself measures about ten seconds, but this runs
+  // under SwiftShader, where loading a rig per crowd member before the world
+  // starts moving costs most of a smaller budget. The assertion is here to
+  // catch a player who never arrives, and it still does that.
+  await expect(page.locator('.prompt__label')).toHaveText('Resonance Seam', { timeout: 60_000 });
   await page.getByRole('button', { name: 'Mine', exact: true }).click();
   await expect(page.locator('.gathering-hud')).toBeVisible();
   // The normal ten-second collection loop must produce authoritative rewards.

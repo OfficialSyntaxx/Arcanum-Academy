@@ -145,8 +145,13 @@ export class CharacterRig {
         if (this.disposed) return;
         this.build(gltf, clips);
       })
-      .catch(() => {
-        // The caller keeps its procedural fallback if the model cannot load.
+      .catch((error: unknown) => {
+        // The caller keeps its procedural fallback, but this must never be
+        // silent: a swallowed failure here degrades every character wearing
+        // this outfit into a pooled silhouette, which looks like a deliberate
+        // art choice rather than a broken asset. It hid a corrupt skin for a
+        // full build cycle.
+        console.error(`character rig "${outfit}" failed to load`, error);
       });
   }
 
