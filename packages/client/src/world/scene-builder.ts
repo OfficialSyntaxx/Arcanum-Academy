@@ -58,8 +58,25 @@ export interface DoorHandle {
   readonly openAngle: number;
 }
 
+/** One building, with the box it occupies, so the view can fade it. */
+export interface Occluder {
+  readonly object: Object3D;
+  readonly box: {
+    readonly minX: number;
+    readonly maxX: number;
+    readonly minZ: number;
+    readonly maxZ: number;
+    readonly minY: number;
+    readonly maxY: number;
+  };
+  /** Materials this building owns; opacity is written straight onto them. */
+  readonly materials: readonly Material[];
+}
+
 export interface ZoneGeometry {
   readonly group: Group;
+  /** Buildings that can stand between the camera and the player. */
+  readonly occluders: readonly Occluder[];
   /** Marker objects keyed by interactable id, so prompts can highlight them. */
   readonly markers: ReadonlyMap<string, Object3D>;
   /** Every building door in the zone, for `WorldService` to animate. */
@@ -280,14 +297,42 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   // (footprint, door side, wall/roof height) varies enough that instancing
   // would not actually share anything.
   const doors: DoorHandle[] = [];
+  const occluders: Occluder[] = [];
   for (const building of zone.buildings) {
     const floorY = heightAt(terrain, {
       x: (building.minX + building.maxX) / 2,
       z: (building.minZ + building.maxZ) / 2,
     });
-    const built = buildBuilding(building, floorY, { wood, plaster, roofTile, doorWood, track });
+    // Each building owns its materials so one can fade without fading the
+    // rest of the street.
+    const owned = [wood.clone(), plaster.clone(), roofTile.clone(), doorWood.clone()].map(track);
+    const [ownWood, ownPlaster, ownRoof, ownDoor] = owned as [
+      MeshStandardMaterial,
+      MeshStandardMaterial,
+      MeshStandardMaterial,
+      MeshStandardMaterial,
+    ];
+    const built = buildBuilding(building, floorY, {
+      wood: ownWood,
+      plaster: ownPlaster,
+      roofTile: ownRoof,
+      doorWood: ownDoor,
+      track,
+    });
     doors.push(built.door);
     group.add(built.object);
+    occluders.push({
+      object: built.object,
+      box: {
+        minX: building.minX,
+        maxX: building.maxX,
+        minZ: building.minZ,
+        maxZ: building.maxZ,
+        minY: floorY,
+        maxY: floorY + building.wallHeight + building.roofHeight,
+      },
+      materials: owned,
+    });
   }
 
   // --- Walkways -----------------------------------------------------------
@@ -500,6 +545,7 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
 
   return {
     group,
+    occluders,
     markers,
     doors,
     dispose(): void {

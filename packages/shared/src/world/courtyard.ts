@@ -504,15 +504,17 @@ export const COURTYARD: Zone = {
   ],
 
   buildings: [
-    // The Scribing Hall is a real enclosed room: four walls and a door on
-    // the plaza side, sized to the terrace it already stands on.
+    // The Scribing Hall is a real enclosed room: four walls and a door on the
+    // plaza side. It stands *on* its terrace rather than filling it, so the
+    // approach reads as a courtyard in front of a hall; at 20x11 it was as
+    // large as the plaza itself and swallowed the opening shot.
     {
-      minX: -10,
-      maxX: 10,
-      minZ: -24,
-      maxZ: -13,
+      minX: -6.5,
+      maxX: 6.5,
+      minZ: -22,
+      maxZ: -15,
       wallHeight: 3.2,
-      roofHeight: 2,
+      roofHeight: 1.6,
       doorSide: BuildingDoorSide.South,
       doorWidth: 3,
       doorTrigger: wp('wp.scribe.stair'),

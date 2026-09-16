@@ -264,6 +264,12 @@ export class HubController {
       Math.floor(this.now() / this.options.tunables.world.worldDayLengthMs),
       this.now(),
     );
+    this.world.updateOcclusion(
+      this.options.render.camera.position,
+      this.player.position,
+      this.player.elevation,
+      dtSeconds,
+    );
     this.world.updateDoors(this.player.position, dtSeconds);
     this.world.updateNavigationMarker(this.player.destination, this.now());
 

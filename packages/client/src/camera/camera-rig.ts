@@ -63,7 +63,9 @@ export interface CameraTarget {
 
 export class CameraRig {
   private yaw = Math.PI;
-  private pitch = 0.72;
+  // Opens near the shallow end of the band: people stand up in frame and the
+  // world shows its silhouette. Drag up for the map-like overhead view.
+  private pitch = 0.68;
   private viewSize: number;
   private aspect = 1;
   private readonly focus = new Vector3();

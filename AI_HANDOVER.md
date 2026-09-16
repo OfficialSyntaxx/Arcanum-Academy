@@ -374,6 +374,13 @@ OSRS rolls; before this every gear bonus in the game was zero. Note that the 640
 strength bonus rounds away at low levels, so early gear is deliberately sold on accuracy rather
 than damage, and there are tests pinning both halves of that.
 
+**Framing update (2026-09-16, branch `Claudesep16`):** the camera pitch band is back to the §5.2
+spec of 30-60 degrees above the horizon (it had drifted to 45-69), which matters because under an
+orthographic camera a figure's screen height scales with `cos(pitch)`. Buildings standing between
+the camera and the player fade to 22% opacity via a segment-versus-box test against the authored
+building rectangles, so the fade can never disagree with collision. The Courtyard's Scribing Hall
+was 20x11 m, as large as the plaza beside it, and is now 13x7 m with a lower roof.
+
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
 oversights.

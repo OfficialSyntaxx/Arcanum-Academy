@@ -131,6 +131,30 @@ accuracy (+12 on a base of 64 is about a fifth more attack roll, felt immediatel
 level). `packages/sim/src/__tests__/combat-rolls.test.ts` asserts both halves of this so
 nobody "fixes" it later by inflating the numbers.
 
+### 6. Camera framing and occlusion (this commit)
+
+Chasing the owner's "miniature figurines" note.
+
+- **Pitch band brought back to the §5.2 spec.** It had drifted to 45-69 degrees above the
+  horizon; the spec is 30-60. Under an orthographic camera a standing figure's screen height
+  is its height times `cos(pitch)`, so looking down that steeply was costing about 15% of
+  every character's apparent height. Band is now 0.52-1.05 rad and the default opens at 0.68.
+- **Buildings between the camera and the player now fade** to 22% opacity, using a
+  segment-versus-box test against the authored building rectangles rather than a raycast, so
+  it cannot disagree with collision and costs nothing per frame. Each building owns its
+  materials so one can fade without fading the street.
+- **The Scribing Hall was 20 m x 11 m,** as large as the plaza it stands beside, and filled
+  the bottom third of the opening shot. Now 13 m x 7 m with a lower roof: it stands _on_ its
+  terrace rather than filling it.
+
+**A wrong turn worth recording.** The roof filling the lower third looked like an occlusion
+bug, and the fade was built to solve it. It was not: under an orthographic camera the segment
+from the player to the camera passes roughly 16 m _above_ that roof, so nothing was actually
+being hidden. The mass in frame was just an oversized building seen from behind. The fade is
+still correct and still earns its place the moment the player walks north of the hall, but the
+composition fix was the prop size. **Diagnose with a colour probe, not by reasoning about the
+projection:** painting the roof magenta answered in one render what two changes had guessed at.
+
 ---
 
 ## Things learned the hard way
@@ -165,10 +189,11 @@ ceiling. No merge to `main`.
 
 ### Open items, roughly by value
 
-1. **The world still dwarfs its people.** Paths are 3 m wide and halls 20 m across, so a
-   correctly-sized human reads small beside them. The fix is a prop-scale pass on the
-   authored zones, not another camera change. This is the owner's one remaining visual
-   complaint.
+1. **The world still dwarfs its people,** though less than it did. The Scribing Hall is
+   resized and the camera is at spec; the remaining offenders are the 11.6 m plaza medallion
+   and the 8 m avenue spacing in `courtyard.ts`, which are layout rather than props and so
+   move waypoints when changed. Do this deliberately, not as a tweak. This is the owner's one
+   remaining visual complaint.
 2. **Gear is one tier deep and melee only.** No head, legs, hands, feet, cape, neck, ring or
    ammo slots, because no gear exists for them. Magic and Ranged are unbuilt (§3.4.3), so
    there is no combat triangle yet.

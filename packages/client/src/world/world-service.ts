@@ -342,6 +342,48 @@ export class WorldService {
   }
 
   /**
+   * Fades any building standing between the camera and the player.
+   *
+   * Under a shallow orthographic pitch a roof between the camera and the
+   * player hides the one thing the player is steering, which was the single
+   * worst thing about the old high camera. Buildings are axis-aligned boxes in
+   * authored data, so this is a segment/box test rather than a raycast: no
+   * scene traversal, no allocation, and it cannot disagree with collision.
+   */
+  updateOcclusion(
+    camera: { readonly x: number; readonly y: number; readonly z: number },
+    player: Vec2,
+    playerY: number,
+    dtSeconds: number,
+  ): void {
+    if (this.geometry.occluders.length === 0) return;
+    // Aim at the player's chest: a roof clipping their feet is not worth a fade.
+    const targetY = playerY + 1.2;
+    const rate = 1 - Math.exp(-9 * dtSeconds);
+    for (const occluder of this.geometry.occluders) {
+      const blocking = segmentHitsBox(
+        camera,
+        { x: player.x, y: targetY, z: player.z },
+        occluder.box,
+      );
+      const target = blocking ? 0.22 : 1;
+      for (const material of occluder.materials) {
+        if (!('opacity' in material)) continue;
+        const next = material.opacity + (target - material.opacity) * rate;
+        material.opacity = Math.abs(next - target) < 0.01 ? target : next;
+        // Staying opaque while fully solid keeps the normal case on the fast
+        // path: a transparent material is sorted and blended every frame.
+        const wantsTransparency = material.opacity < 0.999;
+        if (material.transparent !== wantsTransparency) {
+          material.transparent = wantsTransparency;
+          material.depthWrite = !wantsTransparency;
+          material.needsUpdate = true;
+        }
+      }
+    }
+  }
+
+  /**
    * Swings every building door toward open or shut based on the player's
    * distance from its trigger waypoint. Purely visual — there is no collision
    * system to gate, so a door is a proximity cue, not an obstacle.
@@ -433,4 +475,44 @@ export class WorldService {
     this.sky.dispose();
     this.root.clear();
   }
+}
+
+/**
+ * Slab method: does the segment from `a` to `b` pass through the box?
+ *
+ * Standard three-axis slab clip. Returns false the moment the surviving
+ * parameter range collapses, so the common case of no overlap on the first
+ * axis costs two divisions.
+ */
+function segmentHitsBox(
+  a: { readonly x: number; readonly y: number; readonly z: number },
+  b: { readonly x: number; readonly y: number; readonly z: number },
+  box: {
+    readonly minX: number;
+    readonly maxX: number;
+    readonly minY: number;
+    readonly maxY: number;
+    readonly minZ: number;
+    readonly maxZ: number;
+  },
+): boolean {
+  let enter = 0;
+  let exit = 1;
+  const axes: readonly [number, number, number, number][] = [
+    [a.x, b.x - a.x, box.minX, box.maxX],
+    [a.y, b.y - a.y, box.minY, box.maxY],
+    [a.z, b.z - a.z, box.minZ, box.maxZ],
+  ];
+  for (const [origin, delta, min, max] of axes) {
+    if (Math.abs(delta) < 1e-9) {
+      if (origin < min || origin > max) return false;
+      continue;
+    }
+    const t1 = (min - origin) / delta;
+    const t2 = (max - origin) / delta;
+    enter = Math.max(enter, Math.min(t1, t2));
+    exit = Math.min(exit, Math.max(t1, t2));
+    if (enter > exit) return false;
+  }
+  return true;
 }

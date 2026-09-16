@@ -240,10 +240,12 @@ export const DEFAULT_TUNABLES: Tunables = Object.freeze({
     cameraBoomLength: 120,
     cameraHeight: 5.5,
     cameraSmoothing: 8,
-    // A high isometric opening keeps the player, routes and landmarks in one
-    // composition. The player can still drag down for a closer ground view.
-    cameraMinPitch: 0.78,
-    cameraMaxPitch: 1.2,
+    // The §5.2 spec band is 30-60 degrees above the horizon; this had drifted
+    // to 45-69, and looking down that steeply is most of why characters read
+    // as figurines: a steep camera shows their footprint rather than their
+    // height, and the ground fills the screen instead of the world's skyline.
+    cameraMinPitch: 0.52,
+    cameraMaxPitch: 1.05,
     npcDwellMinMs: 4_000,
     npcDwellMaxMs: 20_000,
     npcWalkSpeed: 1.5,
