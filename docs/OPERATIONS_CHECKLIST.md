@@ -97,3 +97,12 @@ checks; never use a production player as an experiment.
 - [ ] Inspect HTML, JavaScript, storage, URLs, and request URLs for the Render token; it must never
       appear. The `nf_jwt` session cookie must be Secure and HttpOnly where emitted by Netlify.
 - [ ] After login, repeat the complete G6-D mobile navigation and read-only data checks.
+
+## G6-E — audited snapshot restore
+
+- [ ] Review the exact snapshot before the restore action becomes available.
+- [ ] Confirm a 10+ character reason and fresh password confirmation are required.
+- [ ] Restore a staging account and confirm the receipt records actor, reason, snapshot, and versions.
+- [ ] Confirm a new `PRE_RESTORE` snapshot contains the displaced live state and can undo the repair.
+- [ ] Confirm a stale expected version, foreign snapshot, invalid reason, expired re-authentication,
+      and a direct/non-allowlisted POST leave the live save untouched.

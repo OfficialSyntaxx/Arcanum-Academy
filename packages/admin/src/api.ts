@@ -139,12 +139,34 @@ export class AdminApi {
     );
   }
 
+  restore(
+    playerId: string,
+    input: { snapshotId: string; expectedVersion: number; reason: string },
+  ) {
+    return this.send<{ player: PlayerSummary; audit: RestoreAuditEntry }>(
+      `/admin/players/${encodeURIComponent(playerId)}/restore`,
+      input,
+    );
+  }
+
   private async get<T>(path: string): Promise<T> {
     const response = await this.fetcher(`/.netlify/functions/admin-proxy${path}`, {
       method: 'GET',
       cache: 'no-store',
       credentials: 'same-origin',
       headers: { accept: 'application/json' },
+    });
+    if (!response.ok) throw new AdminApiError(response.status);
+    return (await response.json()) as T;
+  }
+
+  private async send<T>(path: string, body: unknown): Promise<T> {
+    const response = await this.fetcher(`/.netlify/functions/admin-proxy${path}`, {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: { accept: 'application/json', 'content-type': 'application/json' },
+      body: JSON.stringify(body),
     });
     if (!response.ok) throw new AdminApiError(response.status);
     return (await response.json()) as T;

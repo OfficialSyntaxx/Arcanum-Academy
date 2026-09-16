@@ -15,7 +15,8 @@ function response(status: number, body: string) {
 }
 
 export default async function adminProxy(request: Request) {
-  if (request.method !== 'GET') return response(405, '{"error":"method_not_allowed"}');
+  if (request.method !== 'GET' && request.method !== 'POST')
+    return response(405, '{"error":"method_not_allowed"}');
 
   const [user, serverUrl, adminToken, authorizedEmail] = [
     await getUser(),
@@ -29,13 +30,30 @@ export default async function adminProxy(request: Request) {
   }
   if (!serverUrl || !adminToken) return response(503, '{"error":"proxy_not_configured"}');
 
-  const target = proxyTarget(request.url, serverUrl);
+  const target = proxyTarget(request.url, serverUrl, request.method);
   if (!target) return response(404, '{"error":"not_found"}');
 
+  if (request.method === 'POST') {
+    const lastSignInAt = user.lastSignInAt ? Date.parse(user.lastSignInAt) : Number.NaN;
+    if (!Number.isFinite(lastSignInAt) || Date.now() - lastSignInAt > 10 * 60_000) {
+      return response(401, '{"error":"fresh_authentication_required"}');
+    }
+  }
+
   const upstream = await fetch(target, {
-    method: 'GET',
+    method: request.method,
     cache: 'no-store',
-    headers: { accept: 'application/json', authorization: `Bearer ${adminToken}` },
+    headers: {
+      accept: 'application/json',
+      authorization: `Bearer ${adminToken}`,
+      ...(request.method === 'POST'
+        ? {
+            'content-type': 'application/json',
+            'x-admin-actor': user.email ?? '',
+          }
+        : {}),
+    },
+    ...(request.method === 'POST' ? { body: await request.text() } : {}),
   });
   return new Response(upstream.body, {
     status: upstream.status,

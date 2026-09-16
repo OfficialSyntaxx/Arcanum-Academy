@@ -21,12 +21,27 @@ describe('operations API client', () => {
     );
   });
 
-  it('does not expose mutation methods and conceals auth failures', async () => {
+  it('reports authentication failures while keeping mutations explicit', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response('', { status: 404 }));
     const api = new AdminApi(fetcher);
-    expect('restore' in api).toBe(false);
     await expect(api.searchPlayers()).rejects.toEqual(expect.any(AdminApiError));
     await expect(api.searchPlayers()).rejects.toThrow(/not found/);
+  });
+
+  it('sends a restore only through the same-origin proxy', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    const api = new AdminApi(fetcher);
+    await api.restore('player-alpha', {
+      snapshotId: 'snapshot-1',
+      expectedVersion: 4,
+      reason: 'Recover confirmed lost progress.',
+    });
+    expect(fetcher).toHaveBeenCalledWith(
+      '/.netlify/functions/admin-proxy/admin/players/player-alpha/restore',
+      expect.objectContaining({ method: 'POST', credentials: 'same-origin' }),
+    );
   });
 
   it('provides only read methods for overview, reports, and diagnostics', async () => {

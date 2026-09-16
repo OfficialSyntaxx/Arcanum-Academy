@@ -150,7 +150,7 @@ describe('read-only admin routes', () => {
     await app.close();
   });
 
-  it('shows immutable restore receipts without exposing a mutation route', async () => {
+  it('shows immutable restore receipts and restores only with reviewed context', async () => {
     const { app, repository } = await harness();
     const snapshots = await repository.listSnapshots(PLAYER);
     if (!snapshots.ok) throw new Error(snapshots.error.reason);
@@ -167,12 +167,27 @@ describe('read-only admin routes', () => {
       headers: auth,
     });
     expect(audit.json().audit[0]).toMatchObject({ actor: 'test-operator', beforeVersion: 2 });
-    const mutation = await app.inject({
+    const missingContext = await app.inject({
       method: 'POST',
       url: `/admin/players/${PLAYER}/restore`,
       headers: auth,
     });
-    expect(mutation.statusCode).toBe(404);
+    expect(missingContext.statusCode).toBe(400);
+    const restored = await app.inject({
+      method: 'POST',
+      url: `/admin/players/${PLAYER}/restore`,
+      headers: { ...auth, 'x-admin-actor': 'operator@example.test' },
+      payload: {
+        snapshotId: snapshots.value[0]!.id,
+        expectedVersion: 3,
+        reason: 'Recover a confirmed support incident safely.',
+      },
+    });
+    expect(restored.statusCode).toBe(200);
+    expect(restored.json()).toMatchObject({
+      player: { version: 4 },
+      audit: { beforeVersion: 3, afterVersion: 4 },
+    });
     await app.close();
   });
 

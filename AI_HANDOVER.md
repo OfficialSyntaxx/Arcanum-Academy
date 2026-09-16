@@ -283,6 +283,12 @@ server-side in Render and Netlify runtime secrets; it cannot enter the browser b
 or DOM. Security headers deny framing and disable caching. Deployment and acceptance evidence is in
 `docs/G6_D1_ADMIN_LOGIN_HANDOVER.md` and `docs/OPERATIONS_CHECKLIST.md`.
 
+**G6-E operations update (2026-09-16):** the first mutation is an audited snapshot restore only.
+Operators review the selected snapshot, provide a support reason, and freshly re-authenticate before
+the allowlisted proxy forwards the request. The repository captures `PRE_RESTORE` before replacement,
+advances the save version, and records the actor/reason receipt; that backup is the immediate undo
+path. No free-form account editing or grant route exists. Evidence is in `docs/G6_E_RETURN.md`.
+
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
 oversights.

@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import type { Logger, PlayerId } from '@alderfell/shared';
+import { FailureCode, type Logger, type PlayerId } from '@alderfell/shared';
+import { z } from 'zod';
 import type { PlayerRecord, PlayerRepository, SaveSnapshot } from '../persistence/repository.js';
 import type { DiagnosticStore } from '../diagnostics.js';
 import type { SupportReportStore } from '../support-reports.js';
@@ -8,6 +9,11 @@ import { adminTokenMatches } from './auth.js';
 const WINDOW_MS = 60_000;
 const REQUESTS_PER_WINDOW = 30;
 const SENSITIVE_KEY = /(token|secret|password|credential)/i;
+const restoreRequest = z.object({
+  snapshotId: z.string().trim().min(1).max(160),
+  expectedVersion: z.number().int().positive(),
+  reason: z.string().trim().min(10).max(240),
+});
 
 export function redactSensitive(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactSensitive);
@@ -85,8 +91,8 @@ export function registerAdminRoutes(
         }
         reply.header('access-control-allow-origin', origin);
         reply.header('vary', 'Origin');
-        reply.header('access-control-allow-methods', 'GET, OPTIONS');
-        reply.header('access-control-allow-headers', 'Authorization, Content-Type');
+        reply.header('access-control-allow-methods', 'GET, POST, OPTIONS');
+        reply.header('access-control-allow-headers', 'Authorization, Content-Type, X-Admin-Actor');
         reply.header('access-control-max-age', '600');
         if (request.method === 'OPTIONS') return reply.code(204).send();
       }
@@ -196,6 +202,46 @@ export function registerAdminRoutes(
       const result = await options.repository.listRestoreAudit(playerId as PlayerId);
       if (!result.ok) return storageError(reply);
       return { audit: result.value };
+    });
+
+    admin.post('/admin/players/:playerId/restore', async (request, reply) => {
+      const { playerId } = request.params as { playerId: string };
+      const parsed = restoreRequest.safeParse(request.body);
+      const actor = request.headers['x-admin-actor'];
+      if (
+        !parsed.success ||
+        typeof actor !== 'string' ||
+        actor.trim().length < 3 ||
+        actor.length > 320
+      ) {
+        return reply.code(400).send({ error: 'invalid_restore_request' });
+      }
+      const restored = await options.repository.restoreSnapshot({
+        playerId: playerId as PlayerId,
+        snapshotId: parsed.data.snapshotId,
+        expectedVersion: parsed.data.expectedVersion,
+        actor,
+        reason: parsed.data.reason,
+      });
+      if (!restored.ok) {
+        const status =
+          restored.error.code === FailureCode.Conflict
+            ? 409
+            : restored.error.code === FailureCode.NotFound
+              ? 404
+              : restored.error.code === FailureCode.Storage
+                ? 503
+                : 400;
+        return reply.code(status).send({ error: restored.error.reason });
+      }
+      options.logger.warn('admin restore completed', {
+        playerId,
+        snapshotId: parsed.data.snapshotId,
+        actor,
+        beforeVersion: restored.value.audit.beforeVersion,
+        afterVersion: restored.value.audit.afterVersion,
+      });
+      return { player: summary(restored.value.record), audit: restored.value.audit };
     });
   });
 }

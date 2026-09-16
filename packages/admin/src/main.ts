@@ -23,6 +23,7 @@ if (!root) throw new Error('Missing operations app root.');
 const app: HTMLElement = root;
 
 let api: AdminApi | undefined;
+let operatorEmail = '';
 let activeQuery = '';
 let nextCursor: string | undefined;
 
@@ -132,7 +133,8 @@ function renderConnect() {
     event.preventDefault();
     submit.disabled = true;
     try {
-      await login(username.value.trim(), password.value);
+      const user = await login(username.value.trim(), password.value);
+      operatorEmail = user.email ?? '';
       const candidate = new AdminApi();
       await candidate.overview();
       api = candidate;
@@ -140,6 +142,7 @@ function renderConnect() {
       await renderDashboard();
     } catch (error) {
       await logout().catch(() => undefined);
+      operatorEmail = '';
       showError(
         error instanceof AuthError && error.status === 401
           ? new Error('Username or password is incorrect.')
@@ -505,7 +508,95 @@ async function renderSnapshot(playerId: string, snapshotId: string) {
       node('h2', '', `Snapshot v${result.snapshot.sourceVersion}`),
       node('p', 'muted', `${formatTime(result.snapshot.createdAtMs)} · ${result.snapshot.reason}`),
       jsonPanel(result.state),
+      button('Review restore', () => renderRestoreReview(playerId, result.snapshot), 'primary'),
     );
+    app.append(section);
+  } catch (error) {
+    showError(error);
+  }
+}
+
+async function renderRestoreReview(playerId: string, snapshot: SnapshotSummary) {
+  if (!api) return renderConnect();
+  shell('players', detailNav(playerId, 'snapshots'));
+  try {
+    const current = await api.player(playerId);
+    const section = node('section', 'card restore-review');
+    section.append(
+      node('p', 'eyebrow', 'Audited repair'),
+      node('h2', '', 'Restore reviewed snapshot'),
+      node(
+        'p',
+        'muted',
+        `Snapshot v${snapshot.sourceVersion} from ${formatTime(snapshot.createdAtMs)} will replace current save v${current.player.version}.`,
+      ),
+      node(
+        'p',
+        'muted',
+        'The current save will be captured first as a permanent PRE_RESTORE snapshot, so this action can be undone from the snapshot list.',
+      ),
+    );
+    const form = node('form');
+    const reasonLabel = node('label', '', 'Reason for this repair');
+    const reason = node('textarea');
+    reason.required = true;
+    reason.minLength = 10;
+    reason.maxLength = 240;
+    reason.placeholder =
+      'Explain the support issue and why this snapshot is the correct recovery point.';
+    reasonLabel.append(reason);
+    const passwordLabel = node('label', '', 'Confirm your password');
+    const password = node('input');
+    password.type = 'password';
+    password.required = true;
+    password.autocomplete = 'current-password';
+    passwordLabel.append(password);
+    const submit = node('button', 'primary', 'Restore snapshot');
+    submit.type = 'submit';
+    form.append(
+      reasonLabel,
+      passwordLabel,
+      submit,
+      button('Cancel', () => renderSnapshot(playerId, snapshot.id), 'quiet'),
+    );
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      submit.disabled = true;
+      try {
+        if (!operatorEmail)
+          throw new Error('Your operator identity is unavailable. Sign in again.');
+        const user = await login(operatorEmail, password.value);
+        operatorEmail = user.email ?? operatorEmail;
+        const restored = await api!.restore(playerId, {
+          snapshotId: snapshot.id,
+          expectedVersion: current.player.version,
+          reason: reason.value.trim(),
+        });
+        const receipt = node('section', 'card');
+        receipt.append(
+          node('p', 'eyebrow', 'Restore complete'),
+          node('h2', '', `Save is now v${restored.player.version}`),
+          node(
+            'p',
+            'muted',
+            `Audit receipt ${restored.audit.id} · ${formatTime(restored.audit.restoredAtMs)}`,
+          ),
+          node(
+            'p',
+            'muted',
+            'The previous live save is now a PRE_RESTORE snapshot and can be restored if needed.',
+          ),
+          button('View updated snapshots', () => renderSnapshots(playerId), 'primary'),
+          button('View restore audit', () => renderAudit(playerId), 'quiet'),
+        );
+        shell('players', detailNav(playerId, 'snapshots'), receipt);
+      } catch (error) {
+        showError(error);
+        submit.disabled = false;
+      } finally {
+        password.value = '';
+      }
+    });
     app.append(section);
   } catch (error) {
     showError(error);
@@ -617,6 +708,7 @@ async function boot() {
     if (callback?.type === 'recovery') return renderNewPassword('recovery');
     const user = await getUser();
     if (user) {
+      operatorEmail = user.email ?? '';
       api = new AdminApi();
       await api.overview();
       return renderDashboard();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { permittedAdminPath, proxyTarget } from '../proxy-policy.js';
+import { permittedAdminPath, permittedAdminRequest, proxyTarget } from '../proxy-policy.js';
 
 describe('operations proxy policy', () => {
   it('allows only the authored read-only operations routes', () => {
@@ -7,6 +7,8 @@ describe('operations proxy policy', () => {
     expect(permittedAdminPath('/admin/players/player-alpha/snapshots/snap-1')).toBe(true);
     expect(permittedAdminPath('/admin/players/player-alpha/restore-audit')).toBe(true);
     expect(permittedAdminPath('/admin/players/player-alpha/restore')).toBe(false);
+    expect(permittedAdminRequest('POST', '/admin/players/player-alpha/restore')).toBe(true);
+    expect(permittedAdminRequest('POST', '/admin/players/player-alpha')).toBe(false);
     expect(permittedAdminPath('/admin/secrets')).toBe(false);
     expect(permittedAdminPath('/admin/players/../diagnostics')).toBe(false);
     expect(permittedAdminPath('/admin/players/player%2Fdiagnostics')).toBe(false);

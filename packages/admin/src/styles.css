@@ -17,7 +17,8 @@ body {
   overflow-x: hidden;
 }
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 button {
@@ -142,6 +143,20 @@ input {
   border-radius: 9px;
   color: #fff8e9;
   background: #091111;
+}
+textarea {
+  width: 100%;
+  min-height: 7rem;
+  padding: 0.7rem 0.8rem;
+  resize: vertical;
+  border: 1px solid #557069;
+  border-radius: 9px;
+  color: #fff8e9;
+  background: #091111;
+}
+textarea:focus {
+  outline: 3px solid rgb(224 169 80 / 35%);
+  border-color: #e0a950;
 }
 input:focus {
   outline: 3px solid rgb(224 169 80 / 35%);
