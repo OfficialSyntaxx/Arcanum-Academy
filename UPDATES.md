@@ -1,0 +1,152 @@
+# Updates — branch `Claudesep16`
+
+Running log of what this branch changed, why, and where it stopped. Written for whoever
+picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
+for the design; this file only records the state of this branch against it.
+
+**Branch:** `Claudesep16`, cut from `main` on 2026-09-16. Nothing here has been merged.
+**Owner instruction on this branch:** never push to `main` without explicit approval.
+
+---
+
+## Why this branch exists
+
+The owner reviewed the live build on an iPhone and reported, in their words: the world feels
+small and easy to finish; the wolf and bat models look off with a red aura floating over them;
+the NPC models look bad; proportions are off; and the whole thing reads as "touch this,
+complete this, finish" rather than an OSRS-like RPG with creatures that fight you.
+
+Every change below follows from that list.
+
+---
+
+## Decisions the owner made during the work
+
+These were escalated as design decisions (per `CLAUDE.md`'s operating rules) and answered.
+Do not reverse them without asking.
+
+| #   | Decision                                                                                                                                                                                                                          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Combat is OSRS-style and automatic.** Walk up to a creature and engage it; passive and aggressive creatures both exist. Every combat level (Attack, Strength, Defence) must measurably improve accuracy, max hit and avoidance. |
+| 2   | **Do not delete the existing world.** Keep the Courtyard as a small hub to improve later, and build larger zones around it. Enlarge first, populate after.                                                                        |
+| 3   | **Quaternius rigged characters,** not the Kenney chibi figures, which read as "tiny and compact". The player wears the hooded ranger.                                                                                             |
+| 4   | **No ground rings.** Tap-highlight reads better. The existing highlight on gathering nodes is fine for now.                                                                                                                       |
+| 5   | **Minimise fixed UI.** Too much chrome hides the game world; a way to collapse everything is wanted.                                                                                                                              |
+| 6   | **Nothing paid, ever.** Blender and CC0 assets only. This ruled out buying the full Quaternius animation library, which is why locomotion is procedural (see below).                                                              |
+| 7   | **Characters must not look like miniature figurines** in a big world.                                                                                                                                                             |
+
+---
+
+## What changed, in order
+
+### 1. Combat (commit `f569c0c`)
+
+- Both sides now roll on every 600 ms tick using the OSRS effective-level formula
+  (`level + 8 + style bonus`) in `packages/sim/src/combat-rolls.ts`. The authored damage
+  floor is gone; a zero is a real miss that still spends the tick.
+- Creatures carry their own Attack, Strength, Defence and an `aggressive` flag in
+  `packages/shared/src/combat/encounters.ts`.
+- One tap starts a fight and blows then trade themselves. The client paces the next
+  exchange from the receipt of the last confirmed one, never from the server clock, so a
+  phone with a skewed clock cannot spam or stall. Walking away ends the fight.
+  See `driveCombat()` in `packages/client/src/app/hub-controller.ts`.
+- **Known trust gap, accepted for single-player:** aggression is client-initiated, so a
+  modified client could decline to be attacked. The server still validates range, level,
+  zone and cooldown on every swing.
+- Presentation: the red rings, posts and halos over creatures are deleted. The animated
+  model is the tap target, on a faint trampled-earth disc. Creatures are scaled per type,
+  have contact shadows, amble inside a leash when idle, square up and close in a fight,
+  flash on hit, show a billboard health bar only while targeted, and dissolve on defeat.
+  Hitsplats (red damage, blue miss) pop over whoever was struck.
+- The fight card became a slim bottom strip with stance chips and food. **There is no
+  attack button.**
+
+### 2. Character pipeline and rig (commits `5e68aed`, `574c8bc`)
+
+- `tools/scripts/build-characters.mjs` (`npm run build:characters`) grades CC0 Quaternius
+  sources into small runtime GLBs under `assets/derived/characters/`: PBR maps stripped,
+  base colour shrunk to a small WebP, meshopt decimation, quantization, and only the
+  animation clips actually used. Creatures go through the same script.
+- Every human is the same 65-joint rig. Outfits are clothes only, so the script crops the
+  base body's head, hair and eyes above the neck and merges them in.
+- **The free Universal Animation Library has no plain idle or walk clip.** Locomotion is
+  therefore procedural in `packages/client/src/player/character-rig.ts`: a breathing idle
+  and a run cycle posed directly on hips, knees, shoulders, elbows and spine, blended
+  continuously with speed and hand-blended against the action clips (the mixer's own fades
+  go to the T-pose, which is why the blending is manual). Buying the full library would
+  replace only this gait — and is ruled out by decision 6.
+- The anonymous crowd uses the same rig; the instanced capsule pool is only a cold-load
+  stand-in now.
+- The female ranger outfit is built but **not shipped**: the 3 MiB precache budget could
+  not take a fourth outfit.
+
+### 3. World (commits `cda30c7`, `cc550fc`, `a5839d8`)
+
+- Emberwood Reach 105 m → 190 m, Cindermark Heights → 192 m, Frostgate Reaches → 189 m.
+  The Courtyard is untouched, as decided.
+- Each region gained a wilds area: Emberwood wolf den and armabee glade, Cindermark scree
+  den and a Cinder Wisp, Frostgate frost hollow and a Rime Wisp. Wolf packs step up in
+  level per region; wisps are passive, hard-skinned and pay crystal.
+- Scenery is a deterministic scatter (`environment-assets.ts`) around each zone's authored
+  routes, culled along links, waypoints, interactables, water and buildings, with density
+  per device tier. **Collision mirrors exactly what renders.**
+- Per-region ground palettes and an emissive grade on the shared scenery models. The models
+  are vertex-coloured, so a colour tint does nothing; an emissive lift is what frosts or
+  dusts them.
+- Every overworld station and node now has server content: mountain seams feed the Foothill
+  Forge (Resonant Ingot), snow berries and creek feed the Frostgate Workshop (Frost Berry
+  Preserve), the Lumber Mill mills Emberwood Planks.
+
+### 4. Camera, scale and HUD (commits `803ae5a`, `a4ce982`, `85c97f4`)
+
+- Default camera 26 m → 15 m across the short axis; figures at 2.05 m, slightly over life
+  size on purpose, because the zones are authored broad.
+- OSRS-shaped HUD: minimap top-right drawn from zone data and turning with the camera,
+  compact zone strip, one-line journey link, four-tab bar (Satchel, Journal, Map, Log).
+  The floating Satchel and Map buttons and the hint strip are gone. A fold control hides
+  every fixed overlay; the connection readout collapses to a dot in play.
+
+---
+
+## Things learned the hard way
+
+Also recorded in `docs/MISTAKES.md`.
+
+- The cloud container **can** render real WebGL, contrary to the old handover note: the
+  pre-installed `/opt/pw-browsers/chromium` with the ANGLE + SwiftShader flags works.
+  `tools/scripts/screenshot-phone.mjs` does this. Never claim a build pass proves the world
+  renders.
+- **Playwright's clock control stops movement.** `page.clock.setFixedTime` and
+  `clock.install` both freeze the locomotion loop, so the screenshot scripts use the real
+  clock. The repo's own smoke test (`tools/smoke/world.spec.ts`) pins the clock and has
+  **not been run on this branch** — see open items.
+- Quaternius outfit glTFs are clothes with no head. Verify a rendered frame, not a mesh list.
+- `gltf-transform`'s `animation.dispose()` leaves channels, samplers and keyframes in the
+  buffer. Dispose channels and samplers explicitly, then prune.
+- A merged glTF document carries a second buffer; a GLB may hold only one. Rebind every
+  accessor before writing.
+- The local gateway process dies when a shell session ends unless started with `setsid`.
+
+---
+
+## State at the stopping point
+
+`npm run verify` green: 472 tests across 56 files. Precache budget 2.9 MiB against a 3 MiB
+ceiling. No merge to `main`.
+
+### Open items, roughly by value
+
+1. **The world still dwarfs its people.** Paths are 3 m wide and halls 20 m across, so a
+   correctly-sized human reads small beside them. The fix is a prop-scale pass on the
+   authored zones, not another camera change. This is the owner's one remaining visual
+   complaint.
+2. **No combat equipment exists.** Only gathering tools bound to skills. The combat rolls
+   already accept `attackBonus`, `strengthBonus` and `defenceBonus`, and every one of them
+   is currently zero except the style bonus. Resonant Ingots and Emberwood Planks have no
+   sink beyond sale and are the obvious inputs for a first gear tier.
+3. **The smoke test is unrun on this branch** and its clock-pinning may fail per the note
+   above. CI on the branch will say.
+4. **The precache budget is nearly full.** A fourth outfit or another creature needs the
+   budget re-examined, not just a harder decimation ratio.
+5. Quest, diary and clue content still centres on the Courtyard; the three outer notice
+   boards surface the same catalog.
