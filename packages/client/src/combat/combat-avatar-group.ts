@@ -20,8 +20,14 @@ import {
   type Material,
 } from 'three';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { heightAt, InteractableKind, type Zone } from '@alderfell/shared';
+import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
+import {
+  combatEncounterByInteractable,
+  heightAt,
+  InteractableKind,
+  type CreatureModel,
+  type Zone,
+} from '@alderfell/shared';
 import { createShadowBlob } from '../world/shadow-blob.js';
 // Graded by tools/scripts/build-characters.mjs from the CC0 sources:
 // Quaternius "Wolf" (https://poly.pizza/m/P1gU3Qkr9r), PolyPizza "Armabee
@@ -82,22 +88,22 @@ interface CreatureDisplay {
   readonly tint?: { readonly darken: number; readonly emissive: number; readonly glow: number };
 }
 
-const DISPLAY: Readonly<Record<string, CreatureDisplay>> = {
-  'int.combat.shore_wolf': {
+const DISPLAY: Readonly<Record<CreatureModel, CreatureDisplay>> = {
+  wolf: {
     height: 0.95,
     shadowRadius: 0.62,
     hover: 0,
     leash: 1.1,
     walkSpeed: 0.7,
   },
-  'int.combat.emberwing_armabee': {
+  armabee: {
     height: 0.72,
     shadowRadius: 0.4,
     hover: 0.55,
     leash: 0.9,
     walkSpeed: 0.9,
   },
-  'int.combat.drowned_sentinel': {
+  ghost: {
     height: 1.9,
     shadowRadius: 0.55,
     hover: 0.12,
@@ -105,7 +111,7 @@ const DISPLAY: Readonly<Record<string, CreatureDisplay>> = {
     walkSpeed: 0.4,
     tint: { darken: 0.78, emissive: 0x124d58, glow: 0.28 },
   },
-  'int.combat.drowned_warden': {
+  'ghost-skull': {
     height: 2.35,
     shadowRadius: 0.75,
     hover: 0.15,
@@ -115,12 +121,21 @@ const DISPLAY: Readonly<Record<string, CreatureDisplay>> = {
   },
 };
 
-const models = {
-  'int.combat.shore_wolf': new GLTFLoader().loadAsync(shoreWolfUrl),
-  'int.combat.emberwing_armabee': new GLTFLoader().loadAsync(armabeeUrl),
-  'int.combat.drowned_sentinel': new GLTFLoader().loadAsync(drownedSentinelUrl),
-  'int.combat.drowned_warden': new GLTFLoader().loadAsync(drownedWardenUrl),
-} as const;
+const MODEL_URL: Readonly<Record<CreatureModel, string>> = {
+  wolf: shoreWolfUrl,
+  armabee: armabeeUrl,
+  ghost: drownedSentinelUrl,
+  'ghost-skull': drownedWardenUrl,
+};
+const modelCache = new Map<CreatureModel, Promise<GLTF>>();
+function loadModel(creature: CreatureModel): Promise<GLTF> {
+  let promise = modelCache.get(creature);
+  if (!promise) {
+    promise = new GLTFLoader().loadAsync(MODEL_URL[creature]);
+    modelCache.set(creature, promise);
+  }
+  return promise;
+}
 
 /** How long the death clip plays before the creature fades out of the world. */
 const FADE_AFTER_MS = 900;
@@ -148,11 +163,17 @@ export class CombatAvatarGroup {
     for (const encounter of zone.interactables.filter(
       (entry) => entry.kind === InteractableKind.CombatEncounter,
     )) {
-      const model = models[encounter.id as keyof typeof models];
-      if (model !== undefined)
-        void model.then((gltf) =>
-          this.create(encounter.id, encounter.position.x, encounter.position.z, gltf),
-        );
+      const definition = combatEncounterByInteractable(encounter.id);
+      if (definition === undefined) continue;
+      void loadModel(definition.creature).then((gltf) =>
+        this.create(
+          encounter.id,
+          definition.creature,
+          encounter.position.x,
+          encounter.position.z,
+          gltf,
+        ),
+      );
     }
   }
 
@@ -234,14 +255,9 @@ export class CombatAvatarGroup {
     this.root.clear();
   }
 
-  private create(
-    id: string,
-    x: number,
-    z: number,
-    gltf: Awaited<(typeof models)[keyof typeof models]>,
-  ): void {
+  private create(id: string, creature: CreatureModel, x: number, z: number, gltf: GLTF): void {
     if (this.disposed || this.avatars.has(id)) return;
-    const display = DISPLAY[id] ?? DISPLAY['int.combat.shore_wolf']!;
+    const display = DISPLAY[creature];
     const model = clone(gltf.scene) as Group;
     model.updateMatrixWorld(true);
     const bounds = new Box3().setFromObject(model);

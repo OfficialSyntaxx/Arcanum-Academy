@@ -86,9 +86,9 @@ export class WorldService {
     this.graph = graph;
     this.pathfinder = new Pathfinder(graph);
     this.geometry = buildZoneGeometry(zone, quality);
-    // This scenery pack currently renders in the Courtyard only. Do not give
-    // other zones invisible collision until their own prop packs exist.
-    const scenery = zone.id === 'zone.courtyard' ? environmentCollisionPlacements(quality) : null;
+    // Collision mirrors exactly the scenery the zone renders; a zone without a
+    // scenery pack gets no invisible obstacles.
+    const scenery = environmentCollisionPlacements(zone, quality);
     this.obstacles = [
       ...authoredObstacles(zone),
       ...(scenery?.trees ?? []).map(([x, z, size]): WorldObstacle => ({

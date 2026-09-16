@@ -128,6 +128,8 @@ export class HubController {
   /** Strike receipt already turned into hitsplats, so each exchange splats once. */
   private lastSplatStrikeAtMs = 0;
   private readonly aggroRetryAtMs = new Map<string, number>();
+  /** No creature picks a fight until this time; set when the player falls. */
+  private aggroGraceUntilMs = 0;
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
   private readonly now: () => number;
@@ -454,9 +456,12 @@ export class HubController {
     }
 
     if (combat !== null && combat.defeated) this.spawnHitsplats(economy);
+    // A fallen player gets a breath after recovering before the den notices
+    // them again, so a death never chains straight into another.
+    if (!alive) this.aggroGraceUntilMs = now + AGGRO_RETRY_MS * 2;
     // Nothing is being fought: an aggressive creature within reach picks the
     // fight itself. The server still validates range, level and respawn.
-    if (!alive || this.player.isTravelling) return;
+    if (!alive || this.player.isTravelling || now < this.aggroGraceUntilMs) return;
     for (const encounter of COMBAT_ENCOUNTERS) {
       if (!encounter.aggressive) continue;
       if (encounter.zoneId !== undefined && encounter.zoneId !== this.world.zone.id) continue;

@@ -5,7 +5,9 @@
  * content today, in the exact shape the Phase 3 content pipeline will later
  * produce from a validated data format.
  *
- * Layout is a single gate in from the Courtyard, opening onto a shrine
+ * Enlarged 2026-09-16 to 190 m across: the Courtyard is the small hub and
+ * this is the first real region around it. Layout is a single gate in from
+ * the Courtyard, opening onto a shrine
  * clearing at the heart of the wood, with three trails branching off it —
  * timber camp to the east, the mushroom bog to the west, and a deeper,
  * stranger hollow to the south. A river runs the length of the western edge
@@ -38,23 +40,27 @@ export { FOREST_ZONE_ID } from './zone-ids.js';
 export const FOREST: Zone = {
   id: FOREST_ZONE_ID,
   name: 'The Emberwood Reach',
-  bounds: { minX: -52.5, maxX: 52.5, minZ: -52.5, maxZ: 52.5 },
+  bounds: { minX: -95, maxX: 95, minZ: -95, maxZ: 95 },
   terrain: {
     baseHeight: 0,
     terraces: [
       // The shrine sits on a low, ancient mound at the heart of the wood.
-      { minX: -7.5, maxX: 7.5, minZ: -7.5, maxZ: 7.5, height: 0.3 },
+      { minX: -13.5, maxX: 13.5, minZ: -13.5, maxZ: 13.5, height: 0.3 },
       // The timber camp works from a cleared, levelled platform.
-      { minX: 24, maxX: 36, minZ: -6, maxZ: 6, height: 0.25 },
+      { minX: 43.2, maxX: 64.8, minZ: -10.8, maxZ: 10.8, height: 0.25 },
       // The bog sits low, fed by the river beside it.
-      { minX: -39, maxX: -21, minZ: -12, maxZ: 12, height: -0.5 },
+      { minX: -70.2, maxX: -37.8, minZ: -21.6, maxZ: 21.6, height: -0.5 },
+      // The wolf den is a bare, scraped-earth rise under the north-east ridge.
+      { minX: 50, maxX: 78, minZ: -72, maxZ: -44, height: 0.2 },
+      // The armabee glade is a sunlit rise in the south-east.
+      { minX: 48, maxX: 74, minZ: 42, maxZ: 68, height: 0.45 },
     ],
     canals: [
       // A river runs the western edge of the zone and bends past the bog —
       // three segments rather than one, so it can turn.
-      { minX: -36, maxX: -31.5, minZ: -52.5, maxZ: -15, waterHeight: -0.15 },
-      { minX: -39, maxX: -28.5, minZ: -15, maxZ: 3, waterHeight: -0.2 },
-      { minX: -36, maxX: -30, minZ: 3, maxZ: 30, waterHeight: -0.15 },
+      { minX: -64.8, maxX: -56.7, minZ: -94.5, maxZ: -27, waterHeight: -0.15 },
+      { minX: -70.2, maxX: -51.3, minZ: -27, maxZ: 5.4, waterHeight: -0.2 },
+      { minX: -64.8, maxX: -54, minZ: 5.4, maxZ: 54, waterHeight: -0.15 },
     ],
   },
   spawn: wp('wp.forest.gate'),
@@ -64,16 +70,16 @@ export const FOREST: Zone = {
     // --- Gate --------------------------------------------------------------
     {
       id: wp('wp.forest.gate'),
-      position: { x: 0, z: -30 },
+      position: { x: 0, z: -54 },
       radius: 3,
       links: [wp('wp.grove.northpath')],
       tags: ['portal'],
     },
     {
       id: wp('wp.grove.northpath'),
-      position: { x: 0, z: -15 },
+      position: { x: 0, z: -27 },
       radius: 2.5,
-      links: [wp('wp.forest.gate'), wp('wp.grove.center')],
+      links: [wp('wp.forest.gate'), wp('wp.grove.center'), wp('wp.den.path')],
     },
 
     // --- Grove clearing (shrine, centre) -----------------------------------
@@ -93,13 +99,13 @@ export const FOREST: Zone = {
     // --- Deepshade Hollow (south) -------------------------------------------
     {
       id: wp('wp.grove.southpath'),
-      position: { x: 0, z: 15 },
+      position: { x: 0, z: 27 },
       radius: 2.5,
-      links: [wp('wp.grove.center'), wp('wp.grove.hollow')],
+      links: [wp('wp.grove.center'), wp('wp.grove.hollow'), wp('wp.glade.path')],
     },
     {
       id: wp('wp.grove.hollow'),
-      position: { x: 0, z: 30 },
+      position: { x: 0, z: 54 },
       radius: 3,
       links: [wp('wp.grove.southpath')],
       tags: ['gathering', 'mystic'],
@@ -108,56 +114,96 @@ export const FOREST: Zone = {
     // --- Timber Camp (east) -------------------------------------------------
     {
       id: wp('wp.grove.eastpath'),
-      position: { x: 15, z: 0 },
+      position: { x: 27, z: 0 },
       radius: 2.5,
-      links: [wp('wp.grove.center'), wp('wp.timber.camp')],
+      links: [wp('wp.grove.center'), wp('wp.timber.camp'), wp('wp.den.path'), wp('wp.glade.path')],
     },
     {
       id: wp('wp.timber.camp'),
-      position: { x: 30, z: 0 },
+      position: { x: 54, z: 0 },
       radius: 2.5,
       links: [wp('wp.grove.eastpath'), wp('wp.timber.stand'), wp('wp.timber.market')],
       tags: ['crafting'],
     },
     {
       id: wp('wp.timber.stand'),
-      position: { x: 42, z: -7.5 },
+      position: { x: 75.6, z: -13.5 },
       radius: 2,
       links: [wp('wp.timber.camp')],
       tags: ['gathering'],
     },
     {
       id: wp('wp.timber.market'),
-      position: { x: 42, z: 7.5 },
+      position: { x: 75.6, z: 13.5 },
       radius: 2,
       links: [wp('wp.timber.camp')],
       tags: ['market'],
     },
 
+    // --- Wolf den (north-east) -----------------------------------------------
+    // A long, quiet track off the north path. The den lies well past the
+    // timber camp's lights: far enough that a new arrival meets the pack on
+    // purpose, near enough that the campfire is a real retreat.
+    {
+      id: wp('wp.den.path'),
+      position: { x: 30, z: -30 },
+      radius: 2.5,
+      links: [wp('wp.grove.northpath'), wp('wp.grove.eastpath'), wp('wp.den.clearing')],
+    },
+    {
+      id: wp('wp.den.clearing'),
+      position: { x: 58, z: -52 },
+      radius: 3,
+      links: [wp('wp.den.path'), wp('wp.den.rocks')],
+      tags: ['wilds'],
+    },
+    {
+      id: wp('wp.den.rocks'),
+      position: { x: 70, z: -64 },
+      radius: 2.5,
+      links: [wp('wp.den.clearing')],
+      tags: ['wilds'],
+    },
+
+    // --- Armabee glade (south-east) ------------------------------------------
+    {
+      id: wp('wp.glade.path'),
+      position: { x: 30, z: 30 },
+      radius: 2.5,
+      links: [wp('wp.grove.southpath'), wp('wp.grove.eastpath'), wp('wp.glade.rise')],
+    },
+    {
+      id: wp('wp.glade.rise'),
+      position: { x: 60, z: 55 },
+      radius: 3,
+      links: [wp('wp.glade.path')],
+      tags: ['wilds', 'mystic'],
+    },
+
     // --- Mushroom Bog (west) -------------------------------------------------
     {
       id: wp('wp.grove.westpath'),
-      position: { x: -15, z: 0 },
+      position: { x: -27, z: 0 },
       radius: 2.5,
       links: [wp('wp.grove.center'), wp('wp.mushroom.bog')],
     },
     {
       id: wp('wp.mushroom.bog'),
-      position: { x: -30, z: 0 },
+      position: { x: -54, z: 0 },
       radius: 2.8,
       links: [wp('wp.grove.westpath'), wp('wp.mushroom.deep'), wp('wp.mushroom.spring')],
       tags: ['gathering'],
     },
     {
       id: wp('wp.mushroom.deep'),
-      position: { x: -42, z: -9 },
+      position: { x: -75.6, z: -16.2 },
       radius: 2,
       links: [wp('wp.mushroom.bog')],
       tags: ['gathering', 'mystic'],
     },
     {
       id: wp('wp.mushroom.spring'),
-      position: { x: -42, z: 9 },
+      position: { x: -75.6, z: 16.2 },
       radius: 2,
       links: [wp('wp.mushroom.bog')],
       tags: ['quests'],
@@ -168,7 +214,7 @@ export const FOREST: Zone = {
     {
       id: ix('int.forest.portal'),
       kind: InteractableKind.ZonePortal,
-      position: { x: 0, z: -32.4 },
+      position: { x: 0, z: -56.4 },
       approach: wp('wp.forest.gate'),
       facing: 0,
       label: 'Gate to the Courtyard',
@@ -178,16 +224,16 @@ export const FOREST: Zone = {
     {
       id: ix('int.grove.hollow'),
       kind: InteractableKind.GatheringNode,
-      position: { x: 0, z: 32.4 },
+      position: { x: 0, z: 56.4 },
       approach: wp('wp.grove.hollow'),
       facing: Math.PI,
       label: 'Moonpetal Hollow',
-      verb: 'Gather',
+      verb: 'Forage',
     },
     {
       id: ix('int.timber.saw'),
       kind: InteractableKind.CraftingStation,
-      position: { x: 30, z: 2.4 },
+      position: { x: 54, z: 2.4 },
       approach: wp('wp.timber.camp'),
       facing: Math.PI * 1.5,
       label: 'Lumber Mill',
@@ -196,7 +242,7 @@ export const FOREST: Zone = {
     {
       id: ix('int.timber.node'),
       kind: InteractableKind.GatheringNode,
-      position: { x: 44.4, z: -7.5 },
+      position: { x: 78, z: -13.5 },
       approach: wp('wp.timber.stand'),
       facing: Math.PI * 1.5,
       label: 'Emberwood Stand',
@@ -205,25 +251,25 @@ export const FOREST: Zone = {
     {
       id: ix('int.timber.market'),
       kind: InteractableKind.MerchantStall,
-      position: { x: 44.4, z: 7.5 },
+      position: { x: 78, z: 13.5 },
       approach: wp('wp.timber.market'),
       facing: Math.PI * 1.5,
       label: "Ranger's Cart",
       verb: 'Trade',
     },
     {
-      id: ix('int.node.mushroom'),
+      id: ix('int.forest.bog_mushroom'),
       kind: InteractableKind.GatheringNode,
-      position: { x: -30, z: 2.4 },
+      position: { x: -54, z: 2.4 },
       approach: wp('wp.mushroom.bog'),
       facing: Math.PI * 0.5,
       label: 'Bog Mushroom Cluster',
       verb: 'Forage',
     },
     {
-      id: ix('int.node.mushroom'),
+      id: ix('int.forest.deep_mushroom'),
       kind: InteractableKind.GatheringNode,
-      position: { x: -44.4, z: -9 },
+      position: { x: -78, z: -16.2 },
       approach: wp('wp.mushroom.deep'),
       facing: Math.PI * 0.5,
       label: 'Deepshade Mushrooms',
@@ -232,11 +278,40 @@ export const FOREST: Zone = {
     {
       id: ix('int.mushroom.spring'),
       kind: InteractableKind.QuestBoard,
-      position: { x: -44.4, z: 9 },
+      position: { x: -78, z: 16.2 },
       approach: wp('wp.mushroom.spring'),
       facing: Math.PI * 0.5,
       label: 'Spring-Carved Notices',
       verb: 'Read',
+    },
+
+    // --- The wilds ---------------------------------------------------------
+    {
+      id: ix('int.combat.emberwood_wolf_a'),
+      kind: InteractableKind.CombatEncounter,
+      position: { x: 59, z: -53.2 },
+      approach: wp('wp.den.clearing'),
+      facing: Math.PI * 0.75,
+      label: 'Emberwood Wolf',
+      verb: 'Attack',
+    },
+    {
+      id: ix('int.combat.emberwood_wolf_b'),
+      kind: InteractableKind.CombatEncounter,
+      position: { x: 71, z: -65.2 },
+      approach: wp('wp.den.rocks'),
+      facing: Math.PI * 0.75,
+      label: 'Emberwood Wolf',
+      verb: 'Attack',
+    },
+    {
+      id: ix('int.combat.glade_armabee'),
+      kind: InteractableKind.CombatEncounter,
+      position: { x: 61.2, z: 56.2 },
+      approach: wp('wp.glade.rise'),
+      facing: Math.PI * 1.25,
+      label: 'Glade Armabee',
+      verb: 'Attack',
     },
   ],
 
@@ -244,10 +319,10 @@ export const FOREST: Zone = {
     // The Ranger's Lodge is the timber camp's one enclosed room, built right
     // on the platform the crafting station and market already stand on.
     {
-      minX: 24,
-      maxX: 36,
-      minZ: -6,
-      maxZ: 6,
+      minX: 43.2,
+      maxX: 64.8,
+      minZ: -10.8,
+      maxZ: 10.8,
       wallHeight: 3,
       roofHeight: 1.8,
       doorSide: BuildingDoorSide.West,

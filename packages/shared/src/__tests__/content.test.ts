@@ -11,6 +11,7 @@ import {
   CONTENT_SCHEMA_VERSION,
   DEFAULT_TUNABLES,
   COURTYARD,
+  FOREST,
   InteractableKind,
   ItemCategory,
   SkillCategory,
@@ -125,9 +126,9 @@ describe('shipped content', () => {
     expect(CONTENT_SCHEMA_VERSION).toBe(2);
   });
 
-  it('binds every gathering node to a gathering interactable in the courtyard', () => {
+  it('binds every gathering node to a gathering interactable in a shipped zone', () => {
     for (const definition of NODE_CATALOG.nodes) {
-      const interactable = COURTYARD.interactables.find(
+      const interactable = [...COURTYARD.interactables, ...FOREST.interactables].find(
         (entry) => entry.id === definition.interactableId,
       );
       expect(interactable, `${definition.id} names a real interactable`).toBeDefined();

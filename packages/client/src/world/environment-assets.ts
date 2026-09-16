@@ -66,20 +66,138 @@ const HOME_SPOTS: Placement[] = [
   [8, 19, 3.8, -Math.PI / 2],
 ];
 
-/** Physical footprints match the visible scenery across every quality tier. */
-export function environmentCollisionPlacements(quality: QualitySettings) {
-  return {
-    trees: TREE_SPOTS.slice(0, quality.tier === 'low' ? 14 : TREE_SPOTS.length),
-    rocks: ROCK_SPOTS,
-    homes: HOME_SPOTS,
+export interface EnvironmentPlacements {
+  readonly trees: Placement[];
+  readonly rocks: Placement[];
+  readonly homes: Placement[];
+}
+
+/**
+ * Physical footprints match the visible scenery across every quality tier.
+ *
+ * The Courtyard is hand-composed; the Emberwood Reach is scattered
+ * deterministically around its authored routes. Any other zone has no
+ * scenery pack yet and gets none, so it never carries invisible collision.
+ */
+export function environmentCollisionPlacements(
+  zone: Zone,
+  quality: QualitySettings,
+): EnvironmentPlacements | null {
+  if (zone.id === 'zone.courtyard') {
+    return {
+      trees: TREE_SPOTS.slice(0, quality.tier === 'low' ? 14 : TREE_SPOTS.length),
+      rocks: ROCK_SPOTS,
+      homes: HOME_SPOTS,
+    };
+  }
+  if (zone.id === 'zone.forest') return forestPlacements(zone, quality);
+  return null;
+}
+
+/** Small deterministic hash in [0, 1): the same zone scatters the same way on every device. */
+function unit(seed: number, salt: number): number {
+  let h = (seed * 374761393 + salt * 668265263) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+function distanceToSegment(px: number, pz: number, ax: number, az: number, bx: number, bz: number) {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const length2 = dx * dx + dz * dz;
+  const t =
+    length2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / length2));
+  return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
+}
+
+/**
+ * A forest, from routes.
+ *
+ * Trees are scattered on a jittered grid across the whole zone and then culled
+ * wherever people need to walk or work: along every authored link, around every
+ * waypoint and interactable, over water, and over any terrace that is a
+ * worked platform rather than ground. Density drops by device tier, and the
+ * grid is what keeps the cheap tier a sparser version of the same wood rather
+ * than a different one.
+ */
+function forestPlacements(zone: Zone, quality: QualitySettings): EnvironmentPlacements {
+  const byId = new Map(zone.waypoints.map((waypoint) => [waypoint.id, waypoint]));
+  const links: Array<readonly [number, number, number, number, number]> = [];
+  for (const waypoint of zone.waypoints) {
+    for (const link of waypoint.links) {
+      const other = byId.get(link);
+      if (!other) continue;
+      links.push([
+        waypoint.position.x,
+        waypoint.position.z,
+        other.position.x,
+        other.position.z,
+        Math.max(waypoint.radius, other.radius) + 2.6,
+      ]);
+    }
+  }
+  const clear = (x: number, z: number, margin: number): boolean => {
+    for (const [ax, az, bx, bz, width] of links)
+      if (distanceToSegment(x, z, ax, az, bx, bz) < width + margin) return false;
+    for (const waypoint of zone.waypoints)
+      if (
+        Math.hypot(x - waypoint.position.x, z - waypoint.position.z) <
+        waypoint.radius + 3 + margin
+      )
+        return false;
+    for (const interactable of zone.interactables)
+      if (Math.hypot(x - interactable.position.x, z - interactable.position.z) < 4.5 + margin)
+        return false;
+    for (const canal of zone.terrain.canals)
+      if (
+        x > canal.minX - 1.5 &&
+        x < canal.maxX + 1.5 &&
+        z > canal.minZ - 1.5 &&
+        z < canal.maxZ + 1.5
+      )
+        return false;
+    for (const building of zone.buildings)
+      if (
+        x > building.minX - 2 &&
+        x < building.maxX + 2 &&
+        z > building.minZ - 2 &&
+        z < building.maxZ + 2
+      )
+        return false;
+    return true;
   };
+
+  const step = quality.tier === 'low' ? 11 : quality.tier === 'medium' ? 8.5 : 7;
+  const trees: Placement[] = [];
+  const rocks: Placement[] = [];
+  const { minX, maxX, minZ, maxZ } = zone.bounds;
+  let seed = 0;
+  for (let gx = minX + 4; gx < maxX - 4; gx += step) {
+    for (let gz = minZ + 4; gz < maxZ - 4; gz += step) {
+      seed += 1;
+      const x = gx + (unit(seed, 1) - 0.5) * step * 0.9;
+      const z = gz + (unit(seed, 2) - 0.5) * step * 0.9;
+      if (!clear(x, z, 0)) continue;
+      const roll = unit(seed, 3);
+      if (roll < 0.09) {
+        rocks.push([x, z, 0.9 + unit(seed, 4) * 1.3, unit(seed, 5) * Math.PI * 2]);
+      } else if (roll < 0.82) {
+        trees.push([x, z, 4.2 + unit(seed, 4) * 2.4, unit(seed, 5) * Math.PI * 2]);
+      }
+    }
+  }
+  return { trees, rocks, homes: [] };
 }
 
 /** Bundled model upgrades, with visible geometry from the very first frame.
  * Each source mesh becomes ONE instance batch. Textures and geometry are shared,
  * and a disposed zone can never be resurrected by a late fetch.
  */
-export function buildEnvironment(zone: Zone, quality: QualitySettings) {
+export function buildEnvironment(
+  zone: Zone,
+  quality: QualitySettings,
+  placements: EnvironmentPlacements,
+) {
   const group = new Group();
   group.name = 'shorelands-environment';
   // Decoration must never steal ground taps, including low rocks and flowers.
@@ -170,18 +288,18 @@ export function buildEnvironment(zone: Zone, quality: QualitySettings) {
 
   // Hand-composed pockets between existing routes. No navigation or gameplay
   // content is changed by this scenery layer.
-  const trees = TREE_SPOTS.slice(0, quality.tier === 'low' ? 14 : TREE_SPOTS.length);
+  const trees = placements.trees;
   const treeFallback = new Group();
   batch(new CylinderGeometry(0.045, 0.075, 0.48, 7), bark, matricesFor(trees, 0.24), treeFallback);
   batch(new SphereGeometry(0.31, 7, 5), leaves, matricesFor(trees, 0.69, 1.1), treeFallback);
   upgrade('tree', trees, treeFallback);
 
-  const rocks = ROCK_SPOTS;
+  const rocks = placements.rocks;
   const rockFallback = new Group();
   batch(new SphereGeometry(0.6, 7, 4), rock, matricesFor(rocks, 0.45, 0.8), rockFallback);
   upgrade('rock', rocks, rockFallback);
 
-  const homes = HOME_SPOTS;
+  const homes = placements.homes;
   const homeFallback = new Group();
   batch(new BoxGeometry(0.8, 0.6, 0.8), plaster, matricesFor(homes, 0.3), homeFallback);
   batch(new ConeGeometry(0.65, 0.4, 4), roof, matricesFor(homes, 0.8), homeFallback);
@@ -189,7 +307,8 @@ export function buildEnvironment(zone: Zone, quality: QualitySettings) {
 
   // Wildflower clumps: shared geometry, stable placements, capped by device tier.
   const flowers: Placement[] = [];
-  const limit = quality.tier === 'low' ? 36 : quality.tier === 'medium' ? 72 : 108;
+  const limit =
+    trees.length === 0 ? 0 : quality.tier === 'low' ? 36 : quality.tier === 'medium' ? 72 : 108;
   for (let i = 0; i < limit; i++) {
     const centreSpot = trees[i % trees.length]!;
     const a = i * 2.399963;

@@ -46,7 +46,7 @@ import {
 
 import { Palette } from './palette.js';
 import type { QualitySettings } from '../core/device.js';
-import { buildEnvironment } from './environment-assets.js';
+import { buildEnvironment, environmentCollisionPlacements } from './environment-assets.js';
 
 /** A door's swing pivot, and the waypoint whose proximity opens it. */
 export interface DoorHandle {
@@ -363,9 +363,11 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   }
 
   // --- Crystal spires ---------------------------------------------------
-  // One spire per corner precinct, tall enough to be a landmark from the plaza.
+  // A landmark at each mystic dead end, tall enough to be seen from the paths.
   const spirePositions = zone.waypoints
-    .filter((w) => w.links.length === 1 && zone.id !== 'zone.courtyard')
+    .filter(
+      (w) => w.links.length === 1 && w.tags?.includes('mystic') && zone.id !== 'zone.courtyard',
+    )
     .map((w) => new Vector3(w.position.x, heightAt(terrain, w.position), w.position.z));
 
   if (spirePositions.length > 0) {
@@ -477,7 +479,8 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
     group.add(marker);
   }
 
-  const environment = zone.id === 'zone.courtyard' ? buildEnvironment(zone, quality) : null;
+  const placements = environmentCollisionPlacements(zone, quality);
+  const environment = placements ? buildEnvironment(zone, quality, placements) : null;
   if (environment) {
     group.add(environment.group);
   }

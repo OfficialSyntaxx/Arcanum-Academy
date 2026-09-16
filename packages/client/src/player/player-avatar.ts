@@ -1,5 +1,5 @@
 /**
- * The player's body: the shared humanoid rig in the washed-ashore outfit.
+ * The player's body: the shared humanoid rig in the hooded ranger outfit.
  *
  * The procedural pool actor stays visible until the rig has loaded, so a cold
  * mobile start never shows an empty spot where the player should be.
@@ -13,7 +13,7 @@ export class PlayerAvatar {
   private readonly rig: CharacterRig;
 
   constructor(shadowsEnabled: boolean, onReady: () => void) {
-    this.rig = new CharacterRig('peasant-m', { shadowsEnabled, onReady });
+    this.rig = new CharacterRig('ranger-m', { shadowsEnabled, onReady });
     this.rig.root.name = 'player-avatar';
   }
 

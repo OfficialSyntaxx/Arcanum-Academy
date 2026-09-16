@@ -76,6 +76,12 @@ export const DISCOVERY_CATALOG: readonly DiscoveryDefinition[] = [
     description: 'Defeat an Emberwing Armabee.',
   },
   {
+    id: 'discovery.combat.emberwood_wolf',
+    category: DiscoveryCategory.Combat,
+    title: 'Pack Hunter',
+    description: 'Defeat an Emberwood Wolf in the Reach.',
+  },
+  {
     id: 'discovery.recovery.grave',
     category: DiscoveryCategory.Recovery,
     title: 'Returned to the Shore',
@@ -120,6 +126,9 @@ const DISCOVERY_BY_SOURCE: Readonly<Record<string, string>> = {
   'recipe.ink.azure': 'discovery.craft.azure_ink',
   'int.combat.shore_wolf': 'discovery.combat.shore_wolf',
   'int.combat.emberwing_armabee': 'discovery.combat.emberwing',
+  'int.combat.emberwood_wolf_a': 'discovery.combat.emberwood_wolf',
+  'int.combat.emberwood_wolf_b': 'discovery.combat.emberwood_wolf',
+  'int.combat.glade_armabee': 'discovery.combat.emberwing',
   'event.grave.reclaimed': 'discovery.recovery.grave',
   'event.saltwake.entered': 'discovery.dungeon.saltwake_entered',
   'int.combat.drowned_sentinel': 'discovery.dungeon.sentinel',

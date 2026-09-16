@@ -124,6 +124,124 @@
           "maxQuantity": 1
         }
       ]
+    },
+    {
+      "id": "node.forest.bog_mushroom",
+      "interactableId": "int.forest.bog_mushroom",
+      "kind": "MUSHROOM",
+      "requiredSkillId": "skill.foraging",
+      "requiredSkillLevel": 1,
+      "harvestIntervalMs": 2600,
+      "xpPerHarvest": 11,
+      "depletionHarvests": 45,
+      "regenerationMs": 240000,
+      "dropTable": [
+        {
+          "itemId": "item.mushroom.cap",
+          "weight": 840,
+          "minQuantity": 1,
+          "maxQuantity": 3
+        },
+        {
+          "itemId": "item.mushroom.glowspore",
+          "weight": 145,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        },
+        {
+          "itemId": "item.mushroom.dreamveil",
+          "weight": 15,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "id": "node.forest.deep_mushroom",
+      "interactableId": "int.forest.deep_mushroom",
+      "kind": "MUSHROOM",
+      "requiredSkillId": "skill.foraging",
+      "requiredSkillLevel": 8,
+      "harvestIntervalMs": 2800,
+      "xpPerHarvest": 16,
+      "depletionHarvests": 40,
+      "regenerationMs": 300000,
+      "dropTable": [
+        {
+          "itemId": "item.mushroom.cap",
+          "weight": 700,
+          "minQuantity": 1,
+          "maxQuantity": 2
+        },
+        {
+          "itemId": "item.mushroom.glowspore",
+          "weight": 260,
+          "minQuantity": 1,
+          "maxQuantity": 2
+        },
+        {
+          "itemId": "item.mushroom.dreamveil",
+          "weight": 40,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "id": "node.forest.hollow",
+      "interactableId": "int.grove.hollow",
+      "kind": "MUSHROOM",
+      "requiredSkillId": "skill.foraging",
+      "requiredSkillLevel": 15,
+      "harvestIntervalMs": 3200,
+      "xpPerHarvest": 24,
+      "depletionHarvests": 30,
+      "regenerationMs": 420000,
+      "dropTable": [
+        {
+          "itemId": "item.mushroom.glowspore",
+          "weight": 720,
+          "minQuantity": 1,
+          "maxQuantity": 2
+        },
+        {
+          "itemId": "item.mushroom.dreamveil",
+          "weight": 280,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "id": "node.forest.timber",
+      "interactableId": "int.timber.node",
+      "kind": "EMBERWOOD",
+      "requiredSkillId": "skill.forestry",
+      "requiredSkillLevel": 5,
+      "harvestIntervalMs": 3400,
+      "xpPerHarvest": 18,
+      "depletionHarvests": 40,
+      "regenerationMs": 360000,
+      "dropTable": [
+        {
+          "itemId": "item.emberwood.branch",
+          "weight": 760,
+          "minQuantity": 1,
+          "maxQuantity": 3
+        },
+        {
+          "itemId": "item.emberwood.heartwood",
+          "weight": 210,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        },
+        {
+          "itemId": "item.emberwood.core",
+          "weight": 30,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        }
+      ]
     }
   ]
 }

@@ -252,10 +252,16 @@ describe('gathering.start', () => {
     expect(state.gathering!.nodeId).toBe(CRYSTAL.id);
   });
 
-  it('starts every shipped gathering node, including Emberwood', async () => {
+  it('starts every shipped gathering node a new player is levelled for', async () => {
     for (const node of NODE_CATALOG.nodes) {
       const h = harness();
       const result = await h.dispatch('gathering.start', { interactableId: node.interactableId });
+      if (node.requiredSkillLevel > 1) {
+        // Outer-zone nodes are the reason to level: they must gate, not open.
+        expect(result.ok, node.id).toBe(false);
+        if (!result.ok) expect(result.error.reason).toBe('gathering.skill_too_low');
+        continue;
+      }
       expect(result.ok, node.id).toBe(true);
       const state = await h.state();
       expect(state.gathering?.nodeId, node.id).toBe(node.id);

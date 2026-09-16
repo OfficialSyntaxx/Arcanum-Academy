@@ -319,6 +319,20 @@ paid dependency and therefore an owner decision; it would replace the procedural
 else. The female ranger is built but not shipped: the 3 MiB precache budget could not take a
 fourth outfit. Creatures go through the same pipeline, which is what paid for the humans.
 
+**Emberwood Reach update (2026-09-16, branch `Claudesep16`):** the first region around the hub
+is now 190 m across (was 105 m). The authored layout was scaled up around the shrine and two new
+areas were added: a wolf den under the north-east ridge (two aggressive Emberwood Wolves, level
+2/2/2 with 6 HP, raw meat and 7 coins) and an armabee glade in the south-east (a passive Glade
+Armabee). Encounters carry a `creature` model key so the client can place any creature by type in
+any zone. The forest is dressed by a deterministic scatter in `environment-assets.ts`: trees and
+rocks on a jittered grid, culled along every authored link, around waypoints, interactables, water
+and buildings, with density by device tier; collision mirrors exactly what renders. The forest's
+four gathering nodes now have real server content (bog and deepshade mushrooms, the hollow at
+Foraging 15, the timber stand at Forestry 5) and the duplicate courtyard node id was replaced with
+forest-owned ids. Its lumber mill, ranger's cart and notice board are still hollow. The player
+wears the hooded ranger outfit. Aggressive creatures leave a fallen player alone for eight seconds
+after recovery.
+
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
 oversights.
