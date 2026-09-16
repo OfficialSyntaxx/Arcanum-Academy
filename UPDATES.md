@@ -271,6 +271,9 @@ The plaza medallion went from 11.6 m to 6.8 m and the Courtyard crowd from 18 to
   `rareDrops` rolls server-side from the killing blow's own seed, so the outcome is fixed when
   the creature falls and cannot be re-rolled by replaying it. Warden 1/24 cape, Sentinel 1/12
   ingot, ridge and frost packs 1/16 crystal.
+- **Ranged as a fourth combat style**, with its own skill and an Emberwood Shortbow strung at
+  the timber saw. One level supplies both accuracy and maximum hit, as in OSRS, and the style is
+  refused without a bow equipped so it is a choice of kit rather than a free extra stance.
 - **Three quests extending the chain into the outer zones** (The Reach Pack, The Foothill
   Forge, The Long Winter), each ending further from the plaza than the last.
 
@@ -278,8 +281,9 @@ All gear bonuses and drop rates are **conservative placeholders and the owner's 
 
 ### Open items, roughly by value
 
-1. **Magic and Ranged are unbuilt** (§3.4.3), so there is still no combat triangle. Gear is
-   melee-only, and Neck, Ring and Ammo slots do not exist because nothing would fill them.
+1. **Magic is unbuilt** (§3.4.3), so the triangle has two corners of three. There is also no
+   ammo system: the bow fires without arrows, and Neck, Ring and Ammo slots do not exist
+   because nothing would fill them.
 2. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
    for character scale than anything left, but it moves waypoints and changes how the hub feels
    to cross, so it was left as an owner decision rather than a tweak.
