@@ -516,6 +516,30 @@ describe('equipment', () => {
     expect(state.inventory.stacks).toContainEqual({ definitionId: BLADE, quantity: 1 });
   });
 
+  it('wears a full set at once, one piece per slot', async () => {
+    // The eight slots exist so a set is assembled over time rather than found
+    // in one drop. Each piece must occupy its own slot and none displace
+    // another, which a shared or defaulted slot key would silently break.
+    const h = harness();
+    await h.setLevel('skill.defence', 10, 4_000);
+    const set: readonly (readonly [string, string])[] = [
+      ['item.armour.emberwood_cap', 'HEAD'],
+      ['item.armour.emberwood_gloves', 'HANDS'],
+      ['item.armour.emberwood_greaves', 'LEGS'],
+      ['item.armour.emberwood_boots', 'FEET'],
+      ['item.armour.tideglass_cape', 'CAPE'],
+      ['item.armour.resonant_hauberk', 'BODY'],
+    ];
+    for (const [itemId] of set) await h.give(itemId, 1);
+    for (const [itemId] of set) {
+      expect((await h.dispatch('equipment.equip', { itemId })).ok).toBe(true);
+    }
+    const state = await h.state();
+    for (const [itemId, slot] of set) {
+      expect(state.equipment[slot]?.definitionId).toBe(itemId);
+    }
+  });
+
   it('returns the displaced piece when swapping within one slot', async () => {
     const h = harness();
     await h.setLevel('skill.defence', 10, 2_000);

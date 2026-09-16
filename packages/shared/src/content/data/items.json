@@ -484,6 +484,168 @@
         "requiredSkillId": "skill.defence",
         "requiredSkillLevel": 8
       }
+    },
+    {
+      "id": "item.armour.emberwood_cap",
+      "name": "Emberwood Cap",
+      "description": "Bent plank and boiled cord. It will turn one blow, which is one more than nothing.",
+      "category": "EQUIPMENT",
+      "rarity": "COMMON",
+      "stackCap": 1,
+      "baseValue": 60,
+      "iconKey": "armour-emberwood-cap",
+      "equipment": {
+        "slot": "HEAD",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 4,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 1
+      }
+    },
+    {
+      "id": "item.armour.emberwood_gloves",
+      "name": "Emberwood Gloves",
+      "description": "Strips of milled emberwood sewn onto old sailcloth.",
+      "category": "EQUIPMENT",
+      "rarity": "COMMON",
+      "stackCap": 1,
+      "baseValue": 45,
+      "iconKey": "armour-emberwood-gloves",
+      "equipment": {
+        "slot": "HANDS",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 3,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 1
+      }
+    },
+    {
+      "id": "item.armour.emberwood_greaves",
+      "name": "Emberwood Greaves",
+      "description": "Slats laced over the shin. They creak on the stairs and nowhere else.",
+      "category": "EQUIPMENT",
+      "rarity": "COMMON",
+      "stackCap": 1,
+      "baseValue": 80,
+      "iconKey": "armour-emberwood-greaves",
+      "equipment": {
+        "slot": "LEGS",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 6,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 1
+      }
+    },
+    {
+      "id": "item.armour.emberwood_boots",
+      "name": "Emberwood Boots",
+      "description": "Hard soles banded with resonant scrap. Quiet on sand, loud on stone.",
+      "category": "EQUIPMENT",
+      "rarity": "COMMON",
+      "stackCap": 1,
+      "baseValue": 50,
+      "iconKey": "armour-emberwood-boots",
+      "equipment": {
+        "slot": "FEET",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 3,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 1
+      }
+    },
+    {
+      "id": "item.armour.resonant_helm",
+      "name": "Resonant Helm",
+      "description": "A scaled hood that hums faintly when a crystal seam is near.",
+      "category": "EQUIPMENT",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 240,
+      "iconKey": "armour-resonant-helm",
+      "equipment": {
+        "slot": "HEAD",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 11,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 8
+      }
+    },
+    {
+      "id": "item.armour.resonant_gauntlets",
+      "name": "Resonant Gauntlets",
+      "description": "Ingot scales over hide, cut close so a grip is still a grip.",
+      "category": "EQUIPMENT",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 190,
+      "iconKey": "armour-resonant-gauntlets",
+      "equipment": {
+        "slot": "HANDS",
+        "attackBonus": 1,
+        "strengthBonus": 0,
+        "defenceBonus": 8,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 8
+      }
+    },
+    {
+      "id": "item.armour.resonant_greaves",
+      "name": "Resonant Greaves",
+      "description": "Overlapping plates from hip to ankle. Heavy until you stop noticing.",
+      "category": "EQUIPMENT",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 300,
+      "iconKey": "armour-resonant-greaves",
+      "equipment": {
+        "slot": "LEGS",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 15,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 10
+      }
+    },
+    {
+      "id": "item.armour.resonant_boots",
+      "name": "Resonant Boots",
+      "description": "Scaled and shod. They keep the cold of the ridge out of your feet.",
+      "category": "EQUIPMENT",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 200,
+      "iconKey": "armour-resonant-boots",
+      "equipment": {
+        "slot": "FEET",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 8,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 10
+      }
+    },
+    {
+      "id": "item.armour.tideglass_cape",
+      "name": "Tideglass Cape",
+      "description": "Waxed cloth hung with tideglass. It catches the light like shallow water.",
+      "category": "EQUIPMENT",
+      "rarity": "UNCOMMON",
+      "stackCap": 1,
+      "baseValue": 320,
+      "iconKey": "armour-tideglass-cape",
+      "equipment": {
+        "slot": "CAPE",
+        "attackBonus": 2,
+        "strengthBonus": 1,
+        "defenceBonus": 6,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 5
+      }
     }
   ]
 }

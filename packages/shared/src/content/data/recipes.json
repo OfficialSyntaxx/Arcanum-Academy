@@ -297,6 +297,207 @@
       "baseWasteRateBasisPoints": 800,
       "wasteReductionPerSkillLevelBasisPoints": 25,
       "xpPerCraft": 95
+    },
+    {
+      "id": "recipe.armour.emberwood_cap",
+      "name": "Shape Emberwood Cap",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 3,
+      "inputs": [
+        {
+          "itemId": "item.plank.emberwood",
+          "quantity": 2
+        }
+      ],
+      "output": {
+        "itemId": "item.armour.emberwood_cap",
+        "quantity": 1
+      },
+      "craftDurationMs": 5000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 22
+    },
+    {
+      "id": "recipe.armour.emberwood_gloves",
+      "name": "Shape Emberwood Gloves",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 3,
+      "inputs": [
+        {
+          "itemId": "item.plank.emberwood",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.armour.emberwood_gloves",
+        "quantity": 1
+      },
+      "craftDurationMs": 4000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 16
+    },
+    {
+      "id": "recipe.armour.emberwood_greaves",
+      "name": "Shape Emberwood Greaves",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 4,
+      "inputs": [
+        {
+          "itemId": "item.plank.emberwood",
+          "quantity": 3
+        }
+      ],
+      "output": {
+        "itemId": "item.armour.emberwood_greaves",
+        "quantity": 1
+      },
+      "craftDurationMs": 6000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 30
+    },
+    {
+      "id": "recipe.armour.emberwood_boots",
+      "name": "Shape Emberwood Boots",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 4,
+      "inputs": [
+        {
+          "itemId": "item.plank.emberwood",
+          "quantity": 2
+        }
+      ],
+      "output": {
+        "itemId": "item.armour.emberwood_boots",
+        "quantity": 1
+      },
+      "craftDurationMs": 5000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 22
+    },
+    {
+      "id": "recipe.armour.resonant_helm",
+      "name": "Forge Resonant Helm",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 12,
+      "inputs": [
+        {
+          "itemId": "item.ingot.resonant",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.plank.emberwood",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.armour.resonant_helm",
+        "quantity": 1
+      },
+      "craftDurationMs": 9000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 58
+    },
+    {
+      "id": "recipe.armour.resonant_gauntlets",
+      "name": "Forge Resonant Gauntlets",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 12,
+      "inputs": [
+        {
+          "itemId": "item.ingot.resonant",
+          "quantity": 2
+        }
+      ],
+      "output": {
+        "itemId": "item.armour.resonant_gauntlets",
+        "quantity": 1
+      },
+      "craftDurationMs": 8000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 50
+    },
+    {
+      "id": "recipe.armour.resonant_greaves",
+      "name": "Forge Resonant Greaves",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 16,
+      "inputs": [
+        {
+          "itemId": "item.ingot.resonant",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.plank.emberwood",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.armour.resonant_greaves",
+        "quantity": 1
+      },
+      "craftDurationMs": 11000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 76
+    },
+    {
+      "id": "recipe.armour.resonant_boots",
+      "name": "Forge Resonant Boots",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 16,
+      "inputs": [
+        {
+          "itemId": "item.ingot.resonant",
+          "quantity": 2
+        }
+      ],
+      "output": {
+        "itemId": "item.armour.resonant_boots",
+        "quantity": 1
+      },
+      "craftDurationMs": 9000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 58
+    },
+    {
+      "id": "recipe.armour.tideglass_cape",
+      "name": "Bind Tideglass Cape",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 9,
+      "inputs": [
+        {
+          "itemId": "item.charm.tideglass",
+          "quantity": 1
+        },
+        {
+          "itemId": "item.material.armabee_wax",
+          "quantity": 2
+        }
+      ],
+      "output": {
+        "itemId": "item.armour.tideglass_cape",
+        "quantity": 1
+      },
+      "craftDurationMs": 10000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 64
     }
   ]
 }

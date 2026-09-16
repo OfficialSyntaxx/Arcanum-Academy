@@ -55,9 +55,14 @@ export interface ToolProperties {
  * for them exists, so the equipment screen never shows a row nothing can fill.
  */
 export const EquipmentSlot = {
+  Head: 'HEAD',
+  Cape: 'CAPE',
   Weapon: 'WEAPON',
   Body: 'BODY',
   Shield: 'SHIELD',
+  Hands: 'HANDS',
+  Legs: 'LEGS',
+  Feet: 'FEET',
 } as const;
 export type EquipmentSlot = (typeof EquipmentSlot)[keyof typeof EquipmentSlot];
 

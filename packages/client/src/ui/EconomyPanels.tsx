@@ -262,9 +262,14 @@ export function InventoryPanel({
 
 /** Equipped tools live outside the satchel so material capacity stays legible. */
 const GEAR_SLOTS = [
+  [EquipmentSlot.Head, 'Head'],
+  [EquipmentSlot.Cape, 'Cape'],
   [EquipmentSlot.Weapon, 'Weapon'],
   [EquipmentSlot.Body, 'Body'],
   [EquipmentSlot.Shield, 'Shield'],
+  [EquipmentSlot.Hands, 'Hands'],
+  [EquipmentSlot.Legs, 'Legs'],
+  [EquipmentSlot.Feet, 'Feet'],
 ] as const;
 
 export function EquipmentPanel({
