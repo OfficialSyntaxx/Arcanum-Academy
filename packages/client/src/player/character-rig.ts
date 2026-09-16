@@ -96,6 +96,17 @@ function loadAnimations(): Promise<AnimationClip[]> {
 interface RigBone {
   readonly node: Object3D;
   readonly bind: Quaternion;
+  /**
+   * The parent's orientation in model space in the **bind** pose, and its
+   * inverse.
+   *
+   * Captured once, never recomputed. Reading the parent's *current*
+   * orientation instead was a real bug: the animation mixer rewrites the whole
+   * chain, so on any frame after a clip played the procedural correction was
+   * computed in the clip's frame and the arms swung out to a T-pose.
+   */
+  readonly parentBind: Quaternion;
+  readonly parentBindInverse: Quaternion;
 }
 
 const X = new Vector3(1, 0, 0);
@@ -103,7 +114,6 @@ const Z = new Vector3(0, 0, 1);
 
 export class CharacterRig {
   readonly root = new Group();
-  private model: Group | null = null;
   private mixer: AnimationMixer | null = null;
   private readonly actions = new Map<string, AnimationAction>();
   private readonly bones = new Map<string, RigBone>();
@@ -115,6 +125,7 @@ export class CharacterRig {
   private disposed = false;
   private readonly scratchQ = new Quaternion();
   private readonly parentQ = new Quaternion();
+  private readonly axisQ = new Quaternion();
   private readonly procedural = new Map<string, Quaternion>();
 
   constructor(
@@ -219,12 +230,27 @@ export class CharacterRig {
       });
       node.material = Array.isArray(node.material) ? owned : owned[0]!;
     });
+    // Captured while the model is still in its bind pose, which is the whole
+    // point: these frames must never move.
     model.traverse((node) => {
-      if (node instanceof Bone) this.bones.set(node.name, { node, bind: node.quaternion.clone() });
+      if (!(node instanceof Bone)) return;
+      const parentBind = new Quaternion();
+      const chain: Object3D[] = [];
+      let ancestor: Object3D | null = node.parent;
+      while (ancestor !== null && ancestor !== model) {
+        chain.push(ancestor);
+        ancestor = ancestor.parent;
+      }
+      for (let i = chain.length - 1; i >= 0; i -= 1) parentBind.multiply(chain[i]!.quaternion);
+      this.bones.set(node.name, {
+        node,
+        bind: node.quaternion.clone(),
+        parentBind,
+        parentBindInverse: parentBind.clone().invert(),
+      });
     });
     this.root.add(model);
     this.root.add(createShadowBlob(0.42));
-    this.model = model;
     this.mixer = new AnimationMixer(model);
     for (const clip of clips) this.actions.set(clip.name, this.mixer.clipAction(clip));
     this.loaded = true;
@@ -285,14 +311,24 @@ export class CharacterRig {
   }
 
   /** local' = (P⁻¹ · R · P) · bind, with P the parent's orientation in model space. */
+  /**
+   * Rotates one bone about model-space axes, expressed in its local frame.
+   *
+   * `local = parentBind⁻¹ · R · parentBind · bind`, entirely in the fixed bind
+   * frame, so the result depends only on the requested angles. That is what
+   * makes it safe to run every frame regardless of what the animation mixer
+   * did to these bones a moment ago.
+   */
   private pose(name: string, axisA: Vector3, angleA: number, axisB?: Vector3, angleB = 0): void {
     const bone = this.bones.get(name);
-    if (!bone || this.model === null) return;
-    this.modelSpaceQuaternion(bone.node.parent, this.parentQ);
+    if (!bone) return;
     const rotation = this.scratchQ.setFromAxisAngle(axisA, angleA);
-    if (axisB) rotation.multiply(new Quaternion().setFromAxisAngle(axisB, angleB));
-    const parentInverse = this.parentQ.clone().invert();
-    const local = parentInverse.multiply(rotation).multiply(this.parentQ).multiply(bone.bind);
+    if (axisB) rotation.multiply(this.axisQ.setFromAxisAngle(axisB, angleB));
+    const local = this.parentQ
+      .copy(bone.parentBindInverse)
+      .multiply(rotation)
+      .multiply(bone.parentBind)
+      .multiply(bone.bind);
     bone.node.quaternion.copy(local);
     let stored = this.procedural.get(name);
     if (!stored) {
@@ -300,18 +336,5 @@ export class CharacterRig {
       this.procedural.set(name, stored);
     }
     stored.copy(local);
-  }
-
-  /** Product of quaternions from the model root down to `node`, using current values. */
-  private modelSpaceQuaternion(node: Object3D | null, out: Quaternion): Quaternion {
-    out.identity();
-    const chain: Object3D[] = [];
-    let current = node;
-    while (current !== null && current !== this.model) {
-      chain.push(current);
-      current = current.parent;
-    }
-    for (let i = chain.length - 1; i >= 0; i -= 1) out.multiply(chain[i]!.quaternion);
-    return out;
   }
 }

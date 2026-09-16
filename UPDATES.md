@@ -155,6 +155,25 @@ still correct and still earns its place the moment the player walks north of the
 composition fix was the prop size. **Diagnose with a colour probe, not by reasoning about the
 projection:** painting the roof magenta answered in one render what two changes had guessed at.
 
+### 7. The T-pose bug (this commit)
+
+The owner reported characters stuck in a T-pose. It was a real bug, not a missing clip.
+
+`CharacterRig.pose()` expressed each bone rotation in the bone's local frame by reading the
+**parent's current orientation** and converting through it. That is correct only while the
+chain is in the pose the maths assumes. The animation mixer rewrites the entire chain whenever
+an action clip plays, so on every frame after a clip had run, the procedural correction was
+computed in the _clip's_ frame: the 73-degree rotation meant to bring T-posed arms down went
+in the wrong direction and left them out sideways. Characters that never played a clip looked
+fine, which is why only some figures were affected and why it looked intermittent.
+
+The fix is to express the rotation entirely in the **bind** frame, captured once per bone at
+build time and never recomputed: `local = parentBind⁻¹ · R · parentBind · bind`. The result now
+depends only on the requested angles, so it is immune to whatever the mixer did a moment ago.
+
+**The general lesson:** a procedural pose layer that runs alongside an animation mixer must not
+read bone state the mixer owns. Treat the bind pose as the only stable frame of reference.
+
 ---
 
 ## Things learned the hard way

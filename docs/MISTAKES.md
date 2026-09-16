@@ -85,3 +85,7 @@
   the buffer. Dispose channels and samplers explicitly, then prune, or the GLB stays huge.
 - A merged glTF document carries a second buffer; a GLB may hold only one. Rebind every
   accessor to the first buffer before writing.
+
+- A procedural pose layer must not read bone orientations the animation mixer owns. Express
+  rotations in the bind frame, captured once. Reading the parent's _current_ orientation made
+  characters snap to a T-pose on any frame after an action clip had played.
