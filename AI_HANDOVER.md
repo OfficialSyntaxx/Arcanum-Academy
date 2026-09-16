@@ -289,6 +289,23 @@ the allowlisted proxy forwards the request. The repository captures `PRE_RESTORE
 advances the save version, and records the actor/reason receipt; that backup is the immediate undo
 path. No free-form account editing or grant route exists. Evidence is in `docs/G6_E_RETURN.md`.
 
+**Combat feel update (2026-09-16, branch `Claudesep16`):** combat is now OSRS-shaped end to end.
+One tap (or walking into an aggressive creature's reach) starts a fight and the blows then trade
+themselves on the 600 ms tick; the client only paces the next exchange from the receipt of the last
+one, the server still owns every roll. Both sides roll every tick with OSRS effective levels
+(`level + 8 + style bonus`), so Attack, Strength and Defence are each felt from level 1; the
+authored damage floor is gone, a zero is a miss that still spends the tick, and creatures carry
+their own Attack/Strength/Defence in `shared/combat/encounters.ts` (Shore Wolf and Drowned
+Sentinel are aggressive). Presentation: the red rings, posts and halos over creatures are deleted;
+the animated model is the tap target, sits on a faint trampled-earth disc, is scaled per creature
+against a **1.8 m reference player** (named NPCs match), has a contact shadow, ambles inside a
+small leash when idle, squares up and closes on the player in a fight, flashes on hit, shows a
+billboard health bar only while targeted, and dissolves on defeat. Hitsplats (red damage, blue
+miss) pop over whoever was struck. The fight card is a slim bottom strip with stance chips and
+food; there is no attack button. A HUD fold control hides every fixed overlay, and the
+connection/fps strip collapses to a single dot in play. Known trust gap, accepted for
+single-player: aggression is client-initiated, so a modified client could decline to be attacked.
+
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
 oversights.

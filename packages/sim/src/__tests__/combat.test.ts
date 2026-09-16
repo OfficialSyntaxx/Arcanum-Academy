@@ -39,8 +39,21 @@ describe('encounter combat', () => {
     });
   });
 
-  it('rejects invalid damage input', () => {
+  it('treats a zero as a miss that still spends the tick', () => {
     expect(resolveSparringAttack(target, 0, 600, 4_000, 0)).toMatchObject({
+      kind: 'hit',
+      damage: 0,
+      defeated: false,
+      state: { hitpoints: target.hitpoints, nextAttackAtMs: 600 },
+    });
+  });
+
+  it('rejects invalid damage input', () => {
+    expect(resolveSparringAttack(target, 0, 600, 4_000, -1)).toMatchObject({
+      kind: 'rejected',
+      reason: 'invalid_damage',
+    });
+    expect(resolveSparringAttack(target, 0, 600, 4_000, 1.5)).toMatchObject({
       kind: 'rejected',
       reason: 'invalid_damage',
     });

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { GamePhase } from '@alderfell/sim';
 import { useAppStore } from '../state/app-store.js';
 import type { DiagnosticEntry } from '../state/app-store.js';
 
@@ -31,20 +32,44 @@ export function StatusBar({
   const diagnosticsOpen = useAppStore((state) => state.diagnosticsOpen);
   const setDiagnosticsOpen = useAppStore((state) => state.setDiagnosticsOpen);
   const [reportOpen, setReportOpen] = useState(false);
+  const hudCollapsed = useAppStore((state) => state.hudCollapsed);
+  const phase = useAppStore((state) => state.phase);
+  const inGame = phase === GamePhase.SocialHub;
+  // In play the readout is a single dot; the numbers and tools are developer
+  // information and live behind it. Outside the hub the full strip stays.
+  const [expanded, setExpanded] = useState(false);
+  const showDetail = !inGame || (expanded && !hudCollapsed);
 
   return (
     <>
-      <div className="status-bar" role="status" aria-live="polite">
-        <span className="status-bar__dot" data-status={transportStatus} aria-hidden="true" />
-        <span>{STATUS_LABEL[transportStatus] ?? transportStatus}</span>
-        {latencyMs !== null ? <span>{latencyMs} ms</span> : null}
-        <span>{fps} fps</span>
-        <button type="button" onClick={() => setDiagnosticsOpen(!diagnosticsOpen)}>
-          Logs
+      <div
+        className="status-bar"
+        role="status"
+        aria-live="polite"
+        data-compact={showDetail ? 'false' : 'true'}
+      >
+        <button
+          type="button"
+          className="status-bar__toggle"
+          aria-label={`Connection: ${STATUS_LABEL[transportStatus] ?? transportStatus}`}
+          aria-expanded={showDetail}
+          onClick={() => setExpanded((open) => !open)}
+        >
+          <span className="status-bar__dot" data-status={transportStatus} aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => setReportOpen(true)}>
-          Report
-        </button>
+        {showDetail && (
+          <>
+            <span>{STATUS_LABEL[transportStatus] ?? transportStatus}</span>
+            {latencyMs !== null ? <span>{latencyMs} ms</span> : null}
+            <span>{fps} fps</span>
+            <button type="button" onClick={() => setDiagnosticsOpen(!diagnosticsOpen)}>
+              Logs
+            </button>
+            <button type="button" onClick={() => setReportOpen(true)}>
+              Report
+            </button>
+          </>
+        )}
       </div>
       {diagnosticsOpen && <DiagnosticsPanel />}
       {reportOpen && (

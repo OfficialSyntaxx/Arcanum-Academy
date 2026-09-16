@@ -66,7 +66,7 @@ npm run dev         # Vite dev server (client)
 npm run dev:server  # the gateway
 ```
 
-**Current: 362 tests across 30 files, all passing** (verified 2026-09-09, after G0's deletions).
+**Current: 472 tests across 56 files, all passing** (verified 2026-09-16).
 
 ## Rules the tooling enforces, so you cannot forget them
 

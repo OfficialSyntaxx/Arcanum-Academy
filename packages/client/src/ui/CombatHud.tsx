@@ -28,32 +28,40 @@ export function GravestoneHud({ onReclaim }: { readonly onReclaim: () => void })
   );
 }
 
-/** Compact, mobile-safe combat feedback for the initial practice encounter. */
+const STYLE_LABEL = {
+  ACCURATE: 'Accurate',
+  AGGRESSIVE: 'Aggressive',
+  DEFENSIVE: 'Defensive',
+} as const;
+
+/**
+ * The fight card: a slim strip at the bottom edge, not a panel over the fight.
+ *
+ * There is no attack button. Blows trade themselves on the tick once a
+ * creature is engaged, exactly as in OSRS; the card only shows the two health
+ * pools, lets the player switch stance or eat, and offers recovery after a fall.
+ */
 export function CombatHud({
-  onAttack,
   onRecover,
   onEat,
 }: {
-  readonly onAttack: (
-    interactableId: string,
-    style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE',
-  ) => void;
   readonly onRecover: () => void;
   readonly onEat: (interactableId: string, itemId: string) => void;
 }) {
   const combat = useAppStore((state) => state.economy.combat);
   const player = useAppStore((state) => state.economy.hitpoints);
   const stacks = useAppStore((state) => state.economy.stacks);
+  const style = useAppStore((state) => state.combatStyle);
+  const setStyle = useAppStore((state) => state.setCombatStyle);
   const [now, setNow] = useState(Date.now());
-  const [style, setStyle] = useState<'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE'>('ACCURATE');
   useEffect(() => {
-    if (player.respawnAtMs === null && combat?.nextAttackAtMs === undefined) return;
+    if (player.respawnAtMs === null) return;
     const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
-  }, [player.respawnAtMs, combat?.nextAttackAtMs]);
+  }, [player.respawnAtMs]);
   if (combat === null) return null;
   const pct = Math.max(0, Math.min(100, (combat.hitpoints / combat.maxHitpoints) * 100));
-  const attackReadyInMs = Math.max(0, combat.nextAttackAtMs - now);
+  const playerPct = Math.max(0, Math.min(100, (player.current / Math.max(1, player.max)) * 100));
   const foods = COMBAT_FOODS.flatMap((item) => {
     const quantity = stacks
       .filter((stack) => stack.definitionId === item.id)
@@ -62,67 +70,47 @@ export function CombatHud({
       ? [{ id: item.id, label: item.name, healAmount: item.consumable.healAmount, quantity }]
       : [];
   });
-  const strikeMessage = combat.rolledHit
-    ? `You hit for ${combat.damage}.`
-    : `Your swing glanced, but the starter strike still deals ${combat.damage}.`;
   const styleSkillName =
     combat.styleSkillId === undefined
       ? 'Combat'
       : (SKILL_TABLE.get(asId<SkillId>(combat.styleSkillId))?.name ?? 'Combat');
+  const fallen = player.current === 0;
+
   return (
     <section className="combat-hud" aria-label={`${combat.label} combat`}>
-      <div className="combat-hud__title">
-        <span>{combat.label}</span>
-        <span>
-          {combat.hitpoints}/{combat.maxHitpoints}
-        </span>
-      </div>
-      <div className="combat-hud__track">
-        <span style={{ width: `${pct}%` }} />
+      <div className="combat-hud__pools">
+        <div className="combat-hud__pool">
+          <div className="combat-hud__title">
+            <span>{combat.label}</span>
+            <span>
+              {combat.hitpoints}/{combat.maxHitpoints}
+            </span>
+          </div>
+          <div className="combat-hud__track">
+            <span style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+        <div className="combat-hud__pool">
+          <div className="combat-hud__title">
+            <span>You</span>
+            <span>
+              {player.current}/{player.max}
+            </span>
+          </div>
+          <div className="combat-hud__track combat-hud__track--player">
+            <span style={{ width: `${playerPct}%` }} />
+          </div>
+        </div>
       </div>
       {combat.bossPhase !== undefined && (
         <p className="combat-hud__phase">
           Warden phase {combat.bossPhase} ·{' '}
           {combat.bossPhase === 1
             ? 'The tideglass shell is holding.'
-            : 'Undertow empowered—Defensive style reduces the pressure.'}
+            : 'Undertow empowered—Defensive stance blunts it.'}
         </p>
       )}
-      <div className="combat-hud__title combat-hud__player">
-        <span>You</span>
-        <span>
-          {player.current}/{player.max} HP
-        </span>
-      </div>
-      <div className="combat-hud__styles" aria-label="Combat style">
-        {(['ACCURATE', 'AGGRESSIVE', 'DEFENSIVE'] as const).map((option) => (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={style === option}
-            onClick={() => setStyle(option)}
-          >
-            {option === 'ACCURATE'
-              ? 'Accurate +ACC'
-              : option === 'AGGRESSIVE'
-                ? 'Aggressive +DMG'
-                : 'Defensive -DMG'}
-          </button>
-        ))}
-      </div>
-      <p className="combat-hud__training">
-        Training:{' '}
-        {style === 'ACCURATE' ? 'Attack' : style === 'AGGRESSIVE' ? 'Strength' : 'Defence'}
-        {' + Hitpoints'}
-      </p>
-      <p className="combat-hud__log" aria-live="polite">
-        {combat.foodConsumed !== undefined
-          ? `You eat ${ITEM_CATALOG.get(asId<ItemDefinitionId>(combat.foodConsumed.itemId))?.name ?? 'food'} and restore ${combat.foodConsumed.healAmount} HP.`
-          : combat.defeated
-            ? `The ${combat.label} is defeated.`
-            : `${strikeMessage}${combat.enemyDamage > 0 ? ` The ${combat.label} hits you for ${combat.enemyDamage}.` : ''}`}
-      </p>
-      {player.current === 0 ? (
+      {fallen ? (
         player.respawnAtMs !== null && now < player.respawnAtMs ? (
           <p>Recovering… {Math.ceil((player.respawnAtMs - now) / 1_000)}s</p>
         ) : (
@@ -131,8 +119,8 @@ export function CombatHud({
           </button>
         )
       ) : combat.defeated ? (
-        <p>
-          Defeated · +{combat.coinsGained} coins ·{' '}
+        <p className="combat-hud__log" aria-live="polite">
+          {combat.label} defeated · +{combat.coinsGained} coins ·{' '}
           {combat.drops
             .map(
               (drop) =>
@@ -142,25 +130,31 @@ export function CombatHud({
           · +{combat.combatXpGained} {styleSkillName} XP
           {combat.hitpointsXpGained !== undefined && combat.hitpointsXpGained > 0
             ? ` · +${combat.hitpointsXpGained} Hitpoints XP`
-            : ''}{' '}
-          · Reforming…
+            : ''}
         </p>
       ) : (
         <div className="combat-hud__actions">
-          <button
-            type="button"
-            disabled={attackReadyInMs > 0}
-            onClick={() => onAttack(combat.interactableId, style)}
-          >
-            {attackReadyInMs > 0 ? `Ready in ${Math.ceil(attackReadyInMs / 1_000)}s` : 'Attack'}
-          </button>
+          <div className="combat-hud__styles" role="radiogroup" aria-label="Attack stance">
+            {(['ACCURATE', 'AGGRESSIVE', 'DEFENSIVE'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={style === option}
+                onClick={() => setStyle(option)}
+              >
+                {STYLE_LABEL[option]}
+              </button>
+            ))}
+          </div>
           {foods.map((food) => (
             <button
               key={food.id}
               type="button"
+              className="combat-hud__eat"
               onClick={() => onEat(combat.interactableId, food.id)}
             >
-              Eat {food.label} +{food.healAmount} HP ({food.quantity})
+              Eat {food.label} +{food.healAmount} ({food.quantity})
             </button>
           ))}
         </div>

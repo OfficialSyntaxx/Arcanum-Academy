@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { maxMeleeHit, resolveMeleeRoll, type CombatRng } from '../combat-rolls.js';
+import { effectiveLevel, maxMeleeHit, resolveMeleeRoll, type CombatRng } from '../combat-rolls.js';
 
 function scripted(...draws: number[]): CombatRng & { calls: readonly [number, number][] } {
   const calls: [number, number][] = [];
@@ -53,5 +53,14 @@ describe('OSRS-shaped combat rolls', () => {
     expect(maxMeleeHit(10, 0)).toBe(1);
     expect(maxMeleeHit(99, 100)).toBe(25);
     expect(() => maxMeleeHit(1.5, 0)).toThrow('strengthLevel');
+  });
+
+  it('raises the effective level by eight plus the style bonus, so level one can hit', () => {
+    expect(effectiveLevel(1)).toBe(9);
+    expect(effectiveLevel(1, 3)).toBe(12);
+    expect(maxMeleeHit(effectiveLevel(1), 0)).toBe(1);
+    expect(maxMeleeHit(effectiveLevel(40), 0)).toBe(5);
+    expect(maxMeleeHit(effectiveLevel(99, 3), 0)).toBe(11);
+    expect(() => effectiveLevel(-1)).toThrow('level');
   });
 });

@@ -66,7 +66,8 @@ export function resolveSparringAttack(
   respawnMs: number,
   damage: number,
 ): SparringAttackResult {
-  if (!Number.isInteger(damage) || damage < 1) {
+  // Zero is a legitimate miss: it still spends the tick, exactly as in OSRS.
+  if (!Number.isInteger(damage) || damage < 0) {
     return { kind: 'rejected', state, reason: 'invalid_damage' };
   }
   if (state.hitpoints < 1 || state.respawnAtMs !== null) {

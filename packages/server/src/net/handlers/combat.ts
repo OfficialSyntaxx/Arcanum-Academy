@@ -2,6 +2,7 @@ import {
   addItems,
   awardXp,
   createSparringState,
+  effectiveLevel,
   removeItems,
   resolveMeleeRoll,
   resolveSparringAttack,
@@ -9,6 +10,7 @@ import {
 } from '@alderfell/sim';
 import {
   asId,
+  BOSS_ENRAGE_STRENGTH_BONUS,
   combatEncounterByInteractable,
   err,
   failure,
@@ -170,26 +172,38 @@ export function registerCombatHandlers(
         state.combatTargets[id!] ?? createSparringState(encounter.maxHitpoints, now),
         now,
       );
+      // One exchange per tick: the player swings, then the creature swings
+      // back if it survived. Both are OSRS rolls, so every Attack, Strength
+      // and Defence level changes how often a hit lands and how hard.
+      const seed = `${session.playerId}:${id}:${target.defeats}:${target.nextAttackAtMs}`;
       const roll = resolveMeleeRoll(
         {
-          attackLevel: attackProgress.level,
-          strengthLevel: strengthProgress.level,
-          defenceLevel: defenceProgress.level,
-          attackBonus: style === 'ACCURATE' ? 3 : 0,
-          strengthBonus: style === 'AGGRESSIVE' ? 3 : 0,
+          attackLevel: effectiveLevel(attackProgress.level, style === 'ACCURATE' ? 3 : 0),
+          strengthLevel: effectiveLevel(strengthProgress.level, style === 'AGGRESSIVE' ? 3 : 0),
+          defenceLevel: effectiveLevel(encounter.defenceLevel),
+          attackBonus: 0,
+          strengthBonus: 0,
           defenceBonus: 0,
         },
-        Rng.fromSeed(`${session.playerId}:${id}:${target.defeats}:${target.nextAttackAtMs}`),
+        Rng.fromSeed(seed),
       );
-      // A first encounter must always make progress. The roll remains the one
-      // source of truth for damage once equipment and levels raise max hit;
-      // this authored floor only protects the level-one Shore Wolf lesson.
-      const playerDamage = Math.max(encounter.playerDamage, roll.damage);
+      const playerDamage = roll.damage;
       const enraged = encounter.boss === true && target.hitpoints <= encounter.maxHitpoints / 2;
-      const enemyDamage = Math.max(
-        0,
-        encounter.enemyDamage + (enraged ? 1 : 0) - (style === 'DEFENSIVE' ? 1 : 0),
+      const enemyRoll = resolveMeleeRoll(
+        {
+          attackLevel: effectiveLevel(encounter.attackLevel),
+          strengthLevel: effectiveLevel(
+            encounter.strengthLevel,
+            enraged ? BOSS_ENRAGE_STRENGTH_BONUS : 0,
+          ),
+          defenceLevel: effectiveLevel(defenceProgress.level, style === 'DEFENSIVE' ? 3 : 0),
+          attackBonus: 0,
+          strengthBonus: 0,
+          defenceBonus: 0,
+        },
+        Rng.fromSeed(`${seed}:enemy`),
       );
+      const enemyDamage = enemyRoll.damage;
       const outcome = resolveSparringAttack(
         target,
         now,
@@ -311,6 +325,7 @@ export function registerCombatHandlers(
             rolledDamage: roll.damage,
             rolledHit: roll.hit,
             enemyDamage: defeated ? 0 : enemyDamage,
+            enemyHit: !defeated && enemyRoll.hit,
             coinsGained: coins,
             drops: defeated ? encounter.drops : [],
             combatXpGained: styleXp,
@@ -404,6 +419,7 @@ export function registerCombatHandlers(
             rolledDamage: 0,
             rolledHit: false,
             enemyDamage: 0,
+            enemyHit: false,
             coinsGained: 0,
             drops: [],
             combatXpGained: 0,

@@ -47,10 +47,6 @@ export interface HubScreenProps {
   readonly onUpgradeTool: (toolId: string) => void;
   readonly onAcceptQuest: (questId: string) => void;
   readonly onCompleteQuest: (questId: string) => void;
-  readonly onAttackEncounter: (
-    interactableId: string,
-    style?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE',
-  ) => void;
   readonly onRecoverCombat: () => void;
   readonly onReclaimCombatGrave: () => void;
   readonly onEatCombatFood: (interactableId: string, itemId: string) => void;
@@ -79,7 +75,6 @@ export function HubScreen({
   onAcceptQuest,
   onCompleteQuest,
   onNavigate,
-  onAttackEncounter,
   onRecoverCombat,
   onReclaimCombatGrave,
   onEatCombatFood,
@@ -96,6 +91,9 @@ export function HubScreen({
   const setOpenMerchant = useAppStore((state) => state.setOpenMerchant);
   const setOpenNotice = useAppStore((state) => state.setOpenNotice);
   const setOpenDialogue = useAppStore((state) => state.setOpenDialogue);
+  const hudCollapsed = useAppStore((state) => state.hudCollapsed);
+  const setHudCollapsed = useAppStore((state) => state.setHudCollapsed);
+  const inCombat = useAppStore((state) => state.economy.combat !== null);
 
   // Satchel and map are local presentation state, while crafting and prompts
   // live in the app store. They all subscribe to the same travel boundary.
@@ -121,27 +119,42 @@ export function HubScreen({
   // occasionally and would otherwise cost screen the world should be using.
 
   return (
-    <div className="hub">
+    <div className="hub" data-collapsed={hudCollapsed ? 'true' : 'false'}>
       <HubHud />
-      <JourneyTracker
-        onOpenMap={() => setMapOpen(true)}
-        onOpenJournal={() => setJournalOpen(true)}
-        onOpenCollection={() => setCollectionOpen(true)}
-      />
-      <ClueTracker />
+      {/* One control folds every fixed overlay away so the world is what fills
+          the phone. Panels the player opens on purpose are unaffected. */}
+      <button
+        type="button"
+        className="hud-fold"
+        aria-pressed={hudCollapsed}
+        aria-label={hudCollapsed ? 'Show overlays' : 'Hide overlays'}
+        onClick={() => setHudCollapsed(!hudCollapsed)}
+      >
+        {hudCollapsed ? '▾' : '▴'}
+      </button>
+      {!hudCollapsed && (
+        <JourneyTracker
+          onOpenMap={() => setMapOpen(true)}
+          onOpenJournal={() => setJournalOpen(true)}
+          onOpenCollection={() => setCollectionOpen(true)}
+        />
+      )}
+      {!hudCollapsed && <ClueTracker />}
       <button type="button" className="map-toggle" onClick={() => setMapOpen(true)}>
         Map
       </button>
       {mapOpen && <WorldMap onNavigate={onNavigate} onClose={() => setMapOpen(false)} />}
       {journalOpen && <QuestJournal onClose={() => setJournalOpen(false)} />}
       {collectionOpen && <CollectionLog onClose={() => setCollectionOpen(false)} />}
-      <div className="hub-help">Tap to walk · Drag to look · Pinch to zoom</div>
-      <InteractionPrompt onEngage={onEngage} />
+      {!hudCollapsed && !inCombat && (
+        <div className="hub-help">Tap to walk · Drag to look · Pinch to zoom</div>
+      )}
+      {!inCombat && <InteractionPrompt onEngage={onEngage} />}
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
       <CollectionToast />
-      <DungeonHud />
+      {!hudCollapsed && <DungeonHud />}
       <CommandError />
-      <CombatHud onAttack={onAttackEncounter} onRecover={onRecoverCombat} onEat={onEatCombatFood} />
+      <CombatHud onRecover={onRecoverCombat} onEat={onEatCombatFood} />
       <GravestoneHud onReclaim={onReclaimCombatGrave} />
       <button
         type="button"

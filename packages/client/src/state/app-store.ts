@@ -125,6 +125,8 @@ export interface EconomyState {
     readonly rolledDamage: number;
     readonly rolledHit: boolean;
     readonly enemyDamage: number;
+    /** Whether the creature's swing connected; a connected swing may still roll 0. */
+    readonly enemyHit?: boolean;
     readonly coinsGained: number;
     readonly drops: readonly { readonly itemId: string; readonly quantity: number }[];
     readonly combatXpGained: number;
@@ -136,6 +138,8 @@ export interface EconomyState {
   } | null;
   /** Local receipt time of the latest server-confirmed combat hit. Presentation only. */
   readonly lastCombatStrikeAtMs: number;
+  /** Local receipt time of the latest tick-spending combat command (attack or eat). */
+  readonly lastCombatTickAtMs: number;
 }
 
 export const EMPTY_ECONOMY: EconomyState = {
@@ -167,6 +171,7 @@ export const EMPTY_ECONOMY: EconomyState = {
   grave: null,
   combat: null,
   lastCombatStrikeAtMs: 0,
+  lastCombatTickAtMs: 0,
 };
 
 export interface AppState {
@@ -209,8 +214,14 @@ export interface AppState {
   readonly queued: { readonly queueSize: number } | null;
   /** Increments whenever movement begins, so contextual UI can dismiss together. */
   readonly travelRevision: number;
+  /** The stance every automatic exchange is fought in until the player changes it. */
+  readonly combatStyle: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
+  /** True when the player has folded the fixed overlays away to see the world. */
+  readonly hudCollapsed: boolean;
 
   setPhase(phase: GamePhase): void;
+  setCombatStyle(style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE'): void;
+  setHudCollapsed(collapsed: boolean): void;
   setBootStep(id: string, patch: Partial<Omit<BootStep, 'id'>>): void;
   registerBootSteps(steps: readonly BootStep[]): void;
   setTransportStatus(status: TransportStatus): void;
@@ -267,8 +278,12 @@ export const useAppStore = create<AppState>((set) => ({
   playerId: '',
   queued: null,
   travelRevision: 0,
+  combatStyle: 'ACCURATE',
+  hudCollapsed: false,
 
   setPhase: (phase) => set({ phase }),
+  setCombatStyle: (combatStyle) => set({ combatStyle }),
+  setHudCollapsed: (hudCollapsed) => set({ hudCollapsed }),
   registerBootSteps: (steps) => set({ bootSteps: steps }),
   setBootStep: (id, patch) =>
     set((state) => ({

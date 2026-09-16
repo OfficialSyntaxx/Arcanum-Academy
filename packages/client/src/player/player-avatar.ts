@@ -10,6 +10,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import archerUrl from '../../../../assets/kenney/mini-forest/character-archer.glb?url';
+import { createShadowBlob } from '../world/shadow-blob.js';
 
 // Mini Forest stores a shared external palette. This compressed copy retains
 // the model's intended colours while keeping the client package self-contained.
@@ -25,10 +26,14 @@ export function createMiniForestCharacterLoader(): GLTFLoader {
   return new GLTFLoader(manager);
 }
 
-// The Mini Forest archer is deliberately chibi-proportioned. Giving the
-// player's version a stronger silhouette lets it read above nearby NPCs and
-// foliage on a portrait phone without changing its collision footprint.
-const PLAYER_DISPLAY_HEIGHT = 2.25;
+/**
+ * The reference height every other figure and creature is held against.
+ *
+ * 1.8 m is a human; the world's doors, stalls and trees are authored in
+ * metres, so the player must be human-sized against them or nothing else can
+ * be. Named NPCs share this height and creatures are scaled relative to it.
+ */
+export const PLAYER_DISPLAY_HEIGHT = 1.8;
 
 /**
  * A progressive replacement for the procedural player silhouette.
@@ -66,6 +71,7 @@ export class PlayerAvatar {
           node.receiveShadow = shadowsEnabled;
         });
         this.root.add(model);
+        this.root.add(createShadowBlob(0.42));
         this.mixer = new AnimationMixer(model);
         for (const clip of gltf.animations)
           this.actions.set(clip.name, this.mixer.clipAction(clip));

@@ -16,6 +16,7 @@
  */
 
 import {
+  COMBAT_ENCOUNTERS,
   COURTYARD,
   InteractableKind,
   type Failure,
@@ -39,6 +40,7 @@ import { NpcDirector } from '../npc/npc-director.js';
 import { NpcAvatarGroup } from '../npc/npc-avatar-group.js';
 import { CombatAvatarGroup } from '../combat/combat-avatar-group.js';
 import { GravestoneMarker } from '../combat/gravestone-marker.js';
+import { Hitsplats } from '../combat/hitsplats.js';
 import { questDialogueForNpc } from '../npc/quest-dialogue.js';
 import { PlayerController } from '../player/player-controller.js';
 import { PlayerAvatar } from '../player/player-avatar.js';
@@ -47,6 +49,10 @@ import { useAppStore, type InteractionPromptState } from '../state/app-store.js'
 import { WorldService } from '../world/world-service.js';
 
 const STORE_UPDATE_INTERVAL_MS = 250;
+/** How long an aggressive creature waits after a refused engagement before trying again. */
+const AGGRO_RETRY_MS = 4_000;
+/** Retry spacing when the server says the tick has not elapsed yet (clock skew). */
+const COOLDOWN_RETRY_MS = 180;
 
 export interface HubControllerOptions {
   readonly render: RenderService;
@@ -114,6 +120,14 @@ export class HubController {
   private npcAvatars: NpcAvatarGroup;
   private combatAvatars: CombatAvatarGroup;
   private gravestoneMarker: GravestoneMarker;
+  private readonly hitsplats = new Hitsplats();
+  /** Receipt time of the strike the last automatic exchange was paced from. */
+  private autoAttackPacedFromMs = -1;
+  private autoAttackRetries = 0;
+  private autoAttackSentAtMs = 0;
+  /** Strike receipt already turned into hitsplats, so each exchange splats once. */
+  private lastSplatStrikeAtMs = 0;
+  private readonly aggroRetryAtMs = new Map<string, number>();
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
   private readonly now: () => number;
@@ -168,6 +182,7 @@ export class HubController {
     options.render.resize();
 
     world.attach(options.render.scene);
+    options.render.scene.add(this.hitsplats.root);
     this.camera.snapTo({
       x: this.player.position.x,
       y: this.player.elevation,
@@ -204,6 +219,7 @@ export class HubController {
     const economy = useAppStore.getState().economy;
     const gathering = economy.gatheringNodeId !== null;
     const combatStriking = this.now() - economy.lastCombatStrikeAtMs < 520;
+    this.driveCombat(economy);
     this.playerAvatar.update(
       dtSeconds,
       focus,
@@ -226,7 +242,14 @@ export class HubController {
     }
     this.npcs.update(this.now(), dtSeconds * 1000);
     this.npcAvatars.update(dtSeconds, this.npcs.namedPresentations());
-    this.combatAvatars.update(dtSeconds, economy.combat, economy.lastCombatStrikeAtMs);
+    this.combatAvatars.update(
+      dtSeconds,
+      economy.combat,
+      economy.lastCombatStrikeAtMs,
+      this.player.position,
+      this.now(),
+    );
+    this.hitsplats.update(this.now());
     this.gravestoneMarker.update(economy.grave, this.now());
     this.world.actors.flush();
 
@@ -382,9 +405,113 @@ export class HubController {
     this.combatAvatars.dispose();
     this.gravestoneMarker.dispose();
     this.playerAvatar.dispose();
+    this.options.render.scene.remove(this.hitsplats.root);
+    this.hitsplats.dispose();
     this.world.actors.release(this.playerSlot);
     this.options.render.scene.remove(this.world.root);
     this.world.dispose();
+  }
+
+  /**
+   * OSRS combat: one tap starts a fight and the blows then trade themselves.
+   *
+   * The server owns every roll and the 600 ms tick. This loop only decides
+   * *when* to ask for the next exchange: once the previous one has been
+   * confirmed and a tick has passed since we received it. Pacing from the
+   * receipt time rather than the server's clock keeps a phone with a skewed
+   * clock from spamming or stalling. Walking away ends the fight, and an
+   * aggressive creature starts one the moment the player is within its reach.
+   */
+  private driveCombat(economy: ReturnType<typeof useAppStore.getState>['economy']): void {
+    const now = this.now();
+    const store = useAppStore.getState();
+    const combat = economy.combat;
+    const alive = economy.hitpoints.current > 0 && economy.hitpoints.respawnAtMs === null;
+    const tickMs = this.options.tunables.combat.tickMs;
+
+    if (combat !== null && !combat.defeated) {
+      this.spawnHitsplats(economy);
+      const target = this.world.zone.interactables.find((i) => i.id === combat.interactableId);
+      if (target) this.player.faceToward(target.position);
+      if (!alive || this.player.isTravelling || !this.withinReach(combat.interactableId)) return;
+      const pacedFrom = economy.lastCombatTickAtMs;
+      if (pacedFrom !== this.autoAttackPacedFromMs) {
+        this.autoAttackPacedFromMs = pacedFrom;
+        this.autoAttackRetries = 0;
+        this.autoAttackSentAtMs = 0;
+      }
+      const cooldownRefused = store.lastCommandError === 'combat.cooldown';
+      const due =
+        this.autoAttackSentAtMs === 0
+          ? now >= pacedFrom + tickMs
+          : cooldownRefused &&
+            this.autoAttackRetries < 4 &&
+            now >= this.autoAttackSentAtMs + COOLDOWN_RETRY_MS;
+      if (!due) return;
+      if (this.autoAttackSentAtMs !== 0) this.autoAttackRetries += 1;
+      this.autoAttackSentAtMs = now;
+      this.options.onEngageCombatEncounter?.(combat.interactableId);
+      return;
+    }
+
+    if (combat !== null && combat.defeated) this.spawnHitsplats(economy);
+    // Nothing is being fought: an aggressive creature within reach picks the
+    // fight itself. The server still validates range, level and respawn.
+    if (!alive || this.player.isTravelling) return;
+    for (const encounter of COMBAT_ENCOUNTERS) {
+      if (!encounter.aggressive) continue;
+      if (encounter.zoneId !== undefined && encounter.zoneId !== this.world.zone.id) continue;
+      if (
+        encounter.zoneId === undefined &&
+        !this.world.zone.interactables.some((i) => i.id === encounter.interactableId)
+      )
+        continue;
+      if (!this.withinReach(encounter.interactableId)) continue;
+      if (now < (this.aggroRetryAtMs.get(encounter.interactableId) ?? 0)) continue;
+      // A creature that was just felled here is reforming; give it its respawn.
+      if (combat?.interactableId === encounter.interactableId && combat.respawnAtMs !== null) {
+        this.aggroRetryAtMs.set(encounter.interactableId, now + encounter.respawnMs);
+        continue;
+      }
+      this.aggroRetryAtMs.set(encounter.interactableId, now + AGGRO_RETRY_MS);
+      useAppStore.getState().recordDiagnostic({
+        level: 'info',
+        source: 'world',
+        message: `${encounter.label} attacks you`,
+      });
+      this.options.onEngageCombatEncounter?.(encounter.interactableId);
+      return;
+    }
+  }
+
+  /** Whether the player stands close enough to an encounter for the server to accept a swing. */
+  private withinReach(interactableId: string): boolean {
+    const encounter = COMBAT_ENCOUNTERS.find((e) => e.interactableId === interactableId);
+    if (!encounter) return false;
+    const dx = this.player.position.x - encounter.position.x;
+    const dz = this.player.position.z - encounter.position.z;
+    const radius = this.options.tunables.world.interactionRadius;
+    return dx * dx + dz * dz <= radius * radius;
+  }
+
+  /** Turns each confirmed exchange into a splat over whoever was struck. */
+  private spawnHitsplats(economy: ReturnType<typeof useAppStore.getState>['economy']): void {
+    const combat = economy.combat;
+    if (combat === null || economy.lastCombatStrikeAtMs === this.lastSplatStrikeAtMs) return;
+    this.lastSplatStrikeAtMs = economy.lastCombatStrikeAtMs;
+    if (combat.foodConsumed !== undefined) return;
+    const now = this.now();
+    const head = this.combatAvatars.headPoint(combat.interactableId);
+    if (head) this.hitsplats.spawn(head.x, head.y, head.z, combat.damage, now);
+    if (combat.defeated) return;
+    // The creature's answer lands a beat later, matching its lunge animation.
+    const enemyDamage = combat.enemyDamage;
+    const px = this.player.position.x;
+    const pz = this.player.position.z;
+    const py = this.player.elevation + 2.0;
+    window.setTimeout(() => {
+      if (!this.disposed) this.hitsplats.spawn(px, py, pz, enemyDamage, this.now());
+    }, 320);
   }
 
   private bindInput(): void {

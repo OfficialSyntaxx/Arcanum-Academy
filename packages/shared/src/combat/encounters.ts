@@ -1,13 +1,24 @@
 import { asId, type InteractableId, type ItemDefinitionId } from '../ids.js';
 
-/** Shared authored values for server-authoritative practice encounters. */
+/**
+ * Shared authored values for server-authoritative encounters.
+ *
+ * Creatures carry real OSRS-shaped combat levels rather than fixed damage
+ * numbers. Both sides roll on every tick: the player's Attack, Strength and
+ * Defence decide how often they hit, how hard, and how often the creature
+ * misses them, so every level gained is felt in a fight.
+ */
 export interface CombatEncounterDefinition {
   readonly interactableId: InteractableId;
   readonly label: string;
   readonly position: { readonly x: number; readonly z: number };
   readonly maxHitpoints: number;
-  readonly playerDamage: number;
-  readonly enemyDamage: number;
+  /** The creature's own combat skills, rolled against the player's every tick. */
+  readonly attackLevel: number;
+  readonly strengthLevel: number;
+  readonly defenceLevel: number;
+  /** True when the creature attacks a player who walks into its reach. */
+  readonly aggressive: boolean;
   readonly rewardCoins: number;
   /** Guaranteed material loot, awarded only on a confirmed defeat. */
   readonly drops: readonly { readonly itemId: ItemDefinitionId; readonly quantity: number }[];
@@ -25,8 +36,10 @@ export const SHORE_WOLF: CombatEncounterDefinition = Object.freeze({
   position: { x: 0, z: 12.8 },
   // The first real fight should teach the loop, not punish a new arrival.
   maxHitpoints: 4,
-  playerDamage: 1,
-  enemyDamage: 1,
+  attackLevel: 1,
+  strengthLevel: 1,
+  defenceLevel: 1,
+  aggressive: true,
   rewardCoins: 6,
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.meat.raw_shore_wolf'), quantity: 1 },
@@ -42,8 +55,10 @@ export const EMBERWING_ARMABEE: CombatEncounterDefinition = Object.freeze({
   label: 'Emberwing Armabee',
   position: { x: -7, z: 19 },
   maxHitpoints: 5,
-  playerDamage: 1,
-  enemyDamage: 1,
+  attackLevel: 3,
+  strengthLevel: 2,
+  defenceLevel: 2,
+  aggressive: false,
   rewardCoins: 8,
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.material.armabee_wax'), quantity: 1 },
@@ -58,8 +73,10 @@ export const DROWNED_SENTINEL: CombatEncounterDefinition = Object.freeze({
   label: 'Drowned Sentinel',
   position: { x: 0, z: -5 },
   maxHitpoints: 9,
-  playerDamage: 1,
-  enemyDamage: 2,
+  attackLevel: 8,
+  strengthLevel: 8,
+  defenceLevel: 10,
+  aggressive: true,
   rewardCoins: 12,
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.material.saltworn_fragment'), quantity: 1 },
@@ -76,8 +93,10 @@ export const DROWNED_WARDEN: CombatEncounterDefinition = Object.freeze({
   label: 'Drowned Warden',
   position: { x: 0, z: 6.5 },
   maxHitpoints: 18,
-  playerDamage: 1,
-  enemyDamage: 2,
+  attackLevel: 15,
+  strengthLevel: 14,
+  defenceLevel: 12,
+  aggressive: false,
   rewardCoins: 24,
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.material.warden_scale'), quantity: 1 },
@@ -89,6 +108,9 @@ export const DROWNED_WARDEN: CombatEncounterDefinition = Object.freeze({
   requiredQuestId: 'quest.beneath_the_saltline',
   boss: true,
 });
+
+/** Extra effective Strength the Warden gains below half health. */
+export const BOSS_ENRAGE_STRENGTH_BONUS = 6;
 
 export const COMBAT_ENCOUNTERS = Object.freeze([
   SHORE_WOLF,

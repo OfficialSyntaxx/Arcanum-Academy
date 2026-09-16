@@ -31,11 +31,22 @@ function nonNegativeInteger(value: number, label: string): void {
     throw new Error(`${label} must be a non-negative integer.`);
 }
 
+/**
+ * OSRS effective level: the skill level, a flat +8, and the attack style's
+ * bonus. Every level raises accuracy, max hit or defence because the level
+ * is a multiplier in the roll, so training is felt from level 1 upward.
+ */
+export function effectiveLevel(level: number, styleBonus = 0): number {
+  nonNegativeInteger(level, 'level');
+  nonNegativeInteger(styleBonus, 'styleBonus');
+  return level + 8 + styleBonus;
+}
+
 /** Calculates the maximum integer damage from an effective strength and gear bonus. */
 export function maxMeleeHit(strengthLevel: number, strengthBonus: number): number {
   nonNegativeInteger(strengthLevel, 'strengthLevel');
   nonNegativeInteger(strengthBonus, 'strengthBonus');
-  return Math.floor((strengthLevel * (strengthBonus + 64)) / 640);
+  return Math.floor(0.5 + (strengthLevel * (strengthBonus + 64)) / 640);
 }
 
 /** Resolves exactly one attack without accepting browser-provided damage. */

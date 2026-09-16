@@ -157,9 +157,10 @@ export class EconomyController {
     this.send('clue.investigate', { interactableId });
   }
 
+  /** One exchange of blows. The style defaults to the player's chosen stance. */
   attackEncounter(
     interactableId: string,
-    style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = 'ACCURATE',
+    style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = useAppStore.getState().combatStyle,
   ): void {
     this.send('combat.attack', { interactableId, style });
   }
@@ -174,7 +175,9 @@ export class EconomyController {
 
   /** Travelling away ends the local combat presentation; the server still owns target respawn. */
   disengageCombat(): void {
-    useAppStore.getState().setEconomy({ combat: null, lastCombatStrikeAtMs: 0 });
+    useAppStore
+      .getState()
+      .setEconomy({ combat: null, lastCombatStrikeAtMs: 0, lastCombatTickAtMs: 0 });
   }
 
   eatCombatFood(interactableId: string, itemId: string): void {
@@ -270,6 +273,12 @@ export class EconomyController {
       ...(patch.tideglassTrail !== undefined ? { tideglassTrail: patch.tideglassTrail } : {}),
       ...(envelope.kind === 'combat.attack' && patch.combat !== undefined
         ? { lastCombatStrikeAtMs: Date.now() }
+        : {}),
+      // Eating spends a combat tick too, so the automatic exchange paces from it
+      // without triggering the player's swing animation.
+      ...((envelope.kind === 'combat.attack' || envelope.kind === 'combat.eat') &&
+      patch.combat !== undefined
+        ? { lastCombatTickAtMs: Date.now() }
         : {}),
     };
 

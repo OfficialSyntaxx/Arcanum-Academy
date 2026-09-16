@@ -104,6 +104,15 @@ export class PlayerController {
     this.mover = { ...this.mover, path: [], pathIndex: 0, velocity: 0 };
   }
 
+  /** Turns the standing player toward a world point, for squaring up to a target. */
+  faceToward(target: Vec2): void {
+    if (isMoving(this.mover)) return;
+    const dx = target.x - this.mover.position.x;
+    const dz = target.z - this.mover.position.z;
+    if (dx * dx + dz * dz < 1e-6) return;
+    this.mover = { ...this.mover, facing: Math.atan2(dx, dz) };
+  }
+
   /**
    * Advances one frame along the current path.
    *

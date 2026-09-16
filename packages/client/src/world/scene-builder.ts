@@ -14,6 +14,7 @@
 import {
   BoxGeometry,
   BufferGeometry,
+  CircleGeometry,
   Color,
   ConeGeometry,
   CylinderGeometry,
@@ -72,7 +73,6 @@ const MARKER_COLOURS: Readonly<Record<string, number>> = {
   [InteractableKind.MerchantStall]: Palette.hazeDim,
   [InteractableKind.ZonePortal]: Palette.verdigris,
   [InteractableKind.QuestBoard]: Palette.haze,
-  [InteractableKind.CombatEncounter]: 0xe85b45,
   [InteractableKind.ClueSite]: 0xe4b95f,
 };
 
@@ -432,7 +432,17 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   const markerPost = track(new BoxGeometry(0.5, 1.4, 0.5));
   const markerHalo = track(new TorusGeometry(0.55, 0.05, 6, 20));
   const portalArch = track(new TorusGeometry(0.92, 0.09, 6, 20, Math.PI));
-  const arenaRing = track(new TorusGeometry(1.42, 0.07, 6, 28));
+  // A flat, faintly worn disc: the trampled ground where a creature dens.
+  const arenaRing = track(new CircleGeometry(1.35, 24));
+  const denMaterial = track(
+    new MeshStandardMaterial({
+      color: 0x4a3a22,
+      roughness: 1,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+    }),
+  );
   const campfireStoneRing = track(new TorusGeometry(0.58, 0.12, 6, 8));
   const campfireLog = track(new BoxGeometry(1.05, 0.13, 0.16));
   const campfireFlame = track(new ConeGeometry(0.24, 0.76, 6));
@@ -444,6 +454,7 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
       halo: markerHalo,
       portalArch,
       arenaRing,
+      denMaterial,
       campfireStoneRing,
       campfireLog,
       campfireFlame,
@@ -492,8 +503,9 @@ interface MarkerParts {
   readonly halo: BufferGeometry;
   /** A half-ring used upright to turn a route marker into a visible gateway. */
   readonly portalArch: BufferGeometry;
-  /** Larger ground ring used to give encounters a readable arena silhouette. */
+  /** Worn ground disc marking where a creature dens; the model is the marker. */
   readonly arenaRing: BufferGeometry;
+  readonly denMaterial: Material;
   readonly material: Material;
   readonly campfireStoneRing: BufferGeometry;
   readonly campfireLog: BufferGeometry;
@@ -563,21 +575,19 @@ function buildMarker(interactable: Interactable, parts: MarkerParts): Object3D {
     halo.rotation.x = Math.PI / 2;
     halo.scale.setScalar(0.62);
     marker.add(halo);
+  } else if (interactable.kind === InteractableKind.CombatEncounter) {
+    // A creature is its own marker: the animated model carries the tap target
+    // and the health bar. All that remains here is a trampled patch of ground
+    // where it dens, which also keeps the spot tappable before the model loads.
+    marker.remove(ring);
+    const den = new Mesh(parts.arenaRing, parts.denMaterial);
+    den.rotation.x = -Math.PI / 2;
+    den.position.y = 0.012;
+    marker.add(den);
   } else {
     const post = new Mesh(parts.post, parts.material);
     post.position.y = 0.7;
     marker.add(post);
-    if (interactable.kind === InteractableKind.CombatEncounter) {
-      const arena = new Mesh(parts.arenaRing, parts.material);
-      arena.rotation.x = -Math.PI / 2;
-      arena.position.y = 0.055;
-      marker.add(arena);
-      const halo = new Mesh(parts.halo, parts.material);
-      halo.position.y = 1.25;
-      halo.rotation.x = Math.PI / 2;
-      halo.scale.setScalar(0.72);
-      marker.add(halo);
-    }
   }
 
   return marker;

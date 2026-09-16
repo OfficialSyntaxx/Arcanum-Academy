@@ -69,6 +69,57 @@ function harness() {
     advance: (ms: number) => {
       clock += ms;
     },
+    /** Attacks tick by tick until one strike lands for damage; returns that strike. */
+    async strikeUntilDamage(
+      interactableId: string,
+      style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = 'ACCURATE',
+    ) {
+      for (let i = 0; i < 200; i += 1) {
+        const r = await router.dispatch(session(), 'combat.attack', { interactableId, style });
+        if (!r.ok) throw Error(r.error.reason);
+        const combat = (r.value as { combat: { damage: number; defeated: boolean } }).combat;
+        if (combat.damage > 0) return combat;
+        clock += DEFAULT_TUNABLES.combat.tickMs;
+      }
+      throw Error('no damage landed in 200 ticks');
+    },
+    /** Fights tick by tick until the creature falls; returns the defeating result. */
+    async fightUntilDefeated(interactableId: string) {
+      for (let i = 0; i < 400; i += 1) {
+        const r = await router.dispatch(session(), 'combat.attack', {
+          interactableId,
+          style: 'ACCURATE',
+        });
+        if (!r.ok) throw Error(r.error.reason);
+        if ((r.value as { combat: { defeated: boolean } }).combat.defeated) return r;
+        clock += DEFAULT_TUNABLES.combat.tickMs;
+        // A healthy player should always outlast the starter creatures here.
+        const state = await players.load(PLAYER);
+        if (state.ok && state.value.hitpoints.current <= 0) throw Error('player fell');
+      }
+      throw Error('creature not defeated in 400 ticks');
+    },
+    /** Fights until the creature lands the killing blow on the player. */
+    async fightUntilPlayerFalls(interactableId: string) {
+      for (let i = 0; i < 400; i += 1) {
+        const r = await router.dispatch(session(), 'combat.attack', {
+          interactableId,
+          style: 'ACCURATE',
+        });
+        if (!r.ok) throw Error(r.error.reason);
+        const value = r.value as {
+          hitpoints: { current: number };
+          combat: { defeated: boolean };
+        };
+        if (value.hitpoints.current <= 0) return r;
+        if (value.combat.defeated) {
+          clock += 4_000;
+          continue;
+        }
+        clock += DEFAULT_TUNABLES.combat.tickMs;
+      }
+      throw Error('player did not fall in 400 ticks');
+    },
     async state() {
       const r = await players.load(PLAYER);
       if (!r.ok) throw Error(r.error.reason);
@@ -168,22 +219,13 @@ describe('Shore Wolf combat handlers', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.reason).toBe('combat.not_an_encounter');
   });
-  it('awards Defence and Hitpoints XP for a defensive strike', async () => {
+  it('awards Defence and Hitpoints XP per point of damage on a defensive strike', async () => {
     const h = harness();
-    expect(await h.dispatch(SHORE_WOLF, 'DEFENSIVE')).toMatchObject({
-      ok: true,
-      value: {
-        combat: {
-          damage: 1,
-          combatXpGained: 4,
-          hitpointsXpGained: 1,
-          styleSkillId: 'skill.defence',
-          style: 'DEFENSIVE',
-        },
-      },
-    });
-    expect((await h.state()).skills['skill.defence']).toEqual({ level: 1, xp: 4 });
-    expect((await h.state()).skills['skill.hitpoints']).toEqual({ level: 1, xp: 1 });
+    const { damage } = await h.strikeUntilDamage(SHORE_WOLF, 'DEFENSIVE');
+    expect(damage).toBeGreaterThan(0);
+    const state = await h.state();
+    expect(state.skills['skill.defence']).toEqual({ level: 1, xp: damage * 4 });
+    expect(state.skills['skill.hitpoints']).toEqual({ level: 1, xp: damage });
   });
   it.each([
     ['ACCURATE', 'skill.attack'],
@@ -191,8 +233,22 @@ describe('Shore Wolf combat handlers', () => {
     ['DEFENSIVE', 'skill.defence'],
   ] as const)('awards the selected %s style skill', async (style, skillId) => {
     const h = harness();
-    await h.dispatch(SHORE_WOLF, style);
-    expect((await h.state()).skills[skillId]).toEqual({ level: 1, xp: 4 });
+    const { damage } = await h.strikeUntilDamage(SHORE_WOLF, style);
+    expect((await h.state()).skills[skillId]).toEqual({ level: 1, xp: damage * 4 });
+  });
+  it('rolls both sides every tick and never accepts browser-supplied damage', async () => {
+    const h = harness();
+    const first = await h.dispatch();
+    expect(first).toMatchObject({
+      ok: true,
+      value: { combat: { style: 'ACCURATE', styleSkillId: 'skill.attack' } },
+    });
+    if (!first.ok) return;
+    const combat = (first.value as { combat: Record<string, unknown> }).combat;
+    expect(combat['damage']).toBe(combat['rolledDamage']);
+    expect(typeof combat['enemyHit']).toBe('boolean');
+    expect(combat['enemyDamage']).toBeGreaterThanOrEqual(0);
+    expect(combat['enemyDamage']).toBeLessThanOrEqual(1);
   });
   it('enforces cooldowns', async () => {
     const h = harness();
@@ -205,11 +261,7 @@ describe('Shore Wolf combat handlers', () => {
   });
   it('awards guaranteed raw meat on the gentle first defeat', async () => {
     const h = harness();
-    let result: unknown;
-    for (let i = 0; i < 4; i += 1) {
-      result = await h.dispatch();
-      h.advance(DEFAULT_TUNABLES.combat.tickMs);
-    }
+    const result = await h.fightUntilDefeated(SHORE_WOLF);
     expect(result).toMatchObject({
       ok: true,
       value: {
@@ -229,11 +281,7 @@ describe('Shore Wolf combat handlers', () => {
   it('resolves the distinct Emberwing Armabee encounter and awards wax', async () => {
     const h = harness();
     h.moveTo({ x: -7, z: 19 });
-    let result: unknown;
-    for (let i = 0; i < 5; i += 1) {
-      result = await h.dispatch(EMBERWING_ARMABEE);
-      h.advance(DEFAULT_TUNABLES.combat.tickMs);
-    }
+    const result = await h.fightUntilDefeated(EMBERWING_ARMABEE);
     expect(result).toMatchObject({
       ok: true,
       value: {
@@ -254,15 +302,9 @@ describe('Shore Wolf combat handlers', () => {
   it('advances The First Hunt only for confirmed Shore Wolf defeats', async () => {
     const h = harness();
     await h.activateFirstHunt();
-    for (let i = 0; i < 4; i += 1) {
-      await h.dispatch();
-      h.advance(DEFAULT_TUNABLES.combat.tickMs);
-    }
+    await h.fightUntilDefeated(SHORE_WOLF);
     h.advance(4_000);
-    for (let i = 0; i < 4; i += 1) {
-      await h.dispatch();
-      h.advance(DEFAULT_TUNABLES.combat.tickMs);
-    }
+    await h.fightUntilDefeated(SHORE_WOLF);
     expect((await h.state()).quests['quest.first_hunt']?.objectiveCounts).toEqual({
       'hunt.shore_wolves': 2,
     });
@@ -295,7 +337,7 @@ describe('Shore Wolf combat handlers', () => {
     await h.grant('item.crystal.resonant' as Parameters<typeof addItems>[1], 2);
     await h.grant('item.crystal.shard' as Parameters<typeof addItems>[1], 3);
     await h.setHitpoints(1);
-    expect(await h.dispatch()).toMatchObject({
+    expect(await h.fightUntilPlayerFalls(SHORE_WOLF)).toMatchObject({
       ok: true,
       value: { grave: { stacks: [{ definitionId: 'item.crystal.shard', quantity: 3 }] } },
     });

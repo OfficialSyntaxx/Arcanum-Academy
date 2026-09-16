@@ -20,13 +20,18 @@ import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { NpcRole } from '@alderfell/shared';
 
-import { createMiniForestCharacterLoader, miniForestArcherUrl } from '../player/player-avatar.js';
+import {
+  createMiniForestCharacterLoader,
+  miniForestArcherUrl,
+  PLAYER_DISPLAY_HEIGHT,
+} from '../player/player-avatar.js';
+import { createShadowBlob } from '../world/shadow-blob.js';
 import type { WorldService } from '../world/world-service.js';
 import type { NamedNpcPresentation } from './npc-director.js';
 import dungeonHumanUrl from '../../../../assets/kenney/mini-dungeon/character-human.glb?url';
 import dungeonOrcUrl from '../../../../assets/kenney/mini-dungeon/character-orc.glb?url';
 
-const NAMED_NPC_HEIGHT = 2.05;
+const NAMED_NPC_HEIGHT = PLAYER_DISPLAY_HEIGHT;
 const COLOURS: Readonly<Record<string, number>> = {
   'robe.indigo': 0xadb8df,
   'robe.slate': 0xc4d7dd,
@@ -135,6 +140,7 @@ export class NpcAvatarGroup {
     const root = new Group();
     root.name = `npc-avatar:${presentation.id}:${variantFor(presentation.role)}`;
     root.add(model);
+    root.add(createShadowBlob(0.42));
     const mixer = new AnimationMixer(model);
     const actions = new Map<string, AnimationAction>();
     for (const clip of gltf.animations) actions.set(clip.name, mixer.clipAction(clip));

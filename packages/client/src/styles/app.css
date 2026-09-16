@@ -1341,3 +1341,112 @@
     max-height: 120px;
   }
 }
+
+/* --- Collapsible overlays ------------------------------------------------ */
+/* The world is the content. One fold control hides every fixed card; the zone
+   strip shrinks to a single line so the player still knows where they are. */
+.hud-fold {
+  position: absolute;
+  top: calc(var(--inset-top) + 1rem);
+  right: calc(var(--inset-right) + 0.75rem + 7.5rem);
+  min-width: 2.6rem;
+  min-height: 48px;
+  padding: 0;
+  border-color: #9c6f2c;
+  font-size: 1.1rem;
+  pointer-events: auto;
+}
+.hub[data-collapsed='true'] .hub-hud {
+  max-width: 13rem;
+  padding: 0.35rem 0.7rem;
+  gap: 0;
+}
+.hub[data-collapsed='true'] .hub-hud__zone {
+  font-size: 0.95rem;
+}
+.hub[data-collapsed='true'] .hub-hud__population {
+  display: none;
+}
+.hub[data-collapsed='true'] .map-toggle {
+  bottom: calc(var(--inset-bottom) + 0.75rem);
+  left: calc(var(--inset-left) + 3.25rem);
+}
+.status-bar[data-compact='true'] {
+  padding: 0.35rem;
+  gap: 0;
+  background: rgba(29, 22, 16, 0.6);
+}
+.status-bar__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  min-height: 1.6rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.status-bar[data-compact='true'] .status-bar__toggle {
+  min-width: 2.2rem;
+  min-height: 2.2rem;
+}
+
+/* --- Fight card ----------------------------------------------------------- */
+/* Anchored to the bottom edge and kept short so the creature, the player and
+   the hitsplats between them stay in view. */
+.combat-hud:not(.combat-hud--grave) {
+  top: auto;
+  bottom: calc(var(--inset-bottom) + 3.6rem);
+  width: min(24rem, calc(100vw - 1.5rem));
+  padding: 0.45rem 0.6rem 0.5rem;
+}
+.combat-hud__pools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.combat-hud__pool .combat-hud__track {
+  margin: 0.25rem 0 0;
+}
+.combat-hud__track--player span {
+  background: #4f9e58;
+}
+.combat-hud__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+.combat-hud__styles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  width: 100%;
+}
+.combat-hud__styles button {
+  min-height: 2rem;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-color: rgba(156, 111, 44, 0.55);
+  color: var(--haze-dim);
+}
+.combat-hud__styles button[aria-checked='true'] {
+  background: rgba(244, 174, 79, 0.18);
+  border-color: var(--amber);
+  color: var(--haze);
+}
+.combat-hud button.combat-hud__eat {
+  width: auto;
+  flex: 1 1 8rem;
+  min-height: 2rem;
+  font-size: 0.75rem;
+}
+.hub[data-collapsed='true'] .combat-hud:not(.combat-hud--grave) {
+  bottom: calc(var(--inset-bottom) + 0.75rem);
+  left: auto;
+  right: calc(var(--inset-right) + 0.75rem);
+  transform: none;
+  width: min(20rem, calc(100vw - 8rem));
+}
