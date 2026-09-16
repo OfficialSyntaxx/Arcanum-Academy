@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Logger, PlayerId } from '@alderfell/shared';
 import type { PlayerRecord, PlayerRepository, SaveSnapshot } from '../persistence/repository.js';
+import type { DiagnosticStore } from '../diagnostics.js';
+import type { SupportReportStore } from '../support-reports.js';
 import { adminTokenMatches } from './auth.js';
 
 const WINDOW_MS = 60_000;
@@ -54,6 +56,14 @@ export function registerAdminRoutes(
   options: {
     readonly token: string;
     readonly repository: PlayerRepository;
+    readonly diagnostics: DiagnosticStore;
+    readonly reports: SupportReportStore;
+    readonly runtime: () => {
+      readonly connections: number;
+      readonly sessions: number;
+      readonly uptimeSeconds: number;
+      readonly rssBytes: number;
+    };
     readonly logger: Logger;
     readonly allowedOrigins?: readonly string[];
     readonly now?: () => number;
@@ -114,6 +124,35 @@ export function registerAdminRoutes(
     });
 
     admin.options('/admin/*', async (_request, reply) => reply.code(204).send());
+
+    admin.get('/admin/overview', async (_request, reply) => {
+      const overview = await options.repository.operationsOverview(now());
+      if (!overview.ok) return storageError(reply);
+      const [diagnostics, reports] = await Promise.all([
+        options.diagnostics.list(),
+        options.reports.list(250),
+      ]);
+      return {
+        generatedAtMs: now(),
+        players: overview.value,
+        runtime: options.runtime(),
+        diagnostics: {
+          total: diagnostics.length,
+          errors: diagnostics.filter((event) => event.level === 'error').length,
+          warnings: diagnostics.filter((event) => event.level === 'warn').length,
+        },
+        reports: { open: reports.length },
+      };
+    });
+
+    admin.get('/admin/diagnostics', async () => ({
+      events: (await options.diagnostics.list())
+        .slice(-100)
+        .reverse()
+        .map(({ ip: _ip, ...event }) => event),
+    }));
+
+    admin.get('/admin/reports', async () => ({ reports: await options.reports.list(100) }));
 
     admin.get('/admin/players', async (request, reply) => {
       const query = request.query as { q?: string; cursor?: string; limit?: string };

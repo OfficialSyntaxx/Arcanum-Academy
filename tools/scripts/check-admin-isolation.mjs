@@ -5,12 +5,7 @@ import { join } from 'node:path';
 const ROOT = new URL('../..', import.meta.url).pathname;
 const PLAYER_SOURCE = join(ROOT, 'packages/client/src');
 const PLAYER_DIST = join(ROOT, 'packages/client/dist');
-const FORBIDDEN = [
-  '@alderfell/admin',
-  'Alderfell Operations',
-  '/admin/players',
-  'ADMIN_READ_TOKEN',
-];
+const FORBIDDEN = ['@alderfell/admin', 'Alderfell Operations', '/admin/', 'ADMIN_READ_TOKEN'];
 
 async function* files(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {

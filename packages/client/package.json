@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && node ../../tools/scripts/clean-build-output.mjs client && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b"
   },

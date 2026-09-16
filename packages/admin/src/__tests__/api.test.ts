@@ -33,4 +33,25 @@ describe('operations API client', () => {
     await expect(api.searchPlayers()).rejects.toEqual(expect.any(AdminApiError));
     await expect(api.searchPlayers()).rejects.toThrow(/credentials refused/);
   });
+
+  it('provides only read methods for overview, reports, and diagnostics', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () =>
+      Promise.resolve(
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
+    const api = new AdminApi('https://server.example.test', 'private token', fetcher);
+    await api.overview();
+    await api.reports();
+    await api.diagnostics();
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      'https://server.example.test/admin/overview',
+      'https://server.example.test/admin/reports',
+      'https://server.example.test/admin/diagnostics',
+    ]);
+    expect(fetcher.mock.calls.every(([, options]) => options?.method === 'GET')).toBe(true);
+  });
 });

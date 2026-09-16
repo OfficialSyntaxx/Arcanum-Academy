@@ -12,6 +12,7 @@ import {
 import {
   SAVE_SNAPSHOT_RETENTION,
   type PlayerRecord,
+  type PlayerOperationsOverview,
   type PlayerRepository,
   type PlayerStore,
   type RestoreAuditReceipt,
@@ -309,6 +310,39 @@ export class PostgresPlayerRepository implements PlayerRepository {
       });
     } catch (error) {
       return err(storageFailure('list players', error));
+    }
+  }
+
+  async operationsOverview(nowMs: number): Promise<Result<PlayerOperationsOverview, Failure>> {
+    try {
+      const result = await this.client.query<{
+        total_players: string;
+        updated_24h: string;
+        updated_7d: string;
+        snapshot_count: string;
+        restore_count: string;
+        latest_save_at_ms: string | null;
+      }>(
+        `SELECT
+           (SELECT COUNT(*) FROM player_records) AS total_players,
+           (SELECT COUNT(*) FROM player_records WHERE updated_at_ms >= $1) AS updated_24h,
+           (SELECT COUNT(*) FROM player_records WHERE updated_at_ms >= $2) AS updated_7d,
+           (SELECT COUNT(*) FROM player_save_snapshots) AS snapshot_count,
+           (SELECT COUNT(*) FROM player_restore_audit) AS restore_count,
+           (SELECT MAX(updated_at_ms) FROM player_records) AS latest_save_at_ms`,
+        [nowMs - 86_400_000, nowMs - 604_800_000],
+      );
+      const row = result.rows[0]!;
+      return ok({
+        totalPlayers: Number(row.total_players),
+        updatedLast24Hours: Number(row.updated_24h),
+        updatedLast7Days: Number(row.updated_7d),
+        snapshotCount: Number(row.snapshot_count),
+        restoreCount: Number(row.restore_count),
+        latestSaveAtMs: row.latest_save_at_ms === null ? null : Number(row.latest_save_at_ms),
+      });
+    } catch (error) {
+      return err(storageFailure('operations overview', error));
     }
   }
 

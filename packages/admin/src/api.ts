@@ -24,8 +24,56 @@ export interface RestoreAuditEntry {
   readonly actor: string;
   readonly reason: string;
   readonly beforeVersion: number;
-  readonly restoredVersion: number;
-  readonly createdAtMs: number;
+  readonly afterVersion: number;
+  readonly restoredAtMs: number;
+}
+
+export interface OperationsOverview {
+  readonly generatedAtMs: number;
+  readonly players: {
+    readonly totalPlayers: number;
+    readonly updatedLast24Hours: number;
+    readonly updatedLast7Days: number;
+    readonly snapshotCount: number;
+    readonly restoreCount: number;
+    readonly latestSaveAtMs: number | null;
+  };
+  readonly runtime: {
+    readonly connections: number;
+    readonly sessions: number;
+    readonly uptimeSeconds: number;
+    readonly rssBytes: number;
+  };
+  readonly diagnostics: {
+    readonly total: number;
+    readonly errors: number;
+    readonly warnings: number;
+  };
+  readonly reports: { readonly open: number };
+}
+
+export interface DiagnosticEvent {
+  readonly level: 'info' | 'warn' | 'error';
+  readonly source: string;
+  readonly message: string;
+  readonly clientAtMs?: number;
+  readonly receivedAtMs: number;
+}
+
+export interface SupportReport {
+  readonly id: string;
+  readonly category: 'bug' | 'gameplay' | 'account' | 'feedback';
+  readonly message: string;
+  readonly playerId?: string;
+  readonly clientAtMs?: number;
+  readonly diagnostics: readonly {
+    readonly level: 'info' | 'warn' | 'error';
+    readonly source: string;
+    readonly message: string;
+    readonly atMs: number;
+  }[];
+  readonly receivedAtMs: number;
+  readonly status: 'open';
 }
 
 export class AdminApiError extends Error {
@@ -69,6 +117,18 @@ export class AdminApi {
     return this.get<{ players: readonly PlayerSummary[]; nextCursor?: string }>(
       `/admin/players?${params.toString()}`,
     );
+  }
+
+  overview() {
+    return this.get<OperationsOverview>('/admin/overview');
+  }
+
+  diagnostics() {
+    return this.get<{ events: readonly DiagnosticEvent[] }>('/admin/diagnostics');
+  }
+
+  reports() {
+    return this.get<{ reports: readonly SupportReport[] }>('/admin/reports');
   }
 
   player(playerId: string) {

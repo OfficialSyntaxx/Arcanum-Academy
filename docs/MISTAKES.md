@@ -57,3 +57,18 @@
   the built PWA for admin imports, route markers, labels, and server credential names.
 - An admin read token is session material, not a preference. Never persist it, prefill it through a
   build variable, append it to a URL, or keep it after disconnect/navigation.
+
+# G6-D rules learned
+
+- A CSS minimum width is not mobile evidence. Long opaque identifiers are adversarial content and
+  need explicit wrapping at the element that renders them.
+- Operational analytics should answer bounded questions with aggregates. Do not collect event trails
+  merely because a dashboard could chart them.
+- Count rejected report attempts toward the rate limit. Schema validation is still server work and
+  malformed spam must not receive an unlimited bypass.
+- Support context must be selected and capped on the client, validated again on the server, and
+  stripped of transport addresses before it reaches the operations console.
+- Build from a clean output directory. TypeScript project-reference artefacts and obsolete hashed
+  Vite chunks otherwise look like deployable PWA weight and can be accidentally precached.
+- Type an admin read model from the actual server receipt. Empty production histories can conceal a
+  mismatched timestamp or version field until the first real recovery event occurs.

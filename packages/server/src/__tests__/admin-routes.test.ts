@@ -4,6 +4,8 @@ import { LogLevel, asId, createLogger, createMemorySink, type PlayerId } from '@
 import { adminTokenMatches } from '../admin/auth.js';
 import { redactSensitive, registerAdminRoutes } from '../admin/routes.js';
 import { InMemoryPlayerRepository } from '../persistence/repository.js';
+import { DiagnosticBuffer } from '../diagnostics.js';
+import { SupportReportBuffer } from '../support-reports.js';
 
 const TOKEN = 'admin-read-token-that-is-at-least-32-characters';
 const PLAYER = asId<PlayerId>('player-alpha');
@@ -32,6 +34,9 @@ async function harness() {
   registerAdminRoutes(app, {
     token: TOKEN,
     repository,
+    diagnostics: new DiagnosticBuffer(),
+    reports: new SupportReportBuffer(),
+    runtime: () => ({ connections: 2, sessions: 1, uptimeSeconds: 60, rssBytes: 1_024 }),
     logger: createLogger({ scope: 'admin-test', level: LogLevel.Info, sinks: [sink] }),
     allowedOrigins: ['https://operations.example.test'],
     now: () => 1_000,
@@ -58,6 +63,24 @@ describe('admin authentication', () => {
 });
 
 describe('read-only admin routes', () => {
+  it('summarises operations without exposing source addresses', async () => {
+    const { app } = await harness();
+    const overview = await app.inject({ method: 'GET', url: '/admin/overview', headers: auth });
+    expect(overview.statusCode).toBe(200);
+    expect(overview.json()).toMatchObject({
+      players: { totalPlayers: 1, snapshotCount: 1 },
+      runtime: { connections: 2, sessions: 1 },
+      reports: { open: 0 },
+    });
+    const diagnostics = await app.inject({
+      method: 'GET',
+      url: '/admin/diagnostics',
+      headers: auth,
+    });
+    expect(diagnostics.body).not.toContain('ip');
+    await app.close();
+  });
+
   it('allows only explicitly configured browser origins and answers preflight without the token', async () => {
     const { app, sink } = await harness();
     const allowed = await app.inject({

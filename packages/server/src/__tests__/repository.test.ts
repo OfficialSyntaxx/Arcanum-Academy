@@ -54,4 +54,21 @@ describe('InMemoryPlayerRepository', () => {
     if (result.ok) return;
     expect(result.error.reason).toBe('repository.not_found');
   });
+
+  it('summarises account activity and recovery history without exposing saves', async () => {
+    let now = 1_000_000_000;
+    const repo = new InMemoryPlayerRepository(() => now);
+    await repo.create({ playerId, schemaVersion: 1, data: {} });
+    now += 1_000;
+    await repo.save({ playerId, schemaVersion: 1, data: { gold: 1 } }, 1);
+    const overview = await repo.operationsOverview(now);
+    expect(overview.ok && overview.value).toEqual({
+      totalPlayers: 1,
+      updatedLast24Hours: 1,
+      updatedLast7Days: 1,
+      snapshotCount: 1,
+      restoreCount: 0,
+      latestSaveAtMs: now,
+    });
+  });
 });

@@ -281,6 +281,34 @@
   font: var(--text-xs) var(--font-serial);
 }
 
+.support-panel {
+  left: auto;
+  width: min(26rem, calc(100vw - 2 * var(--space-3)));
+  max-height: min(32rem, 70vh);
+  font: var(--text-sm) var(--font-ui);
+}
+
+.support-panel form,
+.support-panel label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.support-panel form {
+  gap: var(--space-3);
+}
+
+.support-panel select,
+.support-panel textarea {
+  width: 100%;
+  padding: var(--space-2);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--haze);
+  background: var(--ink);
+  font: inherit;
+}
+
 .diagnostics-panel__head {
   display: flex;
   justify-content: space-between;

@@ -54,6 +54,15 @@ export interface RestoreAuditReceipt {
   readonly restoredAtMs: number;
 }
 
+export interface PlayerOperationsOverview {
+  readonly totalPlayers: number;
+  readonly updatedLast24Hours: number;
+  readonly updatedLast7Days: number;
+  readonly snapshotCount: number;
+  readonly restoreCount: number;
+  readonly latestSaveAtMs: number | null;
+}
+
 /** The reads and writes available both inside and outside a transaction. */
 export interface PlayerStore {
   find(playerId: PlayerId): Promise<Result<PlayerRecord | null, Failure>>;
@@ -69,6 +78,7 @@ export interface PlayerStore {
 }
 
 export interface PlayerRepository extends PlayerStore {
+  operationsOverview(nowMs: number): Promise<Result<PlayerOperationsOverview, Failure>>;
   listPlayers(input: {
     readonly query?: string;
     readonly cursor?: string;
@@ -182,6 +192,21 @@ export class InMemoryPlayerRepository implements PlayerRepository {
     return ok({
       records,
       nextCursor: matches.length > input.limit ? (records.at(-1)?.playerId ?? null) : null,
+    });
+  }
+
+  async operationsOverview(nowMs: number): Promise<Result<PlayerOperationsOverview, Failure>> {
+    const records = [...this.records.values()];
+    return ok({
+      totalPlayers: records.length,
+      updatedLast24Hours: records.filter((record) => record.updatedAtMs >= nowMs - 86_400_000)
+        .length,
+      updatedLast7Days: records.filter((record) => record.updatedAtMs >= nowMs - 604_800_000)
+        .length,
+      snapshotCount: this.snapshots.length,
+      restoreCount: this.restoreAudit.length,
+      latestSaveAtMs:
+        records.length === 0 ? null : Math.max(...records.map((record) => record.updatedAtMs)),
     });
   }
 

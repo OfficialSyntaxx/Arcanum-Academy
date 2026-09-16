@@ -8,6 +8,7 @@ import type { EconomyController } from './economy-controller.js';
 import { StatusBar } from '../ui/StatusBar.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.js';
 import { GamePhase } from '@alderfell/sim';
+import { submitSupportReport } from './support-reporter.js';
 
 const LOCAL_SERVER_URL = 'ws://localhost:8787';
 
@@ -58,6 +59,7 @@ export function App() {
   const setPhase = useAppStore((state) => state.setPhase);
   const [hub, setHub] = useState<HubController | null>(null);
   const [economy, setEconomy] = useState<EconomyController | null>(null);
+  const [serverUrl] = useState(resolveServerUrl);
   const Screen = resolveScreen(phase);
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export function App() {
 
     void bootstrap({
       canvas,
-      serverUrl: resolveServerUrl(),
+      serverUrl,
       debug: import.meta.env.DEV,
     })
       .then((container) => {
@@ -92,13 +94,13 @@ export function App() {
       setHub(null);
       void dispose?.();
     };
-  }, [setFault, setPhase]);
+  }, [serverUrl, setFault, setPhase]);
 
   return (
     <div className="app">
       <canvas ref={canvasRef} className="app__canvas" aria-hidden="true" />
       <div className="app__overlay">
-        <StatusBar />
+        <StatusBar onSubmitReport={(input) => submitSupportReport(serverUrl, input)} />
         <ErrorBoundary onError={(error) => setFault(error.message)}>
           {hub !== null && isHubPhase(phase) ? (
             <HubScreen

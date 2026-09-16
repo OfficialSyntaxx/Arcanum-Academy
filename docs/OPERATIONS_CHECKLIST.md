@@ -62,3 +62,20 @@ checks; never use a production player as an experiment.
 - [ ] Inspect fields containing HTML-like player text; confirm it renders as text, never markup.
 - [ ] Attempt POST/PUT/PATCH/DELETE against every visible resource; confirm 404 and no save change.
 - [ ] Confirm snapshot and restore-audit views remain readable for empty and populated histories.
+
+## G6-D — overview, diagnostics, and reports
+
+- [ ] On a 320px-wide phone, confirm long player IDs wrap inside the account card and never create
+      horizontal page scrolling.
+- [ ] Confirm Overview totals match the authoritative database and runtime `/metrics` values.
+- [ ] Confirm the Players, Reports, and Events navigation remains reachable with one tap.
+- [ ] Confirm raw save JSON starts collapsed and summary cards show coins, bag, bank, skills, quests,
+      and zone without changing the save.
+- [ ] Submit each report category from the game and confirm its receipt appears in Operations.
+- [ ] Confirm a report carries no identity token, IP address, cookie, or more than ten diagnostic
+      events in either the request body or admin response.
+- [ ] Confirm a foreign Origin is refused, malformed text is refused, and attempt six in one hour is
+      rate-limited without creating a report.
+- [ ] Confirm Events omits source IP addresses and shows newest retained events first.
+- [ ] Restart staging and confirm reports persist through the Postgres adapter.
+- [ ] Confirm no POST/PUT/PATCH/DELETE account route or account-editing control has appeared.

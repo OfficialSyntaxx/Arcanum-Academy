@@ -18,6 +18,9 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    // TypeScript emits project-reference artefacts here before Vite runs.
+    // Always clear them, along with obsolete hashed chunks, before bundling.
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: {

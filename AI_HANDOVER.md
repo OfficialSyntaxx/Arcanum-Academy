@@ -2,16 +2,17 @@
 
 ### Game design document and engineering handover — everything needed to build it from nothing
 
-**Written:** 2026-09-09 · **Updated:** 2026-09-15 · **Author:** Claude Code, with Codex implementation updates
+**Written:** 2026-09-09 · **Updated:** 2026-09-16 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G6-C is implemented. Reliable skilling/economy, persistence, quest and diary
+**Code state:** G6-D is implemented. Reliable skilling/economy, persistence, quest and diary
 progression, combat/death recovery, the three-room Saltwake dungeon, its Drowned Warden boss,
 production GLB creature presentation, and the first persisted treasure-clue trail are live. The
 save retains bounded immutable history, restore is backup-first and audited, and a separately
 authenticated read-only operations API can inspect redacted accounts and history through a separate,
-mobile-safe operations bundle. The next G6 focus is bounded analytics and player reporting; mutation
-tooling remains deferred until its domain-service and audit path is complete.
+mobile-safe operations bundle. The console now includes bounded overview analytics, sanitized events,
+and durable player reports. The next G6 focus is the first audited repair operation; mutation tooling
+remains blocked until its domain-service, preview, backup, audit, and undo path are complete.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -53,7 +54,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of G6-C on 2026-09-15 it reports **456 tests across 52 files**.
+afterwards is yours. As of G6-D on 2026-09-16 it reports **467 tests across 55 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -263,6 +264,15 @@ Browser access is restricted by the separate `ADMIN_ALLOWED_ORIGINS` allowlist. 
 build produces the console independently and scans the player source/output for admin markers.
 Automated evidence is in `docs/G6_C_RETURN.md`; manual deployment and phone checks are in
 `docs/OPERATIONS_CHECKLIST.md`.
+
+**G6-D operations update (2026-09-16):** the console now opens on an aggregate realm overview and
+has phone-first navigation across Players, Reports, and sanitized Events. Account inspection shows
+useful summary cards and collapses raw redacted JSON; opaque player IDs wrap safely. Players can send
+four categories of in-game report with their confirmed ID and at most ten recent bounded session
+events. Reports are origin-checked, schema-validated, limited to five attempts per IP/hour, retained
+for 90 days in Postgres, and never carry an identity token or stored source IP. No third-party tracker
+or account mutation was added. Evidence is in `docs/G6_D_RETURN.md` and the durable acceptance list
+is in `docs/OPERATIONS_CHECKLIST.md`.
 
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not

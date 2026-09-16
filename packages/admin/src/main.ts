@@ -1,9 +1,11 @@
 import './styles.css';
 import {
   AdminApi,
+  type DiagnosticEvent,
   type PlayerSummary,
   type RestoreAuditEntry,
   type SnapshotSummary,
+  type SupportReport,
   normalizeEndpoint,
 } from './api.js';
 
@@ -66,6 +68,27 @@ function header() {
   return bar;
 }
 
+type MainView = 'dashboard' | 'players' | 'reports' | 'diagnostics';
+
+function mainNav(active: MainView) {
+  const nav = node('nav', 'main-nav');
+  nav.setAttribute('aria-label', 'Operations sections');
+  const entries: readonly [MainView, string, () => void | Promise<void>][] = [
+    ['dashboard', 'Overview', renderDashboard],
+    ['players', 'Players', renderPlayers],
+    ['reports', 'Reports', renderReports],
+    ['diagnostics', 'Events', renderDiagnostics],
+  ];
+  for (const [id, label, action] of entries) {
+    nav.append(button(label, action, id === active ? 'active' : ''));
+  }
+  return nav;
+}
+
+function shell(active: MainView, ...content: HTMLElement[]) {
+  app.replaceChildren(header(), mainNav(active), ...content);
+}
+
 function renderConnect() {
   app.replaceChildren(header());
   const card = node('section', 'card connect');
@@ -104,7 +127,7 @@ function renderConnect() {
       await candidate.searchPlayers('', undefined);
       api = candidate;
       token.value = '';
-      await renderPlayers();
+      await renderDashboard();
     } catch (error) {
       showError(error);
       submit.disabled = false;
@@ -114,9 +137,82 @@ function renderConnect() {
   app.append(card);
 }
 
+async function renderDashboard() {
+  if (!api) return renderConnect();
+  const loading = node('section', 'card', 'Loading operational overview…');
+  shell('dashboard', loading);
+  try {
+    const overview = await api.overview();
+    const intro = node('section', 'card hero-card');
+    intro.append(
+      node('p', 'eyebrow', 'Realm status'),
+      node('h2', '', overview.runtime.connections > 0 ? 'Players are connected' : 'Realm is quiet'),
+      node('p', 'muted', `Updated ${formatTime(overview.generatedAtMs)}`),
+    );
+    const metrics = node('section', 'metric-grid');
+    metrics.append(
+      metricCard('Players', overview.players.totalPlayers, 'Authoritative accounts'),
+      metricCard(
+        'Connected',
+        overview.runtime.connections,
+        `${overview.runtime.sessions} resumable sessions`,
+      ),
+      metricCard(
+        '24h saves',
+        overview.players.updatedLast24Hours,
+        `${overview.players.updatedLast7Days} in seven days`,
+      ),
+      metricCard(
+        'Open reports',
+        overview.reports.open,
+        `${overview.diagnostics.errors} recent errors`,
+      ),
+      metricCard(
+        'Snapshots',
+        overview.players.snapshotCount,
+        `${overview.players.restoreCount} restores`,
+      ),
+      metricCard(
+        'Uptime',
+        formatDuration(overview.runtime.uptimeSeconds),
+        formatBytes(overview.runtime.rssBytes),
+      ),
+    );
+    const actions = node('section', 'card quick-actions');
+    actions.append(
+      node('h3', '', 'Quick actions'),
+      button('Find a player', renderPlayers, 'primary'),
+      button('Review reports', renderReports, 'quiet'),
+      button('Inspect events', renderDiagnostics, 'quiet'),
+    );
+    shell('dashboard', intro, metrics, actions);
+  } catch (error) {
+    showError(error);
+  }
+}
+
+function metricCard(label: string, value: string | number, detail: string) {
+  const card = node('article', 'metric-card');
+  card.append(
+    node('span', 'muted', label),
+    node('strong', '', String(value)),
+    node('small', '', detail),
+  );
+  return card;
+}
+
+function formatDuration(seconds: number) {
+  if (seconds < 3_600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86_400) return `${Math.floor(seconds / 3_600)}h`;
+  return `${Math.floor(seconds / 86_400)}d`;
+}
+
+function formatBytes(bytes: number) {
+  return `${Math.round(bytes / 1_048_576)} MiB memory`;
+}
+
 async function renderPlayers(cursor?: string) {
   if (!api) return renderConnect();
-  app.replaceChildren(header());
   const section = node('section', 'card');
   section.append(node('h2', '', 'Player lookup'));
   const form = node('form', 'search');
@@ -136,7 +232,7 @@ async function renderPlayers(cursor?: string) {
       'Searches authoritative saves. Results expose no credentials or secret fields.',
     ),
   );
-  app.append(section);
+  shell('players', section);
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     activeQuery = input.value.trim();
@@ -158,7 +254,7 @@ async function renderPlayers(cursor?: string) {
 function playerCard(player: PlayerSummary) {
   const card = node('article', 'card player');
   card.append(
-    node('h3', '', player.playerId),
+    node('h3', 'identifier', player.playerId),
     node(
       'p',
       'metrics',
@@ -176,7 +272,7 @@ function playerCard(player: PlayerSummary) {
 
 async function renderPlayer(playerId: string) {
   if (!api) return renderConnect();
-  app.replaceChildren(header());
+  shell('players');
   const nav = node('nav', 'tabs');
   nav.append(
     button('← Players', () => renderPlayers(), 'quiet'),
@@ -190,7 +286,7 @@ async function renderPlayer(playerId: string) {
     const summary = node('section', 'card');
     summary.append(
       node('p', 'eyebrow', 'Authoritative save'),
-      node('h2', '', result.player.playerId),
+      node('h2', 'identifier', result.player.playerId),
       node(
         'p',
         'metrics',
@@ -202,12 +298,57 @@ async function renderPlayer(playerId: string) {
         `Updated ${formatTime(result.player.updatedAtMs)} · Last seen ${formatTime(result.player.lastSeenAtMs)}`,
       ),
     );
-    const state = node('section', 'card');
-    state.append(node('h3', '', 'Redacted state'), jsonPanel(result.state));
-    app.append(summary, state);
+    const account = accountSummary(result.state);
+    const state = node('details', 'card raw-state');
+    const stateLabel = node('summary', '', 'View redacted raw save');
+    state.append(stateLabel, jsonPanel(result.state));
+    app.append(summary, account, state);
   } catch (error) {
     showError(error);
   }
+}
+
+function accountSummary(state: unknown) {
+  const data = isRecord(state) ? state : {};
+  const inventory = isRecord(data['inventory']) ? data['inventory'] : {};
+  const bank = isRecord(data['bank']) ? data['bank'] : {};
+  const skills = isRecord(data['skills']) ? data['skills'] : {};
+  const quests = isRecord(data['quests']) ? data['quests'] : {};
+  const completedQuests = Object.values(quests).filter(
+    (quest) => isRecord(quest) && quest['status'] === 'completed',
+  ).length;
+  const section = node('section', 'metric-grid account-grid');
+  section.append(
+    metricCard('Coins', typeof data['coins'] === 'number' ? data['coins'] : 0, 'Current purse'),
+    metricCard(
+      'Bag stacks',
+      arrayLength(inventory['stacks']),
+      `${String(inventory['slotCapacity'] ?? '—')} slots`,
+    ),
+    metricCard(
+      'Bank stacks',
+      arrayLength(bank['stacks']),
+      `${String(bank['slotCapacity'] ?? '—')} slots`,
+    ),
+    metricCard('Skills', Object.keys(skills).length, 'Tracked disciplines'),
+    metricCard('Quests', completedQuests, `${Object.keys(quests).length} tracked`),
+    metricCard('Zone', locationLabel(data['location']), 'Last saved position'),
+  );
+  return section;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function arrayLength(value: unknown) {
+  return Array.isArray(value) ? value.length : 0;
+}
+
+function locationLabel(value: unknown) {
+  return isRecord(value) && typeof value['zoneId'] === 'string'
+    ? value['zoneId'].replace(/^zone\./, '')
+    : 'Unknown';
 }
 
 function detailNav(playerId: string, active: 'snapshots' | 'audit') {
@@ -223,7 +364,7 @@ function detailNav(playerId: string, active: 'snapshots' | 'audit') {
 
 async function renderSnapshots(playerId: string) {
   if (!api) return renderConnect();
-  app.replaceChildren(header(), detailNav(playerId, 'snapshots'));
+  shell('players', detailNav(playerId, 'snapshots'));
   try {
     const result = await api.snapshots(playerId);
     const section = node('section', 'card');
@@ -248,7 +389,7 @@ function snapshotRow(snapshot: SnapshotSummary, playerId: string) {
 
 async function renderSnapshot(playerId: string, snapshotId: string) {
   if (!api) return renderConnect();
-  app.replaceChildren(header(), detailNav(playerId, 'snapshots'));
+  shell('players', detailNav(playerId, 'snapshots'));
   try {
     const result = await api.snapshot(playerId, snapshotId);
     const section = node('section', 'card');
@@ -266,7 +407,7 @@ async function renderSnapshot(playerId: string, snapshotId: string) {
 
 async function renderAudit(playerId: string) {
   if (!api) return renderConnect();
-  app.replaceChildren(header(), detailNav(playerId, 'audit'));
+  shell('players', detailNav(playerId, 'audit'));
   try {
     const result = await api.restoreAudit(playerId);
     const section = node('section', 'card');
@@ -279,11 +420,80 @@ async function renderAudit(playerId: string) {
   }
 }
 
+async function renderReports() {
+  if (!api) return renderConnect();
+  shell('reports', node('section', 'card', 'Loading player reports…'));
+  try {
+    const result = await api.reports();
+    const section = node('section', 'card');
+    section.append(node('p', 'eyebrow', 'Player support'), node('h2', '', 'Open reports'));
+    if (result.reports.length === 0) section.append(node('p', 'empty', 'No player reports yet.'));
+    for (const report of result.reports) section.append(reportRow(report));
+    shell('reports', section);
+  } catch (error) {
+    showError(error);
+  }
+}
+
+function reportRow(report: SupportReport) {
+  const article = node('article', 'record report');
+  article.dataset['category'] = report.category;
+  const heading = node('div', 'record-head');
+  heading.append(
+    node('strong', '', report.category),
+    node('time', 'muted', formatTime(report.receivedAtMs)),
+  );
+  article.append(heading, node('p', '', report.message));
+  if (report.playerId) {
+    article.append(
+      button(
+        `Player · ${report.playerId}`,
+        () => renderPlayer(report.playerId!),
+        'quiet identifier-button',
+      ),
+    );
+  }
+  if (report.diagnostics.length > 0) {
+    const details = node('details', 'context');
+    details.append(node('summary', '', `${report.diagnostics.length} attached events`));
+    for (const event of report.diagnostics) details.append(eventRow(event));
+    article.append(details);
+  }
+  return article;
+}
+
+async function renderDiagnostics() {
+  if (!api) return renderConnect();
+  shell('diagnostics', node('section', 'card', 'Loading recent events…'));
+  try {
+    const result = await api.diagnostics();
+    const section = node('section', 'card');
+    section.append(node('p', 'eyebrow', 'Sanitized feed'), node('h2', '', 'Recent events'));
+    if (result.events.length === 0) section.append(node('p', 'empty', 'No retained events.'));
+    for (const event of result.events) section.append(eventRow(event));
+    shell('diagnostics', section);
+  } catch (error) {
+    showError(error);
+  }
+}
+
+function eventRow(event: DiagnosticEvent | SupportReport['diagnostics'][number]) {
+  const article = node('article', 'record event');
+  article.dataset['level'] = event.level;
+  const time = 'receivedAtMs' in event ? event.receivedAtMs : event.atMs;
+  article.append(
+    node('strong', '', `${event.level} · ${event.source}`),
+    node('span', 'muted', formatTime(time)),
+    node('span', '', event.message),
+  );
+  return article;
+}
+
 function auditRow(entry: RestoreAuditEntry) {
   const row = node('article', 'record');
   row.append(
-    node('strong', '', `${entry.actor} · v${entry.beforeVersion} → v${entry.restoredVersion}`),
-    node('span', 'muted', formatTime(entry.createdAtMs)),
+    node('strong', '', `${entry.actor} · v${entry.beforeVersion} → v${entry.afterVersion}`),
+    node('span', 'muted', formatTime(entry.restoredAtMs)),
     node('span', '', entry.reason),
   );
   return row;

@@ -76,6 +76,12 @@ violation. It is not advisory — it runs in CI ahead of the typecheck.
 The `admin` layer is a separately authenticated HTTP surface. Read routes may inspect the
 repository; any future mutation must call domain services and may never write raw persistence.
 
+G6-D adds two bounded operational stores beside player state: short-lived diagnostics and 90-day
+support reports. The player can append a validated report through a rate-limited first-party route;
+the admin client can only read aggregates, sanitized events, and reports. Neither path can mutate a
+save. Source IP is used transiently for rate limiting and never stored with a support report or
+returned in the admin diagnostic feed.
+
 `@alderfell/admin` is a separate Vite entry and output directory. It cannot import another workspace
 package. `npm run admin-isolation` additionally scans the player source and built PWA for admin
 imports, labels, route paths, and credential names; a clean architecture graph alone cannot prove a

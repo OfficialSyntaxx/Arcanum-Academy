@@ -40,6 +40,12 @@ import {
   type IdentityStore,
 } from './domain/identity.js';
 import { registerAdminRoutes } from './admin/routes.js';
+import {
+  PostgresSupportReportStore,
+  SupportReportBuffer,
+  type SupportReportStore,
+} from './support-reports.js';
+import { registerSupportReportRoutes } from './support-routes.js';
 
 /**
  * Server entry point.
@@ -204,22 +210,33 @@ async function main(): Promise<void> {
   });
 
   const app = Fastify({ logger: false });
+  let diagnostics: DiagnosticStore = new DiagnosticBuffer();
+  let reports: SupportReportStore = new SupportReportBuffer();
+  if (postgres !== null) {
+    diagnostics = new PostgresDiagnosticStore(postgres.client);
+    reports = new PostgresSupportReportStore(postgres.client);
+  }
+  await Promise.all([diagnostics.initialise(), reports.initialise()]);
+  const diagnosticRate = new Map<string, { windowStartedMs: number; count: number }>();
+  let ready = false;
+
   if (config.ADMIN_READ_TOKEN !== undefined) {
     registerAdminRoutes(app, {
       token: config.ADMIN_READ_TOKEN,
       allowedOrigins: config.adminAllowedOrigins,
       repository,
+      diagnostics,
+      reports,
+      runtime: () => ({
+        connections: gateway.connectionCount,
+        sessions: sessions.size,
+        uptimeSeconds: Math.floor(process.uptime()),
+        rssBytes: process.memoryUsage().rss,
+      }),
       logger: logger.child('admin'),
     });
     logger.info('read-only admin routes registered');
   }
-  let diagnostics: DiagnosticStore = new DiagnosticBuffer();
-  if (postgres !== null) {
-    diagnostics = new PostgresDiagnosticStore(postgres.client);
-  }
-  await diagnostics.initialise();
-  const diagnosticRate = new Map<string, { windowStartedMs: number; count: number }>();
-  let ready = false;
 
   app.get('/healthz', async () => ({ status: 'ok' }));
   app.get('/readyz', async (_request, reply) => {
@@ -270,6 +287,12 @@ async function main(): Promise<void> {
     if (!parsed.success) return reply.code(400).send({ error: 'invalid_report' });
     await diagnostics.add({ ...parsed.data, receivedAtMs: nowMs, ip });
     return reply.code(202).send({ accepted: true });
+  });
+  registerSupportReportRoutes(app, {
+    store: reports,
+    logger: logger.child('support'),
+    allowedOrigins: config.allowedOrigins,
+    production: config.NODE_ENV === 'production',
   });
   app.get('/diagnostics/events', async (request, reply) => {
     const key = config.DIAGNOSTICS_READ_KEY;
