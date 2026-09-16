@@ -28,8 +28,16 @@
       "stationInteractableId": "int.station.shorelands_campfire",
       "requiredSkillId": "skill.cooking",
       "requiredSkillLevel": 1,
-      "inputs": [{ "itemId": "item.fish.tidefin", "quantity": 1 }],
-      "output": { "itemId": "item.fish.cooked_tidefin", "quantity": 1 },
+      "inputs": [
+        {
+          "itemId": "item.fish.tidefin",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.fish.cooked_tidefin",
+        "quantity": 1
+      },
       "craftDurationMs": 3000,
       "baseWasteRateBasisPoints": 0,
       "wasteReductionPerSkillLevelBasisPoints": 0,
@@ -41,8 +49,16 @@
       "stationInteractableId": "int.station.shorelands_campfire",
       "requiredSkillId": "skill.cooking",
       "requiredSkillLevel": 10,
-      "inputs": [{ "itemId": "item.fish.moonray", "quantity": 1 }],
-      "output": { "itemId": "item.fish.cooked_moonray", "quantity": 1 },
+      "inputs": [
+        {
+          "itemId": "item.fish.moonray",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.fish.cooked_moonray",
+        "quantity": 1
+      },
       "craftDurationMs": 4000,
       "baseWasteRateBasisPoints": 0,
       "wasteReductionPerSkillLevelBasisPoints": 0,
@@ -54,8 +70,16 @@
       "stationInteractableId": "int.station.shorelands_campfire",
       "requiredSkillId": "skill.cooking",
       "requiredSkillLevel": 25,
-      "inputs": [{ "itemId": "item.fish.stargill", "quantity": 1 }],
-      "output": { "itemId": "item.fish.cooked_stargill", "quantity": 1 },
+      "inputs": [
+        {
+          "itemId": "item.fish.stargill",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.fish.cooked_stargill",
+        "quantity": 1
+      },
       "craftDurationMs": 5000,
       "baseWasteRateBasisPoints": 0,
       "wasteReductionPerSkillLevelBasisPoints": 0,
@@ -131,6 +155,77 @@
       "baseWasteRateBasisPoints": 2600,
       "wasteReductionPerSkillLevelBasisPoints": 50,
       "xpPerCraft": 52
+    },
+    {
+      "id": "recipe.plank.emberwood",
+      "name": "Mill Emberwood Plank",
+      "stationInteractableId": "int.timber.saw",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 3,
+      "inputs": [
+        {
+          "itemId": "item.emberwood.branch",
+          "quantity": 2
+        }
+      ],
+      "output": {
+        "itemId": "item.plank.emberwood",
+        "quantity": 1
+      },
+      "craftDurationMs": 4000,
+      "baseWasteRateBasisPoints": 300,
+      "wasteReductionPerSkillLevelBasisPoints": 25,
+      "xpPerCraft": 14
+    },
+    {
+      "id": "recipe.ingot.resonant",
+      "name": "Fuse Resonant Ingot",
+      "stationInteractableId": "int.foothill.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 8,
+      "inputs": [
+        {
+          "itemId": "item.crystal.shard",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.emberwood.branch",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.ingot.resonant",
+        "quantity": 1
+      },
+      "craftDurationMs": 6000,
+      "baseWasteRateBasisPoints": 600,
+      "wasteReductionPerSkillLevelBasisPoints": 25,
+      "xpPerCraft": 32
+    },
+    {
+      "id": "recipe.food.berry_preserve",
+      "name": "Stew Frost Berry Preserve",
+      "stationInteractableId": "int.frostgate.workshop",
+      "requiredSkillId": "skill.cooking",
+      "requiredSkillLevel": 5,
+      "inputs": [
+        {
+          "itemId": "item.berry.frost",
+          "quantity": 3
+        },
+        {
+          "itemId": "item.emberwood.branch",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.food.berry_preserve",
+        "quantity": 1
+      },
+      "craftDurationMs": 4500,
+      "baseWasteRateBasisPoints": 400,
+      "wasteReductionPerSkillLevelBasisPoints": 25,
+      "xpPerCraft": 18
     }
   ]
 }

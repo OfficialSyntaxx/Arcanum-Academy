@@ -344,6 +344,16 @@ emissive lift, since the models are vertex-coloured. Scenery density per region:
 mountains rock-heavy, snow sparse. The content catalogs now validate against all four overworld
 zones. The mountain and snow gathering nodes, stations, merchants and boards remain hollow.
 
+**Outer-zone loops (2026-09-16, branch `Claudesep16`):** every crafting station and gathering
+node in the overworld now has server content. Mountains: the Resonance Seam (Mining 3) and Crystal
+Vein (Mining 12) feed the Foothill Forge, which fuses three shards and an emberwood branch into a
+**Resonant Ingot** (Refining 8). Snow: Frost Berries (Foraging 4, a 2 HP combat snack) and the
+creek (Fishing 6, moonray-heavy) feed the Frostgate Workshop's **Frost Berry Preserve** (Cooking 5,
+heals 6). Forest: the Lumber Mill turns two branches into an **Emberwood Plank** (Refining 3).
+Merchants and notice boards were already generic, so the Ranger's Cart, foothill and outpost
+markets and the three outer boards work as-is. Planks and ingots have no sink yet beyond sale;
+they are the inputs the hold and gear tiers will want.
+
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
 oversights.

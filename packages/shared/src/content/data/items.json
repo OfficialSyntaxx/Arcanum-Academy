@@ -110,7 +110,9 @@
       "stackCap": 999,
       "baseValue": 8,
       "iconKey": "cooked-tidefin",
-      "consumable": { "healAmount": 2 }
+      "consumable": {
+        "healAmount": 2
+      }
     },
     {
       "id": "item.fish.moonray",
@@ -131,7 +133,9 @@
       "stackCap": 999,
       "baseValue": 38,
       "iconKey": "cooked-moonray",
-      "consumable": { "healAmount": 5 }
+      "consumable": {
+        "healAmount": 5
+      }
     },
     {
       "id": "item.fish.stargill",
@@ -152,7 +156,9 @@
       "stackCap": 999,
       "baseValue": 190,
       "iconKey": "cooked-stargill",
-      "consumable": { "healAmount": 8 }
+      "consumable": {
+        "healAmount": 8
+      }
     },
     {
       "id": "item.meat.raw_shore_wolf",
@@ -377,6 +383,52 @@
         "boundSkillId": "skill.fishing",
         "requiredSkillLevel": 10,
         "repairCost": 70
+      }
+    },
+    {
+      "id": "item.plank.emberwood",
+      "name": "Emberwood Plank",
+      "description": "Milled true at the timber camp. Still faintly warm along the grain.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 12,
+      "iconKey": "plank-emberwood"
+    },
+    {
+      "id": "item.ingot.resonant",
+      "name": "Resonant Ingot",
+      "description": "Crystal shards fused over emberwood at the foothill forge. Hums when struck.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 40,
+      "iconKey": "ingot-resonant"
+    },
+    {
+      "id": "item.berry.frost",
+      "name": "Frost Berry",
+      "description": "Hard, sour and bright blue. Restores 2 HP in combat.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 4,
+      "iconKey": "berry-frost",
+      "consumable": {
+        "healAmount": 2
+      }
+    },
+    {
+      "id": "item.food.berry_preserve",
+      "name": "Frost Berry Preserve",
+      "description": "Berries stewed down with a splinter of emberwood. Restores 6 HP in combat.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 999,
+      "baseValue": 22,
+      "iconKey": "berry-preserve",
+      "consumable": {
+        "healAmount": 6
       }
     }
   ]

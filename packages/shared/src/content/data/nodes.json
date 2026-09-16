@@ -242,6 +242,124 @@
           "maxQuantity": 1
         }
       ]
+    },
+    {
+      "id": "node.mountains.seam",
+      "interactableId": "int.mine.seam",
+      "kind": "CRYSTAL",
+      "requiredSkillId": "skill.mining",
+      "requiredSkillLevel": 3,
+      "harvestIntervalMs": 3000,
+      "xpPerHarvest": 15,
+      "depletionHarvests": 40,
+      "regenerationMs": 300000,
+      "dropTable": [
+        {
+          "itemId": "item.crystal.shard",
+          "weight": 760,
+          "minQuantity": 1,
+          "maxQuantity": 3
+        },
+        {
+          "itemId": "item.crystal.resonant",
+          "weight": 215,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        },
+        {
+          "itemId": "item.crystal.prismatic",
+          "weight": 25,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "id": "node.mountains.crystal",
+      "interactableId": "int.mine.crystal",
+      "kind": "CRYSTAL",
+      "requiredSkillId": "skill.mining",
+      "requiredSkillLevel": 12,
+      "harvestIntervalMs": 3400,
+      "xpPerHarvest": 26,
+      "depletionHarvests": 30,
+      "regenerationMs": 420000,
+      "dropTable": [
+        {
+          "itemId": "item.crystal.shard",
+          "weight": 520,
+          "minQuantity": 1,
+          "maxQuantity": 2
+        },
+        {
+          "itemId": "item.crystal.resonant",
+          "weight": 400,
+          "minQuantity": 1,
+          "maxQuantity": 2
+        },
+        {
+          "itemId": "item.crystal.prismatic",
+          "weight": 80,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "id": "node.snow.berries",
+      "interactableId": "int.frost.berries",
+      "kind": "MUSHROOM",
+      "requiredSkillId": "skill.foraging",
+      "requiredSkillLevel": 4,
+      "harvestIntervalMs": 2600,
+      "xpPerHarvest": 13,
+      "depletionHarvests": 45,
+      "regenerationMs": 240000,
+      "dropTable": [
+        {
+          "itemId": "item.berry.frost",
+          "weight": 900,
+          "minQuantity": 1,
+          "maxQuantity": 3
+        },
+        {
+          "itemId": "item.mushroom.glowspore",
+          "weight": 100,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        }
+      ]
+    },
+    {
+      "id": "node.snow.fishing",
+      "interactableId": "int.frost.fishing",
+      "kind": "TIDEFISH",
+      "requiredSkillId": "skill.fishing",
+      "requiredSkillLevel": 6,
+      "harvestIntervalMs": 3200,
+      "xpPerHarvest": 20,
+      "depletionHarvests": 40,
+      "regenerationMs": 300000,
+      "dropTable": [
+        {
+          "itemId": "item.fish.tidefin",
+          "weight": 520,
+          "minQuantity": 1,
+          "maxQuantity": 2
+        },
+        {
+          "itemId": "item.fish.moonray",
+          "weight": 380,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        },
+        {
+          "itemId": "item.fish.stargill",
+          "weight": 100,
+          "minQuantity": 1,
+          "maxQuantity": 1
+        }
+      ]
     }
   ]
 }

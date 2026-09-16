@@ -12,6 +12,8 @@ import {
   DEFAULT_TUNABLES,
   COURTYARD,
   FOREST,
+  MOUNTAINS,
+  SNOW,
   InteractableKind,
   ItemCategory,
   SkillCategory,
@@ -128,9 +130,12 @@ describe('shipped content', () => {
 
   it('binds every gathering node to a gathering interactable in a shipped zone', () => {
     for (const definition of NODE_CATALOG.nodes) {
-      const interactable = [...COURTYARD.interactables, ...FOREST.interactables].find(
-        (entry) => entry.id === definition.interactableId,
-      );
+      const interactable = [
+        ...COURTYARD.interactables,
+        ...FOREST.interactables,
+        ...MOUNTAINS.interactables,
+        ...SNOW.interactables,
+      ].find((entry) => entry.id === definition.interactableId);
       expect(interactable, `${definition.id} names a real interactable`).toBeDefined();
       expect(interactable!.kind).toBe(InteractableKind.GatheringNode);
       expect(NODE_CATALOG.byInteractable(definition.interactableId)).toBe(definition);
