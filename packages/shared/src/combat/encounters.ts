@@ -29,6 +29,20 @@ export interface CombatEncounterDefinition {
   readonly respawnMs: number;
   readonly playerRecoveryMs: number;
   readonly requiredCombatLevel: number;
+  /**
+   * Drops that are rolled rather than given.
+   *
+   * `oneInChance` is the denominator of a uniform roll, so 128 means one kill
+   * in 128 on average. Guaranteed `drops` are what a creature is worth; this
+   * is what makes killing it again interesting. Rolled server-side from the
+   * same seeded RNG as the fight, so a client cannot fish for a drop by
+   * replaying the killing blow.
+   */
+  readonly rareDrops?: readonly {
+    readonly itemId: ItemDefinitionId;
+    readonly quantity: number;
+    readonly oneInChance: number;
+  }[];
   readonly zoneId?: string;
   readonly requiredQuestId?: string;
   readonly boss?: boolean;
@@ -88,6 +102,11 @@ export const DROWNED_SENTINEL: CombatEncounterDefinition = Object.freeze({
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.material.saltworn_fragment'), quantity: 1 },
   ]),
+  // An ingot is eight Refining levels of work, so pulling one off a sentinel
+  // is worth walking back for without replacing the forge.
+  rareDrops: Object.freeze([
+    { itemId: asId<ItemDefinitionId>('item.ingot.resonant'), quantity: 1, oneInChance: 12 },
+  ]),
   respawnMs: 8_000,
   playerRecoveryMs: 5_000,
   requiredCombatLevel: 2,
@@ -108,6 +127,15 @@ export const DROWNED_WARDEN: CombatEncounterDefinition = Object.freeze({
   rewardCoins: 24,
   drops: Object.freeze([
     { itemId: asId<ItemDefinitionId>('item.material.warden_scale'), quantity: 1 },
+  ]),
+  // The one piece in the game that is found rather than made. A boss with a
+  // quest gate in front of it is the right place for the only such drop.
+  rareDrops: Object.freeze([
+    {
+      itemId: asId<ItemDefinitionId>('item.armour.tideglass_cape'),
+      quantity: 1,
+      oneInChance: 24,
+    },
   ]),
   respawnMs: 15_000,
   playerRecoveryMs: 5_000,
@@ -195,6 +223,11 @@ function wolfPack(
       rewardCoins: coins,
       drops: Object.freeze([
         { itemId: asId<ItemDefinitionId>('item.meat.raw_shore_wolf'), quantity: 1 },
+      ]),
+      // Outer-zone packs are a second route to a resonant crystal, so a player
+      // who would rather fight than mine is not locked out of the forge line.
+      rareDrops: Object.freeze([
+        { itemId: asId<ItemDefinitionId>('item.crystal.resonant'), quantity: 1, oneInChance: 16 },
       ]),
       respawnMs: 6_000,
       playerRecoveryMs: 5_000,

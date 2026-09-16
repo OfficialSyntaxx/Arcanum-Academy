@@ -242,11 +242,24 @@ export function registerCombatHandlers(
         return err(failure(FailureCode.Conflict, `combat.${outcome.reason}`));
       const { state: nextTarget, defeated } = outcome;
       let inventory = state.inventory;
+      const rareDropsAwarded: { itemId: string; quantity: number }[] = [];
       if (defeated) {
         for (const drop of encounter.drops) {
           const awardedDrop = addItems(inventory, drop.itemId, drop.quantity, options.items);
           if (!awardedDrop.ok) return err(awardedDrop.error);
           inventory = awardedDrop.value;
+        }
+        // Rolled from the killing blow's own seed, so the outcome is fixed the
+        // moment the creature falls and cannot be re-rolled by replaying it.
+        const dropRng = Rng.fromSeed(`${seed}:drop`);
+        for (const rare of encounter.rareDrops ?? []) {
+          if (dropRng.nextInt(1, rare.oneInChance) !== 1) continue;
+          const awardedRare = addItems(inventory, rare.itemId, rare.quantity, options.items);
+          // A full satchel must not destroy a rare drop; the kill still stands
+          // and the rest of the reward is paid, but the player is told.
+          if (!awardedRare.ok) continue;
+          inventory = awardedRare.value;
+          rareDropsAwarded.push({ itemId: rare.itemId, quantity: rare.quantity });
         }
       }
       const styleSkillId =
@@ -354,7 +367,7 @@ export function registerCombatHandlers(
             enemyDamage: defeated ? 0 : enemyDamage,
             enemyHit: !defeated && enemyRoll.hit,
             coinsGained: coins,
-            drops: defeated ? encounter.drops : [],
+            drops: defeated ? [...encounter.drops, ...rareDropsAwarded] : [],
             combatXpGained: styleXp,
             hitpointsXpGained: hitpointsXp,
             styleSkillId,

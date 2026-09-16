@@ -16,6 +16,7 @@ import {
   MOUNTAINS,
   SNOW,
   SALTWAKE_RUINS,
+  COMBAT_ENCOUNTERS,
   combatEncounterByInteractable,
 } from '@alderfell/shared';
 import { PlayerService } from '../domain/player-service.js';
@@ -458,5 +459,73 @@ describe('Saltwake combat lifecycle', () => {
       'saltline.warden': 1,
     });
     expect(state.discoveries).toHaveProperty('discovery.dungeon.warden');
+  });
+});
+
+describe('rare drop awards', () => {
+  it('eventually pays the Sentinel ingot and never pays it outside a defeat', async () => {
+    // The award path is worth exercising for real: a rare drop that rolls but
+    // is never added to the satchel looks identical to bad luck.
+    const h = harness();
+    h.moveTo({ x: 0, z: -5 });
+    await h.enterSaltwake();
+    let ingots = 0;
+    let defeats = 0;
+    // 1/12 per kill: 60 kills makes a miss a genuine failure, not variance.
+    for (let kill = 0; kill < 60 && ingots === 0; kill += 1) {
+      let defeated = false;
+      while (!defeated) {
+        const strike = await h.dispatch(DROWNED_SENTINEL, 'DEFENSIVE');
+        expect(strike.ok).toBe(true);
+        if (strike.ok) {
+          const value = strike.value as {
+            combat: { defeated: boolean };
+            drops?: readonly { itemId: string }[];
+          };
+          defeated = value.combat.defeated;
+          if (!defeated) expect(value.drops ?? []).toEqual([]);
+        }
+        h.advance(DEFAULT_TUNABLES.combat.tickMs);
+      }
+      defeats += 1;
+      h.advance(12_000);
+      const stacks = (await h.state()).inventory.stacks;
+      ingots = stacks.find((stack) => stack.definitionId === 'item.ingot.resonant')?.quantity ?? 0;
+    }
+    expect(defeats).toBeGreaterThan(0);
+    expect(ingots).toBeGreaterThan(0);
+  });
+});
+
+describe('rare drop tables', () => {
+  it('names a real item and a sane chance on every rare drop', () => {
+    const problems: string[] = [];
+    for (const encounter of COMBAT_ENCOUNTERS) {
+      for (const rare of encounter.rareDrops ?? []) {
+        if (ITEM_CATALOG.get(rare.itemId) === undefined) {
+          problems.push(`${encounter.label}: unknown item "${rare.itemId}"`);
+        }
+        // A denominator of one is a guaranteed drop wearing the wrong hat, and
+        // a non-integer or negative one makes the roll meaningless.
+        if (!Number.isInteger(rare.oneInChance) || rare.oneInChance < 2) {
+          problems.push(`${encounter.label}: bad chance 1/${String(rare.oneInChance)}`);
+        }
+        if (rare.quantity < 1) {
+          problems.push(`${encounter.label}: bad quantity ${String(rare.quantity)}`);
+        }
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('keeps rare drops out of the guaranteed table', () => {
+    // A creature that both guarantees and rolls the same item would pay it
+    // twice on a lucky kill, which reads as a duplication bug.
+    for (const encounter of COMBAT_ENCOUNTERS) {
+      const guaranteed = new Set(encounter.drops.map((drop) => String(drop.itemId)));
+      for (const rare of encounter.rareDrops ?? []) {
+        expect(guaranteed.has(String(rare.itemId))).toBe(false);
+      }
+    }
   });
 });
