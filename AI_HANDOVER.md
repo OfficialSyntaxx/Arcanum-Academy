@@ -354,6 +354,15 @@ Merchants and notice boards were already generic, so the Ranger's Cart, foothill
 markets and the three outer boards work as-is. Planks and ingots have no sink yet beyond sale;
 they are the inputs the hold and gear tiers will want.
 
+**HUD update (2026-09-16, branch `Claudesep16`):** the hub is OSRS-shaped: a minimap top-right
+drawn from zone data (routes, landmark dots by kind, the player's heading) that turns with the
+camera and opens the local map on tap; a compact zone strip and a one-line journey link top-left;
+a four-tab bar along the bottom (Satchel, Journal, Map, Log) in place of the floating Satchel and
+Map buttons and the hint strip. The interaction prompt and the fight card sit just above the tab
+bar. Default camera is 15 m across the short axis with figures at 2.05 m, tuned so people read as
+people rather than figurines on a phone. The connection readout is a single dot below the zone
+strip.
+
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
 oversights.

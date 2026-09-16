@@ -758,5 +758,9 @@ export class HubController {
         1440,
     );
     store.setWorldMinute(minute);
+    store.setPlayerPosition(
+      { x: this.player.position.x, z: this.player.position.z, facing: this.player.facing },
+      this.camera.orbitYaw,
+    );
   }
 }

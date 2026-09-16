@@ -218,10 +218,15 @@ export interface AppState {
   readonly combatStyle: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
   /** True when the player has folded the fixed overlays away to see the world. */
   readonly hudCollapsed: boolean;
+  /** Player position and heading, published a few times a second for the minimap. */
+  readonly playerPosition: { readonly x: number; readonly z: number; readonly facing: number };
+  /** Camera yaw in radians, so the minimap can turn with the view. */
+  readonly cameraYaw: number;
 
   setPhase(phase: GamePhase): void;
   setCombatStyle(style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE'): void;
   setHudCollapsed(collapsed: boolean): void;
+  setPlayerPosition(position: { x: number; z: number; facing: number }, cameraYaw: number): void;
   setBootStep(id: string, patch: Partial<Omit<BootStep, 'id'>>): void;
   registerBootSteps(steps: readonly BootStep[]): void;
   setTransportStatus(status: TransportStatus): void;
@@ -280,10 +285,13 @@ export const useAppStore = create<AppState>((set) => ({
   travelRevision: 0,
   combatStyle: 'ACCURATE',
   hudCollapsed: false,
+  playerPosition: { x: 0, z: 0, facing: 0 },
+  cameraYaw: 0,
 
   setPhase: (phase) => set({ phase }),
   setCombatStyle: (combatStyle) => set({ combatStyle }),
   setHudCollapsed: (hudCollapsed) => set({ hudCollapsed }),
+  setPlayerPosition: (playerPosition, cameraYaw) => set({ playerPosition, cameraYaw }),
   registerBootSteps: (steps) => set({ bootSteps: steps }),
   setBootStep: (id, patch) =>
     set((state) => ({

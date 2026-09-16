@@ -101,15 +101,7 @@ export function HubHud() {
  * This compact card only answers the phone-first question players ask after
  * closing it: "what should I do next?" It never calculates progression locally.
  */
-export function JourneyTracker({
-  onOpenMap,
-  onOpenJournal,
-  onOpenCollection,
-}: {
-  onOpenMap: () => void;
-  onOpenJournal: () => void;
-  onOpenCollection: () => void;
-}) {
+export function JourneyTracker({ onOpenJournal }: { onOpenJournal: () => void }) {
   const economy = useAppStore((state) => state.economy);
   const inCombat = economy.combat !== null && !economy.combat.defeated;
   const quest =
@@ -137,24 +129,18 @@ export function JourneyTracker({
     ? (objective?.label ?? 'Return to the notice board to turn in your work.')
     : `Visit the Library notice board to begin ${quest.title}.`;
 
+  // One line, not a card: the world is what should fill the phone. Tapping
+  // it opens the journal for the full objective list.
   return (
-    <aside className="journey-tracker" aria-label="Current journey">
-      <span className="journey-tracker__eyebrow">
-        {accepted ? 'Current journey' : 'Next journey'}
-      </span>
+    <button
+      type="button"
+      className="journey-tracker"
+      onClick={onOpenJournal}
+      aria-label="Open the quest journal"
+    >
+      <span className="journey-tracker__eyebrow">{accepted ? 'Journey' : 'Next'}</span>
       <strong>{quest.title}</strong>
       <p>{nextStep}</p>
-      <div className="journey-tracker__actions">
-        <button type="button" onClick={onOpenMap}>
-          Show map
-        </button>
-        <button type="button" onClick={onOpenJournal}>
-          Journal
-        </button>
-        <button type="button" onClick={onOpenCollection}>
-          Log
-        </button>
-      </div>
-    </aside>
+    </button>
   );
 }

@@ -17,6 +17,7 @@ import { NpcDialogue } from '../ui/NpcDialogue.js';
 import { CombatHud, DungeonHud, GravestoneHud } from '../ui/CombatHud.js';
 import { QuestJournal } from '../ui/QuestJournal.js';
 import { CollectionLog } from '../ui/CollectionLog.js';
+import { Minimap } from '../ui/Minimap.js';
 
 /**
  * The hub overlay.
@@ -132,23 +133,12 @@ export function HubScreen({
       >
         {hudCollapsed ? '▾' : '▴'}
       </button>
-      {!hudCollapsed && (
-        <JourneyTracker
-          onOpenMap={() => setMapOpen(true)}
-          onOpenJournal={() => setJournalOpen(true)}
-          onOpenCollection={() => setCollectionOpen(true)}
-        />
-      )}
+      {!hudCollapsed && <JourneyTracker onOpenJournal={() => setJournalOpen(true)} />}
       {!hudCollapsed && <ClueTracker />}
-      <button type="button" className="map-toggle" onClick={() => setMapOpen(true)}>
-        Map
-      </button>
+      {!hudCollapsed && <Minimap onOpenMap={() => setMapOpen(true)} />}
       {mapOpen && <WorldMap onNavigate={onNavigate} onClose={() => setMapOpen(false)} />}
       {journalOpen && <QuestJournal onClose={() => setJournalOpen(false)} />}
       {collectionOpen && <CollectionLog onClose={() => setCollectionOpen(false)} />}
-      {!hudCollapsed && !inCombat && (
-        <div className="hub-help">Tap to walk · Drag to look · Pinch to zoom</div>
-      )}
       {!inCombat && <InteractionPrompt onEngage={onEngage} />}
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
       <CollectionToast />
@@ -156,13 +146,34 @@ export function HubScreen({
       <CommandError />
       <CombatHud onRecover={onRecoverCombat} onEat={onEatCombatFood} />
       <GravestoneHud onReclaim={onReclaimCombatGrave} />
-      <button
-        type="button"
-        className="satchel-toggle"
-        onClick={() => setSatchelView((view) => (view === null ? 'inventory' : null))}
-      >
-        Satchel
-      </button>
+      {/* OSRS-style tab bar: every panel the player opens on purpose lives here,
+          so the top of the screen stays clear for the world and the minimap. */}
+      <nav className="tab-bar" aria-label="Game panels">
+        <button
+          type="button"
+          aria-pressed={satchelView !== null}
+          onClick={() => setSatchelView((view) => (view === null ? 'inventory' : null))}
+        >
+          Satchel
+        </button>
+        <button
+          type="button"
+          aria-pressed={journalOpen}
+          onClick={() => setJournalOpen((open) => !open)}
+        >
+          Journal
+        </button>
+        <button type="button" aria-pressed={mapOpen} onClick={() => setMapOpen((open) => !open)}>
+          Map
+        </button>
+        <button
+          type="button"
+          aria-pressed={collectionOpen}
+          onClick={() => setCollectionOpen((open) => !open)}
+        >
+          Log
+        </button>
+      </nav>
       {satchelView === 'inventory' && (
         <InventoryPanel
           onClose={() => setSatchelView(null)}
