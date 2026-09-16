@@ -20,6 +20,7 @@
     "test:watch": "vitest",
     "boundaries": "node tools/scripts/check-boundaries.mjs",
     "asset-budget": "node tools/scripts/check-client-asset-budget.mjs",
+    "build:characters": "node tools/scripts/build-characters.mjs",
     "admin-isolation": "node tools/scripts/check-admin-isolation.mjs",
     "build": "npm run typecheck && npm run build --workspace @alderfell/client && npm run asset-budget && npm run build --workspace @alderfell/admin && npm run admin-isolation && npm run build --workspace @alderfell/server",
     "dev": "npm run dev --workspace @alderfell/client --",
@@ -30,6 +31,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/extensions": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.10.2",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
@@ -37,7 +41,9 @@
     "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
+    "meshoptimizer": "^1.2.0",
     "prettier": "^3.4.2",
+    "sharp": "^0.35.4",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.0",
     "vitest": "^2.1.8"

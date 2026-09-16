@@ -218,14 +218,13 @@ export class HubController {
 
     const economy = useAppStore.getState().economy;
     const gathering = economy.gatheringNodeId !== null;
-    const combatStriking = this.now() - economy.lastCombatStrikeAtMs < 520;
     this.driveCombat(economy);
     this.playerAvatar.update(
       dtSeconds,
       focus,
       this.player.facing,
       this.player.gait,
-      gathering || combatStriking,
+      this.playerAction(economy),
     );
     if (!this.playerAvatar.ready) {
       this.world.actors.setTransform(
@@ -482,6 +481,27 @@ export class HubController {
       this.options.onEngageCombatEncounter?.(encounter.interactableId);
       return;
     }
+  }
+
+  /** What the player's hands are doing this frame, from confirmed server state. */
+  private playerAction(
+    economy: ReturnType<typeof useAppStore.getState>['economy'],
+  ): 'none' | 'attack' | 'chop' | 'harvest' | 'eat' | 'flinch' {
+    const now = this.now();
+    const combat = economy.combat;
+    if (combat !== null && !combat.defeated) {
+      const sinceTick = now - economy.lastCombatTickAtMs;
+      if (combat.foodConsumed !== undefined && sinceTick < 700) return 'eat';
+      const sinceStrike = now - economy.lastCombatStrikeAtMs;
+      // The creature's answer lands a beat after the player's swing.
+      if (combat.enemyDamage > 0 && sinceStrike >= 320 && sinceStrike < 900) return 'flinch';
+      if (sinceStrike < 320) return 'attack';
+    }
+    if (economy.gatheringNodeId !== null && !this.player.isTravelling) {
+      const node = this.world.zone.interactables.find((i) => i.id === economy.gatheringNodeId);
+      return node?.verb === 'Fell' || node?.verb === 'Mine' ? 'chop' : 'harvest';
+    }
+    return 'none';
   }
 
   /** Whether the player stands close enough to an encounter for the server to accept a swing. */

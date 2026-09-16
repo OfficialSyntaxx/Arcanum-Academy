@@ -48,6 +48,8 @@ export interface NamedNpcPresentation {
   readonly elevation: number;
   readonly facing: number;
   readonly gait: number;
+  /** The scheduled activity being served, so the body can act it out. */
+  readonly activity: NpcActivity;
 }
 
 const AMBIENT_APPEARANCES = ['student.a', 'student.b', 'student.c'] as const;
@@ -98,6 +100,10 @@ export class NpcDirector {
           elevation: this.world.heightAt(position),
           facing,
           gait: Math.min(1, velocity / this.locomotion.speed),
+          activity:
+            actor.agent.definition.schedule.find(
+              (entry) => entry.startMinute === actor.agent.servingMinute,
+            )?.activity ?? NpcActivity.Idle,
         };
       });
   }

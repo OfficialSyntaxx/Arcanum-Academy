@@ -23,14 +23,14 @@ import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { heightAt, InteractableKind, type Zone } from '@alderfell/shared';
 import { createShadowBlob } from '../world/shadow-blob.js';
-// Quaternius, "Wolf", CC0 1.0: https://poly.pizza/m/P1gU3Qkr9r
-import shoreWolfUrl from '../../../../assets/quaternius/low-poly-animated-animals/wolf.glb?url';
-// PolyPizza, "Armabee Evolved", CC0 1.0: https://poly.pizza/m/GcttdvsqsQ
-import armabeeUrl from '../../../../assets/poly-pizza/armabee-evolved.glb?url';
-// Quaternius, "Ghost" and "Ghost Skull", CC0 1.0 (Ultimate Monsters):
-// https://poly.pizza/bundle/Ultimate-Monsters-Bundle-5oyGWAmOB6
-import drownedSentinelUrl from '../../../../assets/quaternius/ultimate-monsters/ghost.glb?url';
-import drownedWardenUrl from '../../../../assets/quaternius/ultimate-monsters/ghost-skull.glb?url';
+// Graded by tools/scripts/build-characters.mjs from the CC0 sources:
+// Quaternius "Wolf" (https://poly.pizza/m/P1gU3Qkr9r), PolyPizza "Armabee
+// Evolved" (https://poly.pizza/m/GcttdvsqsQ), Quaternius "Ghost" and "Ghost
+// Skull" (https://poly.pizza/bundle/Ultimate-Monsters-Bundle-5oyGWAmOB6).
+import shoreWolfUrl from '../../../../assets/derived/characters/wolf.glb?url';
+import armabeeUrl from '../../../../assets/derived/characters/armabee.glb?url';
+import drownedSentinelUrl from '../../../../assets/derived/characters/ghost.glb?url';
+import drownedWardenUrl from '../../../../assets/derived/characters/ghost-skull.glb?url';
 
 type Intent = 'idle' | 'walk' | 'hit' | 'attack' | 'death';
 

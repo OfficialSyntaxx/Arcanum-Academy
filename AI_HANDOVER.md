@@ -306,6 +306,19 @@ food; there is no attack button. A HUD fold control hides every fixed overlay, a
 connection/fps strip collapses to a single dot in play. Known trust gap, accepted for
 single-player: aggression is client-initiated, so a modified client could decline to be attacked.
 
+**Character rig update (2026-09-16, branch `Claudesep16`):** every human is now the one Quaternius
+65-joint rig (§6.1.1) in a graded outfit built by `npm run build:characters`: the player wears
+`peasant-m`, merchants `peasant-m`, the groundskeeper `peasant-f`, scholars and wardens the hooded
+`ranger-m`, each with a light role tint. The Kenney chibi characters are no longer used. Action
+clips (unarmed and sword attacks, tree chopping, harvesting, eating, a flinch) ship in one shared
+`animations.glb` and bind by bone name. **The free Universal Animation Library has no plain idle
+or walk**, so locomotion is procedural in `player/character-rig.ts`: a breathing idle and a run
+cycle posed on hips, knees, shoulders, elbows and spine, blended continuously with speed and
+hand-blended with clips (the mixer's own fades go to the T-pose). Buying the full library is a
+paid dependency and therefore an owner decision; it would replace the procedural gait, nothing
+else. The female ranger is built but not shipped: the 3 MiB precache budget could not take a
+fourth outfit. Creatures go through the same pipeline, which is what paid for the humans.
+
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
 oversights.
