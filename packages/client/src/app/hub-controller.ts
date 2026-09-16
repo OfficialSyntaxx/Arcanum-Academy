@@ -456,6 +456,22 @@ export class HubController {
         this.autoAttackRetries = 0;
         this.autoAttackSentAtMs = 0;
       }
+      // Running dry must not silently stop an automatic fight. Drop back to
+      // the stance that costs nothing and say so once, rather than leaving the
+      // player watching a creature they are no longer swinging at.
+      const outOfAmmo =
+        store.lastCommandError === 'combat.out_of_arrows' ||
+        store.lastCommandError === 'combat.out_of_dust';
+      if (outOfAmmo) {
+        const spent =
+          store.lastCommandError === 'combat.out_of_arrows' ? 'arrows' : 'resonant dust';
+        useAppStore.getState().setCombatStyle('ACCURATE');
+        useAppStore.getState().recordDiagnostic({
+          level: 'warn',
+          source: 'world',
+          message: `Out of ${spent}. Falling back to melee.`,
+        });
+      }
       const cooldownRefused = store.lastCommandError === 'combat.cooldown';
       const due =
         this.autoAttackSentAtMs === 0

@@ -281,6 +281,13 @@ The plaza medallion went from 11.6 m to 6.8 m and the Courtyard crowd from 18 to
   is untouched, so a good matchup lands more often rather than hitting harder, and a bad one is
   slower rather than hopeless. Wisps are weak to Ranged, wolf packs to Magic, the Sentinel to
   Aggressive and the Warden to Magic.
+- **Ammunition, so the kit styles have an ongoing cost.** A bow spends an Emberwood Arrow and a
+  staff burns a mote of resonant dust, every swing, hit or miss - a cost that applied only to
+  swings that landed would make accuracy free and quietly reward missing. Arrows are fletched
+  fifteen at a time at the timber saw; dust was already a Refining product, so Magic gives that
+  recipe its first customer. Melee stays free, which is what makes it the floor. Running dry
+  drops the client back to melee with a line in the log rather than silently stalling an
+  automatic fight.
 - **Three quests extending the chain into the outer zones** (The Reach Pack, The Foothill
   Forge, The Long Winter), each ending further from the plaza than the last.
 
@@ -288,15 +295,14 @@ All gear bonuses and drop rates are **conservative placeholders and the owner's 
 
 ### Open items, roughly by value
 
-1. **No ammo or rune system.** The bow fires without arrows and the staff channels without
-   runes, so neither kit style has an ongoing cost; Neck, Ring and Ammo slots do not exist
-   because nothing would fill them. This is the obvious next thing to give the triangle
-   economic weight.
-2. **Only four creatures carry a `weakTo`.** The rest are neutral, so the triangle matters in
+1. **Only four creatures carry a `weakTo`.** The rest are neutral, so the triangle matters in
    some fights and not others. Deliberate for now - it wants a balance pass, not a blanket.
-3. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
+2. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
    for character scale than anything left, but it moves waypoints and changes how the hub feels
    to cross, so it was left as an owner decision rather than a tweak.
-4. Diary and clue content still centres on the Courtyard, though the quest chain no longer does.
+3. Diary and clue content still centres on the Courtyard, though the quest chain no longer does.
+4. **No Neck, Ring or Ammo slots**, because nothing would fill them. Ammunition is spent from
+   the satchel rather than a worn slot, which is a deliberate simplification: a stack inside an
+   equipment slot is a real system, not a field.
 5. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots. The owner
    has said Codex will take the device checks.

@@ -60,6 +60,20 @@ const STYLE_SKILL: Readonly<Record<'RANGED' | 'MAGIC', SkillId>> = {
   RANGED: RANGED_SKILL,
   MAGIC: MAGIC_SKILL,
 };
+
+/**
+ * What a kit style spends per swing.
+ *
+ * Melee costs nothing and always works, which is what makes it the floor. A
+ * bow and a staff hit harder for their level and reach, and the price is that
+ * they run out: an arrow is loosed and a mote of resonant dust is burnt. This
+ * is the only ongoing cost in combat, and it is what gives the crafting skills
+ * a customer.
+ */
+const STYLE_AMMO: Readonly<Record<'RANGED' | 'MAGIC', ItemDefinitionId>> = {
+  RANGED: asId<ItemDefinitionId>('item.ammo.emberwood_arrow'),
+  MAGIC: asId<ItemDefinitionId>('item.dust.resonant'),
+};
 export interface CombatHandlerOptions {
   readonly players: PlayerService;
   readonly skills: SkillTable;
@@ -290,6 +304,20 @@ export function registerCombatHandlers(
         return err(failure(FailureCode.Conflict, `combat.${outcome.reason}`));
       const { state: nextTarget, defeated } = outcome;
       let inventory = state.inventory;
+      // Spend the shot. Done after the roll is resolved but before any reward,
+      // so a swing that misses still costs its arrow - otherwise accuracy would
+      // be free and the cost would only apply to swings that already paid off.
+      if (style === 'RANGED' || style === 'MAGIC') {
+        const spent = removeItems(inventory, STYLE_AMMO[style], 1);
+        if (!spent.ok)
+          return err(
+            failure(
+              FailureCode.Conflict,
+              style === 'RANGED' ? 'combat.out_of_arrows' : 'combat.out_of_dust',
+            ),
+          );
+        inventory = spent.value;
+      }
       const rareDropsAwarded: { itemId: string; quantity: number }[] = [];
       if (defeated) {
         for (const drop of encounter.drops) {

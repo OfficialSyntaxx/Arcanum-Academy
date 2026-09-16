@@ -548,6 +548,31 @@
       "baseWasteRateBasisPoints": 1500,
       "wasteReductionPerSkillLevelBasisPoints": 40,
       "xpPerCraft": 60
+    },
+    {
+      "id": "recipe.ammo.emberwood_arrow",
+      "name": "Fletch Emberwood Arrows",
+      "stationInteractableId": "int.timber.saw",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 2,
+      "inputs": [
+        {
+          "itemId": "item.plank.emberwood",
+          "quantity": 1
+        },
+        {
+          "itemId": "item.crystal.shard",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.ammo.emberwood_arrow",
+        "quantity": 15
+      },
+      "craftDurationMs": 5000,
+      "baseWasteRateBasisPoints": 800,
+      "wasteReductionPerSkillLevelBasisPoints": 30,
+      "xpPerCraft": 20
     }
   ]
 }

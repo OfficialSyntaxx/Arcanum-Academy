@@ -682,6 +682,16 @@
         "requiredSkillId": "skill.magic",
         "requiredSkillLevel": 1
       }
+    },
+    {
+      "id": "item.ammo.emberwood_arrow",
+      "name": "Emberwood Arrow",
+      "description": "Straight-grained shafts with a knapped crystal head. Spent when loosed.",
+      "category": "MATERIAL",
+      "rarity": "COMMON",
+      "stackCap": 1000,
+      "baseValue": 2,
+      "iconKey": "ammo-emberwood-arrow"
     }
   ]
 }

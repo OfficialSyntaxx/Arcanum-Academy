@@ -563,6 +563,7 @@ describe('ranged combat style', () => {
   it('awards Ranged experience rather than Attack or Strength', async () => {
     const h = harness();
     await h.equip(BOW);
+    await h.grant('item.ammo.emberwood_arrow' as Parameters<typeof addItems>[1], 300);
     // Swing until something actually lands: a miss awards nothing, so an
     // assertion on the first tick would pass or fail on the RNG.
     const landed = await h.strikeUntilDamage(SHORE_WOLF, 'RANGED');
@@ -597,6 +598,7 @@ describe('magic combat style and the triangle', () => {
   it('awards Magic experience rather than Attack or Ranged', async () => {
     const h = harness();
     await h.equip(STAFF);
+    await h.grant('item.dust.resonant' as Parameters<typeof addItems>[1], 300);
     const landed = await h.strikeUntilDamage(SHORE_WOLF, 'MAGIC');
     expect(landed.damage).toBeGreaterThan(0);
     const state = await h.state();
@@ -636,5 +638,59 @@ describe('magic combat style and the triangle', () => {
       if (encounter.weakTo === undefined) continue;
       expect(styles.has(encounter.weakTo)).toBe(true);
     }
+  });
+});
+
+describe('kit styles cost ammunition', () => {
+  const BOW = 'item.weapon.emberwood_shortbow';
+  const STAFF = 'item.weapon.resonant_staff';
+  const ARROW = 'item.ammo.emberwood_arrow';
+  const DUST = 'item.dust.resonant';
+
+  it('refuses to fire an empty quiver', async () => {
+    const h = harness();
+    await h.equip(BOW);
+    const result = await h.dispatch(SHORE_WOLF, 'RANGED');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('combat.out_of_arrows');
+  });
+
+  it('refuses to channel without resonant dust', async () => {
+    const h = harness();
+    await h.equip(STAFF);
+    const result = await h.dispatch(SHORE_WOLF, 'MAGIC');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('combat.out_of_dust');
+  });
+
+  it('spends exactly one arrow per swing, hit or miss', async () => {
+    // A cost that only applied to swings that landed would make accuracy free
+    // and quietly reward missing, so this counts swings rather than hits.
+    const h = harness();
+    await h.equip(BOW);
+    await h.grant(ARROW as Parameters<typeof addItems>[1], 10);
+    let swings = 0;
+    for (let i = 0; i < 4; i += 1) {
+      const strike = await h.dispatch(SHORE_WOLF, 'RANGED');
+      if (!strike.ok) throw Error(strike.error.reason);
+      swings += 1;
+      h.advance(DEFAULT_TUNABLES.combat.tickMs);
+    }
+    const stacks = (await h.state()).inventory.stacks;
+    const left = stacks.find((stack) => stack.definitionId === ARROW)?.quantity ?? 0;
+    expect(left).toBe(10 - swings);
+  });
+
+  it('leaves melee free, so the floor never runs out', async () => {
+    const h = harness();
+    await h.grant(ARROW as Parameters<typeof addItems>[1], 3);
+    for (let i = 0; i < 5; i += 1) {
+      const strike = await h.dispatch(SHORE_WOLF, 'ACCURATE');
+      expect(strike.ok).toBe(true);
+      h.advance(DEFAULT_TUNABLES.combat.tickMs);
+    }
+    const stacks = (await h.state()).inventory.stacks;
+    expect(stacks.find((stack) => stack.definitionId === ARROW)?.quantity).toBe(3);
+    expect(stacks.find((stack) => stack.definitionId === DUST)).toBeUndefined();
   });
 });
