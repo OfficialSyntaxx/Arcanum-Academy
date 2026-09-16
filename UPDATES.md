@@ -203,8 +203,42 @@ Also recorded in `docs/MISTAKES.md`.
 
 ## State at the stopping point
 
-`npm run verify` green: 479 tests across 56 files. Precache budget 2.9 MiB against a 3 MiB
-ceiling. No merge to `main`.
+`npm run verify` green: **481 tests across 56 files**. The Playwright smoke suite is green too,
+**5 passed in 43 seconds**. Precache budget **2.2 MiB against a 3 MiB ceiling**. No merge to `main`.
+
+### Three real bugs the smoke suite finally surfaced
+
+The two long-failing smoke tests were not flaky and not slow rendering. Chasing them down found
+three genuine defects, each of which would bite a real phone:
+
+1. **Presence was published on a 250 ms throttle, but interaction commands were sent the instant
+   the player arrived.** The server validates range against the last position it was told about,
+   so the first attacks were refused with `combat.out_of_range` - and `autoAttackRetries < 4`
+   meant four such misses disabled the fight _permanently_. The controller now syncs presence on
+   the same ordered connection immediately before engaging, so the range check sees where the
+   player actually is. A stuttering phone hit this exactly as the test did.
+2. **Automatic combat paced its next attack from a server timestamp compared against the client's
+   own `Date.now()`.** With any clock skew where the client trails the server, `now >= pacedFrom +
+tickMs` is never true and the entire exchange freezes with both sides at full health, forever.
+   Pacing now runs from the local time the strike receipt arrived; the server still refuses
+   anything early with `combat.cooldown`, which the existing retry answers.
+3. **The smoke tests froze the world they were testing.** `page.clock.setFixedTime` replaces the
+   `requestAnimationFrame` timestamp, not just `Date`, and the engine derives its frame delta from
+   that timestamp - so the player never moved at all. The same walk completes in 10.5 s with no
+   clock control. `install` + `resume` is no better. The pin bought nothing anyway: the in-game
+   hour comes from the sim clock, not wall time. All clock control is gone from the suite.
+
+### Draw-call and download budgets
+
+- **Crowd LOD.** Rigging all 18 crowd members put the Courtyard near 190 draw calls against the
+  §6.8.1 target of 100. Crowd rigs are now pooled two per outfit and follow the nearest matching
+  students, while the named cast stays always-rigged; roughly 80 draw calls, and the measured
+  frame rate went from 3.4 fps to 5.2 fps under software rendering.
+- **Draco for characters closed open item 4.** The environment models were already Draco-
+  compressed, so the phone downloads the decoder either way - compressing the characters with it
+  too was pure saving. The character set went from ~1.44 MB to 634 KB and the precache from
+  3150 KiB (_over_ the 3072 KiB ceiling, which was failing the build) to 2248 KiB. Both character
+  loaders now share one Draco-enabled `GLTFLoader` in the new `assets` layer.
 
 ### Open items, roughly by value
 
@@ -216,9 +250,7 @@ ceiling. No merge to `main`.
 2. **Gear is one tier deep and melee only.** No head, legs, hands, feet, cape, neck, ring or
    ammo slots, because no gear exists for them. Magic and Ranged are unbuilt (§3.4.3), so
    there is no combat triangle yet.
-3. **The smoke test is unrun on this branch** and its clock-pinning may fail per the note
-   above. CI on the branch will say.
-4. **The precache budget is nearly full.** A fourth outfit or another creature needs the
-   budget re-examined, not just a harder decimation ratio.
-5. Quest, diary and clue content still centres on the Courtyard; the three outer notice
+3. Quest, diary and clue content still centres on the Courtyard; the three outer notice
    boards surface the same catalog.
+4. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots; the owner's
+   home-screen launch is the gate.

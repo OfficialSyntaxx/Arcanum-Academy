@@ -123,6 +123,8 @@ export class HubController {
   private readonly hitsplats = new Hitsplats();
   /** Receipt time of the strike the last automatic exchange was paced from. */
   private autoAttackPacedFromMs = -1;
+  /** Local time at which that strike receipt arrived, used to pace the next one. */
+  private autoAttackPacedAtMs = 0;
   private autoAttackRetries = 0;
   private autoAttackSentAtMs = 0;
   /** Strike receipt already turned into hitsplats, so each exchange splats once. */
@@ -242,7 +244,7 @@ export class HubController {
       );
     }
     this.npcs.update(this.now(), dtSeconds * 1000);
-    this.npcAvatars.update(dtSeconds, this.npcs.presentations());
+    this.npcAvatars.update(dtSeconds, this.npcs.presentations(), this.player.position);
     this.combatAvatars.update(
       dtSeconds,
       economy.combat,
@@ -444,19 +446,27 @@ export class HubController {
       const pacedFrom = economy.lastCombatTickAtMs;
       if (pacedFrom !== this.autoAttackPacedFromMs) {
         this.autoAttackPacedFromMs = pacedFrom;
+        // Paced from when we *heard* about the strike, not from the server
+        // timestamp on it. The two clocks are unrelated, and comparing a server
+        // instant against Date.now() stalls the whole exchange whenever the
+        // client's clock trails the server's - permanently, since nothing else
+        // advances the pacing. The server still refuses anything early with
+        // combat.cooldown, which the retry below answers.
+        this.autoAttackPacedAtMs = now;
         this.autoAttackRetries = 0;
         this.autoAttackSentAtMs = 0;
       }
       const cooldownRefused = store.lastCommandError === 'combat.cooldown';
       const due =
         this.autoAttackSentAtMs === 0
-          ? now >= pacedFrom + tickMs
+          ? now >= this.autoAttackPacedAtMs + tickMs
           : cooldownRefused &&
             this.autoAttackRetries < 4 &&
             now >= this.autoAttackSentAtMs + COOLDOWN_RETRY_MS;
       if (!due) return;
       if (this.autoAttackSentAtMs !== 0) this.autoAttackRetries += 1;
       this.autoAttackSentAtMs = now;
+      this.syncPresence();
       this.options.onEngageCombatEncounter?.(combat.interactableId);
       return;
     }
@@ -489,6 +499,7 @@ export class HubController {
         source: 'world',
         message: `${encounter.label} attacks you`,
       });
+      this.syncPresence();
       this.options.onEngageCombatEncounter?.(encounter.interactableId);
       return;
     }
@@ -706,16 +717,30 @@ export class HubController {
     this.options.onBeginTravel?.();
   }
 
-  /** Throttled projection of world state into the UI store. */
-  private publish(dtMs: number): void {
-    this.storeAccumulatorMs += dtMs;
-    if (this.storeAccumulatorMs < STORE_UPDATE_INTERVAL_MS) return;
+  /**
+   * Tells the server where the player is standing, right now.
+   *
+   * Presence is otherwise published on a 250 ms throttle, which is fine for
+   * drawing other people but not for a range check: the server refuses an
+   * interaction against the position it last heard about, so a command sent
+   * the instant the player arrives is judged against where they were a frame
+   * ago. Sending presence first on the same ordered connection removes the
+   * race. It matters most on a slow phone, where a frame is long.
+   */
+  private syncPresence(): void {
     this.storeAccumulatorMs = 0;
     this.options.onPresence?.({
       x: this.player.position.x,
       z: this.player.position.z,
       facing: this.player.facing,
     });
+  }
+
+  /** Throttled projection of world state into the UI store. */
+  private publish(dtMs: number): void {
+    this.storeAccumulatorMs += dtMs;
+    if (this.storeAccumulatorMs < STORE_UPDATE_INTERVAL_MS) return;
+    this.syncPresence();
 
     const store = useAppStore.getState();
     const nearest = this.player.isTravelling

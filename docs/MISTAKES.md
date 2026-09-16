@@ -89,3 +89,17 @@
 - A procedural pose layer must not read bone orientations the animation mixer owns. Express
   rotations in the bind frame, captured once. Reading the parent's _current_ orientation made
   characters snap to a T-pose on any frame after an action clip had played.
+
+- Playwright's clock control replaces the `requestAnimationFrame` timestamp, not just `Date`.
+  The engine derives its frame delta from that timestamp, so `page.clock.setFixedTime` froze
+  the world: the player stood still forever and two smoke tests failed for months against what
+  looked like slow software rendering. `install` + `resume` is no better. The in-game hour comes
+  from the sim clock anyway, so the pin bought nothing.
+- A client must not pace a repeated command from a _server_ timestamp compared against its own
+  `Date.now()`. The two clocks are unrelated; when the client's trails the server's the whole
+  automatic exchange stalls permanently. Pace from local receipt and let the server refuse
+  anything early.
+- An interaction command sent the instant the player arrives is judged against the last position
+  the server was told about. Publish presence immediately before the command rather than relying
+  on the movement throttle, or a slow frame puts the player out of range of something they are
+  standing next to.

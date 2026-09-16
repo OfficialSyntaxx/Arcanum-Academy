@@ -25,6 +25,7 @@ import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import {
   dedup,
+  draco,
   mergeDocuments,
   prune,
   quantize,
@@ -33,6 +34,7 @@ import {
   textureCompress,
   weld,
 } from '@gltf-transform/functions';
+import draco3d from 'draco3d';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 
@@ -105,7 +107,13 @@ const CLIPS = [
   'Consume',
 ];
 
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+// The environment models are already Draco-compressed, so the phone downloads
+// the decoder either way. Compressing the characters with it too is therefore
+// pure saving: the character GLBs are the largest thing in the precache.
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
+  'draco3d.decoder': await draco3d.createDecoderModule(),
+  'draco3d.encoder': await draco3d.createEncoderModule(),
+});
 
 function dropAnimations(document, shouldDrop) {
   for (const animation of document.getRoot().listAnimations()) {
@@ -238,8 +246,10 @@ async function grade(file, name, ratio, textureSize, keepClips = null, body = nu
       quality: 78,
     }),
     resample({ tolerance: 1e-3 }),
-    quantize(),
     prune(),
+    // draco() quantizes as part of encoding, so it replaces quantize() here
+    // rather than following it.
+    draco(),
   );
 
   const output = path.join(outDir, `${name}.glb`);

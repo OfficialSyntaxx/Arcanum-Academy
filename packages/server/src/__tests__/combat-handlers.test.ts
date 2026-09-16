@@ -10,6 +10,14 @@ import {
   ok,
 } from '@alderfell/shared';
 import { addItems } from '@alderfell/sim';
+import {
+  COURTYARD,
+  FOREST,
+  MOUNTAINS,
+  SNOW,
+  SALTWAKE_RUINS,
+  combatEncounterByInteractable,
+} from '@alderfell/shared';
 import { PlayerService } from '../domain/player-service.js';
 import { RegistryCommandRouter } from '../net/gateway.js';
 import { registerCombatHandlers } from '../net/handlers/combat.js';
@@ -212,6 +220,41 @@ describe('Shore Wolf combat handlers', () => {
     const r = await h.dispatch();
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.reason).toBe('combat.out_of_range');
+  });
+  it("accepts an attack from the encounter's own approach waypoint", async () => {
+    // The player walks to the authored approach point, not onto the creature.
+    // For the Shore Wolf that is wp.duel.entry at (0, 14) against a creature
+    // at (0, 12.8): 1.2 m, comfortably inside the 2.2 m interaction radius.
+    // Authoring a creature further than that from its approach point would
+    // make it unattackable by walking up to it, which is the normal way to
+    // start a fight.
+    const h = harness();
+    h.moveTo({ x: 0, z: 14 });
+    expect((await h.dispatch()).ok).toBe(true);
+  });
+  it('keeps every authored encounter inside reach of its approach waypoint', () => {
+    const radius = DEFAULT_TUNABLES.world.interactionRadius;
+    const problems: string[] = [];
+    for (const zone of [COURTYARD, FOREST, MOUNTAINS, SNOW, SALTWAKE_RUINS]) {
+      const waypoints = new Map(zone.waypoints.map((w) => [w.id as string, w]));
+      for (const interactable of zone.interactables) {
+        const encounter = combatEncounterByInteractable(interactable.id);
+        if (encounter === undefined) continue;
+        const approach = waypoints.get(interactable.approach as string);
+        if (approach === undefined) {
+          problems.push(`${interactable.id} has no approach waypoint`);
+          continue;
+        }
+        const distance = Math.hypot(
+          approach.position.x - encounter.position.x,
+          approach.position.z - encounter.position.z,
+        );
+        if (distance > radius) {
+          problems.push(`${interactable.id} is ${distance.toFixed(2)}m from its approach point`);
+        }
+      }
+    }
+    expect(problems, problems.join('; ')).toEqual([]);
   });
   it('rejects a non-combat interactable', async () => {
     const h = harness();

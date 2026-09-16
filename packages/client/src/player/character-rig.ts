@@ -32,8 +32,9 @@ import {
   type Object3D,
 } from 'three';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
-import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
+import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
 
+import { gltfLoader } from '../assets/gltf-loader.js';
 import { createShadowBlob } from '../world/shadow-blob.js';
 import peasantMaleUrl from '../../../../assets/derived/characters/peasant-m.glb?url';
 import peasantFemaleUrl from '../../../../assets/derived/characters/peasant-f.glb?url';
@@ -75,21 +76,22 @@ const RUN_STRIDE_HZ = 2.3;
 /** Seconds to blend between the procedural pose and a clip, either way. */
 const BLEND_SECONDS = 0.12;
 
-const loader = new GLTFLoader();
 const outfitCache = new Map<CharacterOutfit, Promise<GLTF>>();
 let animationCache: Promise<AnimationClip[]> | null = null;
 
 function loadOutfit(outfit: CharacterOutfit): Promise<GLTF> {
   let promise = outfitCache.get(outfit);
   if (!promise) {
-    promise = loader.loadAsync(OUTFIT_URL[outfit]);
+    promise = gltfLoader().loadAsync(OUTFIT_URL[outfit]);
     outfitCache.set(outfit, promise);
   }
   return promise;
 }
 
 function loadAnimations(): Promise<AnimationClip[]> {
-  animationCache ??= loader.loadAsync(animationsUrl).then((gltf) => gltf.animations);
+  animationCache ??= gltfLoader()
+    .loadAsync(animationsUrl)
+    .then((gltf) => gltf.animations);
   return animationCache;
 }
 
@@ -183,8 +185,12 @@ export class CharacterRig {
       if (this.clipWeight < 1) {
         // The mixer just wrote the clip pose; pull every bone back toward the
         // procedural pose by the remaining weight.
-        for (const [name, bone] of this.bones) {
-          const procedural = this.procedural.get(name) ?? bone.bind;
+        // Only the handful of bones the procedural layer writes need blending
+        // back; the rest are the clip's business alone. Slerping all 65 joints
+        // per character per frame was pure waste at crowd scale.
+        for (const [name, procedural] of this.procedural) {
+          const bone = this.bones.get(name);
+          if (bone === undefined) continue;
           bone.node.quaternion.slerpQuaternions(procedural, bone.node.quaternion, this.clipWeight);
         }
       }

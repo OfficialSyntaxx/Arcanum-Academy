@@ -20,7 +20,9 @@ import {
   type Material,
 } from 'three';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
-import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
+import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
+
+import { gltfLoader } from '../assets/gltf-loader.js';
 import {
   combatEncounterByInteractable,
   heightAt,
@@ -137,7 +139,7 @@ const modelCache = new Map<CreatureModel, Promise<GLTF>>();
 function loadModel(creature: CreatureModel): Promise<GLTF> {
   let promise = modelCache.get(creature);
   if (!promise) {
-    promise = new GLTFLoader().loadAsync(MODEL_URL[creature]);
+    promise = gltfLoader().loadAsync(MODEL_URL[creature]);
     modelCache.set(creature, promise);
   }
   return promise;

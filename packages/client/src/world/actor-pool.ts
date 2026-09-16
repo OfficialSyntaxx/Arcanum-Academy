@@ -44,11 +44,18 @@ export function appearanceColour(key: string): number {
   return APPEARANCE[key] ?? APPEARANCE['student.a']!;
 }
 
-const BODY_HEIGHT = 1.15;
-const HEAD_HEIGHT = 1.62;
-const HAIR_HEIGHT = 1.76;
-const LEG_HEIGHT = 0.52;
-const ARM_HEIGHT = 1.22;
+/**
+ * Heights scaled to the rigged character's 2.05 m.
+ *
+ * These figures stand in for crowd members too far away to deserve a rig, so
+ * a mismatched silhouette would advertise exactly where that swap happens.
+ */
+const POOL_SCALE = 2.05 / 1.8;
+const BODY_HEIGHT = 1.15 * POOL_SCALE;
+const HEAD_HEIGHT = 1.62 * POOL_SCALE;
+const HAIR_HEIGHT = 1.76 * POOL_SCALE;
+const LEG_HEIGHT = 0.52 * POOL_SCALE;
+const ARM_HEIGHT = 1.22 * POOL_SCALE;
 
 /** Presentation-only equipment. Rules still live in the economy service. */
 export type ActorTool = 'none' | 'axe' | 'pick' | 'sickle' | 'net';
