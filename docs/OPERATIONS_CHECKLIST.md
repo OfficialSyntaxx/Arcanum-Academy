@@ -79,3 +79,21 @@ checks; never use a production player as an experiment.
 - [ ] Confirm Events omits source IP addresses and shows newest retained events first.
 - [ ] Restart staging and confirm reports persist through the Postgres adapter.
 - [ ] Confirm no POST/PUT/PATCH/DELETE account route or account-editing control has appeared.
+
+## G6-D.1 — administrator login
+
+- [ ] Enable Netlify Identity with registration set to **Invite only** and invite only the owner.
+- [ ] Set `ADMIN_AUTHORIZED_EMAIL` to the exact invited account; confirm any other valid Identity
+      account receives 403 and no operations payload.
+- [ ] Rotate the previously shared read token and set the replacement only as Render
+      `ADMIN_READ_TOKEN` and Netlify `ALDERFELL_ADMIN_READ_TOKEN` (never a `VITE_*` variable).
+- [ ] Confirm the login page contains Username and Password only—no Render endpoint or token field.
+- [ ] Accept a fresh invitation, set a 12+ character password, sign in, reload, and sign out.
+- [ ] Confirm wrong credentials return generic copy and neither disclose account existence nor log a
+      password.
+- [ ] Complete password recovery and verify the old password can no longer create a session.
+- [ ] Confirm the proxy permits only the authored GET routes; mutations return 405 and unknown paths
+      return 404.
+- [ ] Inspect HTML, JavaScript, storage, URLs, and request URLs for the Render token; it must never
+      appear. The `nf_jwt` session cookie must be Secure and HttpOnly where emitted by Netlify.
+- [ ] After login, repeat the complete G6-D mobile navigation and read-only data checks.

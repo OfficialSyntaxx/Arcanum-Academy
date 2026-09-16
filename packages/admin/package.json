@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "vite": "^6.0.5"
+  },
+  "dependencies": {
+    "@netlify/identity": "^2.0.0"
   }
 }

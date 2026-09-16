@@ -79,9 +79,11 @@ export interface SupportReport {
 export class AdminApiError extends Error {
   constructor(readonly status: number) {
     super(
-      status === 404
-        ? 'Admin access unavailable or credentials refused.'
-        : `Request failed (${status}).`,
+      status === 401 || status === 403
+        ? 'Your operations session is unavailable or unauthorized. Sign in again.'
+        : status === 404
+          ? 'The requested operations resource was not found.'
+          : `Request failed (${status}).`,
     );
     this.name = 'AdminApiError';
   }
@@ -89,26 +91,8 @@ export class AdminApiError extends Error {
 
 type Fetcher = typeof fetch;
 
-export function normalizeEndpoint(value: string): string {
-  const trimmed = value.trim().replace(/\/+$/, '');
-  if (trimmed === '') return '';
-  const url = new URL(trimmed);
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('Endpoint must use HTTP or HTTPS.');
-  }
-  return url.toString().replace(/\/$/, '');
-}
-
-/**
- * The credential exists only inside this object. The UI never writes it to
- * storage, the URL, logs, or DOM after connection.
- */
 export class AdminApi {
-  constructor(
-    private readonly endpoint: string,
-    private readonly token: string,
-    private readonly fetcher: Fetcher = globalThis.fetch.bind(globalThis),
-  ) {}
+  constructor(private readonly fetcher: Fetcher = globalThis.fetch.bind(globalThis)) {}
 
   searchPlayers(query = '', cursor?: string) {
     const params = new URLSearchParams({ limit: '25' });
@@ -156,10 +140,11 @@ export class AdminApi {
   }
 
   private async get<T>(path: string): Promise<T> {
-    const response = await this.fetcher(`${this.endpoint}${path}`, {
+    const response = await this.fetcher(`/.netlify/functions/admin-proxy${path}`, {
       method: 'GET',
       cache: 'no-store',
-      headers: { authorization: `Bearer ${this.token}`, accept: 'application/json' },
+      credentials: 'same-origin',
+      headers: { accept: 'application/json' },
     });
     if (!response.ok) throw new AdminApiError(response.status);
     return (await response.json()) as T;

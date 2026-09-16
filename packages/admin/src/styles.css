@@ -295,6 +295,23 @@ button:disabled {
   color: #ffd9cf;
   background: #4d211c;
 }
+.success {
+  padding: 0.8rem 1rem;
+  border: 1px solid #4f866f;
+  border-radius: 9px;
+  color: #d9f4e5;
+  background: #17382d;
+}
+.link-button {
+  min-height: 36px;
+  justify-self: center;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  color: #f1c77e;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
 .empty {
   padding: 1rem 0;
   color: #afc1bb;

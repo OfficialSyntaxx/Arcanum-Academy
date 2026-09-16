@@ -5,14 +5,15 @@
 **Written:** 2026-09-09 · **Updated:** 2026-09-16 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G6-D is implemented. Reliable skilling/economy, persistence, quest and diary
+**Code state:** G6-D.1 is implemented. Reliable skilling/economy, persistence, quest and diary
 progression, combat/death recovery, the three-room Saltwake dungeon, its Drowned Warden boss,
 production GLB creature presentation, and the first persisted treasure-clue trail are live. The
 save retains bounded immutable history, restore is backup-first and audited, and a separately
 authenticated read-only operations API can inspect redacted accounts and history through a separate,
-mobile-safe operations bundle. The console now includes bounded overview analytics, sanitized events,
-and durable player reports. The next G6 focus is the first audited repair operation; mutation tooling
-remains blocked until its domain-service, preview, backup, audit, and undo path are complete.
+mobile-safe operations bundle. The console now includes invite-only administrator login, bounded
+overview analytics, sanitized events, and durable player reports. The next G6 focus is the first
+audited repair operation; mutation tooling remains blocked until its domain-service, preview,
+backup, audit, and undo path are complete.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -54,7 +55,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of G6-D on 2026-09-16 it reports **467 tests across 55 files**.
+afterwards is yours. As of G6-D.1 on 2026-09-16 it reports **468 tests across 56 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -273,6 +274,14 @@ events. Reports are origin-checked, schema-validated, limited to five attempts p
 for 90 days in Postgres, and never carry an identity token or stored source IP. No third-party tracker
 or account mutation was added. Evidence is in `docs/G6_D_RETURN.md` and the durable acceptance list
 is in `docs/OPERATIONS_CHECKLIST.md`.
+
+**G6-D.1 authentication update (2026-09-16):** the manual Render endpoint and bearer-token fields
+are replaced by an invite-only Netlify Identity login with first-invite and password-recovery flows.
+A same-origin Netlify Function authorizes one configured administrator email and proxies only an
+explicit allowlist of existing read-only GET routes. The rotated Render credential remains
+server-side in Render and Netlify runtime secrets; it cannot enter the browser bundle, storage, URL,
+or DOM. Security headers deny framing and disable caching. Deployment and acceptance evidence is in
+`docs/G6_D1_ADMIN_LOGIN_HANDOVER.md` and `docs/OPERATIONS_CHECKLIST.md`.
 
 **Still in progress:** broader combat content, the hold, wiki, account recovery, real tool sockets,
 audio, and the fully authored zone art pass. §11.1 lists deliberate deferrals, which are not
@@ -2163,6 +2172,13 @@ are delegated to Codex. Proceed autonomously and record material decisions. Stop
 would change Alderfell's foundational identity, monetisation, control philosophy, difficulty
 philosophy, licensing posture, require a paid dependency, or contradict Ironman's promise or the
 death model. Engineering-quality decisions remain autonomous as before.
+
+Operations update, 2026-09-16: G6-D.1 replaces the manual endpoint/read-token form with an
+invite-only Netlify Identity login. The admin site authenticates an authorized email and proxies a
+strict allowlist of read-only GET routes through a same-origin Netlify Function. Render's
+`ADMIN_READ_TOKEN` remains a rotated break-glass credential and must match Netlify's server-only
+`ALDERFELL_ADMIN_READ_TOKEN`; neither value may enter browser code or a `VITE_*` variable. See
+`docs/G6_D1_ADMIN_LOGIN_HANDOVER.md` for deployment and acceptance steps.
 
 **When you stop, stop usefully.** Do every part of the gate that does not depend on the
 answer, then ask a single specific question with options, and say what you have already

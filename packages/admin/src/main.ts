@@ -1,12 +1,21 @@
 import './styles.css';
 import {
+  AuthError,
+  acceptInvite,
+  getUser,
+  handleAuthCallback,
+  login,
+  logout,
+  requestPasswordRecovery,
+  updateUser,
+} from '@netlify/identity';
+import {
   AdminApi,
   type DiagnosticEvent,
   type PlayerSummary,
   type RestoreAuditEntry,
   type SnapshotSummary,
   type SupportReport,
-  normalizeEndpoint,
 } from './api.js';
 
 const root = document.querySelector<HTMLElement>('#app');
@@ -56,9 +65,10 @@ function header() {
   if (api) {
     bar.append(
       button(
-        'Disconnect',
-        () => {
+        'Sign out',
+        async () => {
           api = undefined;
+          await logout();
           renderConnect();
         },
         'quiet',
@@ -93,40 +103,137 @@ function renderConnect() {
   app.replaceChildren(header());
   const card = node('section', 'card connect');
   card.append(
-    node('h2', '', 'Connect securely'),
-    node(
-      'p',
-      'muted',
-      'Credentials stay in memory and are erased when this tab reloads or disconnects.',
-    ),
+    node('p', 'eyebrow', 'Authorized operators only'),
+    node('h2', '', 'Sign in'),
+    node('p', 'muted', 'Use the administrator account invited to this operations console.'),
   );
   const form = node('form');
-  const endpointLabel = node('label', '', 'Server endpoint');
-  const endpoint = node('input');
-  endpoint.type = 'url';
-  endpoint.required = true;
-  endpoint.placeholder = 'https://server.example.com';
-  endpoint.autocomplete = 'off';
-  endpointLabel.append(endpoint);
-  const tokenLabel = node('label', '', 'Read token');
-  const token = node('input');
-  token.type = 'password';
-  token.required = true;
-  token.minLength = 32;
-  token.autocomplete = 'off';
-  token.spellcheck = false;
-  tokenLabel.append(token);
-  const submit = node('button', 'primary', 'Open console');
+  const usernameLabel = node('label', '', 'Username');
+  const username = node('input');
+  username.type = 'email';
+  username.required = true;
+  username.placeholder = 'Administrator email';
+  username.autocomplete = 'username';
+  username.autocapitalize = 'none';
+  username.spellcheck = false;
+  usernameLabel.append(username);
+  const passwordLabel = node('label', '', 'Password');
+  const password = node('input');
+  password.type = 'password';
+  password.required = true;
+  password.minLength = 8;
+  password.autocomplete = 'current-password';
+  passwordLabel.append(password);
+  const submit = node('button', 'primary', 'Sign in');
   submit.type = 'submit';
-  form.append(endpointLabel, tokenLabel, submit);
+  const recovery = button('Forgot password?', renderRecovery, 'link-button');
+  form.append(usernameLabel, passwordLabel, submit, recovery);
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     submit.disabled = true;
     try {
-      const candidate = new AdminApi(normalizeEndpoint(endpoint.value), token.value);
-      await candidate.searchPlayers('', undefined);
+      await login(username.value.trim(), password.value);
+      const candidate = new AdminApi();
+      await candidate.overview();
       api = candidate;
-      token.value = '';
+      password.value = '';
+      await renderDashboard();
+    } catch (error) {
+      await logout().catch(() => undefined);
+      showError(
+        error instanceof AuthError && error.status === 401
+          ? new Error('Username or password is incorrect.')
+          : error,
+      );
+      submit.disabled = false;
+    }
+  });
+  card.append(form);
+  app.append(card);
+}
+
+function renderRecovery() {
+  api = undefined;
+  app.replaceChildren(header());
+  const card = node('section', 'card connect');
+  card.append(
+    node('p', 'eyebrow', 'Account recovery'),
+    node('h2', '', 'Reset password'),
+    node('p', 'muted', 'We will send a secure reset link to the invited administrator email.'),
+  );
+  const form = node('form');
+  const emailLabel = node('label', '', 'Username');
+  const email = node('input');
+  email.type = 'email';
+  email.required = true;
+  email.autocomplete = 'username';
+  email.autocapitalize = 'none';
+  email.spellcheck = false;
+  emailLabel.append(email);
+  const submit = node('button', 'primary', 'Send reset link');
+  submit.type = 'submit';
+  form.append(emailLabel, submit, button('Back to sign in', renderConnect, 'quiet'));
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    submit.disabled = true;
+    try {
+      await requestPasswordRecovery(email.value.trim());
+      form.replaceChildren(
+        node('p', 'success', 'If that administrator account exists, a reset link is on its way.'),
+        button('Back to sign in', renderConnect, 'primary'),
+      );
+    } catch {
+      form.replaceChildren(
+        node('p', 'success', 'If that administrator account exists, a reset link is on its way.'),
+        button('Back to sign in', renderConnect, 'primary'),
+      );
+    }
+  });
+  card.append(form);
+  app.append(card);
+}
+
+function renderNewPassword(mode: 'invite' | 'recovery', token?: string) {
+  api = undefined;
+  app.replaceChildren(header());
+  const card = node('section', 'card connect');
+  card.append(
+    node('p', 'eyebrow', mode === 'invite' ? 'Administrator invitation' : 'Account recovery'),
+    node('h2', '', mode === 'invite' ? 'Create your password' : 'Choose a new password'),
+    node('p', 'muted', 'Use at least 12 characters and a password manager-generated value.'),
+  );
+  const form = node('form');
+  const passwordLabel = node('label', '', 'New password');
+  const password = node('input');
+  password.type = 'password';
+  password.required = true;
+  password.minLength = 12;
+  password.autocomplete = 'new-password';
+  passwordLabel.append(password);
+  const confirmLabel = node('label', '', 'Confirm password');
+  const confirm = node('input');
+  confirm.type = 'password';
+  confirm.required = true;
+  confirm.minLength = 12;
+  confirm.autocomplete = 'new-password';
+  confirmLabel.append(confirm);
+  const submit = node('button', 'primary', 'Save password');
+  submit.type = 'submit';
+  form.append(passwordLabel, confirmLabel, submit);
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (password.value !== confirm.value) return showError(new Error('Passwords do not match.'));
+    submit.disabled = true;
+    try {
+      if (mode === 'invite') {
+        if (!token) throw new Error('This invitation is incomplete. Request a new invite.');
+        await acceptInvite(token, password.value);
+      } else {
+        await updateUser({ password: password.value });
+      }
+      api = new AdminApi();
+      await api.overview();
+      history.replaceState(null, '', location.pathname);
       await renderDashboard();
     } catch (error) {
       showError(error);
@@ -503,4 +610,24 @@ window.addEventListener('pagehide', () => {
   api = undefined;
 });
 
-renderConnect();
+async function boot() {
+  try {
+    const callback = await handleAuthCallback();
+    if (callback?.type === 'invite') return renderNewPassword('invite', callback.token);
+    if (callback?.type === 'recovery') return renderNewPassword('recovery');
+    const user = await getUser();
+    if (user) {
+      api = new AdminApi();
+      await api.overview();
+      return renderDashboard();
+    }
+  } catch (error) {
+    await logout().catch(() => undefined);
+    renderConnect();
+    showError(error);
+    return;
+  }
+  renderConnect();
+}
+
+void boot();
