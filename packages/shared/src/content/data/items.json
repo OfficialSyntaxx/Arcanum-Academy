@@ -646,6 +646,24 @@
         "requiredSkillId": "skill.defence",
         "requiredSkillLevel": 5
       }
+    },
+    {
+      "id": "item.weapon.emberwood_shortbow",
+      "name": "Emberwood Shortbow",
+      "description": "Milled emberwood bent young and strung with wax cord. It throws further than it looks.",
+      "category": "EQUIPMENT",
+      "rarity": "COMMON",
+      "stackCap": 1,
+      "baseValue": 140,
+      "iconKey": "weapon-emberwood-shortbow",
+      "equipment": {
+        "slot": "WEAPON",
+        "attackBonus": 9,
+        "strengthBonus": 7,
+        "defenceBonus": 0,
+        "requiredSkillId": "skill.ranged",
+        "requiredSkillLevel": 1
+      }
     }
   ]
 }

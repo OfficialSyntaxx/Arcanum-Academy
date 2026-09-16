@@ -42,7 +42,16 @@ const ATTACK_SKILL = asId<SkillId>('skill.attack');
 const STRENGTH_SKILL = asId<SkillId>('skill.strength');
 const DEFENCE_SKILL = asId<SkillId>('skill.defence');
 const HITPOINTS_SKILL = asId<SkillId>('skill.hitpoints');
-type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE';
+const RANGED_SKILL = asId<SkillId>('skill.ranged');
+/**
+ * RANGED is a fourth style rather than a separate combat system.
+ *
+ * As in OSRS, Ranged supplies both the accuracy and the maximum hit, so one
+ * level raises both halves of the roll instead of the Attack/Strength split
+ * the melee styles use. It is refused without a bow equipped, which is what
+ * makes it a choice of kit rather than a free extra stance.
+ */
+type CombatStyle = 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED';
 export interface CombatHandlerOptions {
   readonly players: PlayerService;
   readonly skills: SkillTable;
@@ -68,7 +77,10 @@ function interactableId(payload: unknown): string | null {
 function combatStyle(payload: unknown): CombatStyle {
   if (typeof payload !== 'object' || payload === null) return 'ACCURATE';
   const style = (payload as Record<string, unknown>).style;
-  return style === 'AGGRESSIVE' || style === 'DEFENSIVE' || style === 'ACCURATE'
+  return style === 'AGGRESSIVE' ||
+    style === 'DEFENSIVE' ||
+    style === 'ACCURATE' ||
+    style === 'RANGED'
     ? style
     : 'ACCURATE';
 }
@@ -192,6 +204,14 @@ export function registerCombatHandlers(
         encounter.requiredCombatLevel
       )
         return err(failure(FailureCode.Conflict, 'combat.level_required'));
+      // Ranged is a choice of kit: without a bow in hand there is nothing to
+      // fire, and allowing it would make it a strictly free fourth stance.
+      if (style === 'RANGED') {
+        const weapon = state.equipment['WEAPON'];
+        const requires = weapon && options.items.get(weapon.definitionId)?.equipment;
+        if (requires?.requiredSkillId !== 'skill.ranged')
+          return err(failure(FailureCode.Conflict, 'combat.ranged_needs_bow'));
+      }
       const target = respawnSparringTarget(
         state.combatTargets[id!] ?? createSparringState(encounter.maxHitpoints, now),
         now,
@@ -201,10 +221,17 @@ export function registerCombatHandlers(
       // and Defence level changes how often a hit lands and how hard.
       const seed = `${session.playerId}:${id}:${target.defeats}:${target.nextAttackAtMs}`;
       const worn = equipmentBonuses(state, options.items);
+      const rangedProgress = skillProgress(state, RANGED_SKILL);
       const roll = resolveMeleeRoll(
         {
-          attackLevel: effectiveLevel(attackProgress.level, style === 'ACCURATE' ? 3 : 0),
-          strengthLevel: effectiveLevel(strengthProgress.level, style === 'AGGRESSIVE' ? 3 : 0),
+          attackLevel:
+            style === 'RANGED'
+              ? effectiveLevel(rangedProgress.level, 3)
+              : effectiveLevel(attackProgress.level, style === 'ACCURATE' ? 3 : 0),
+          strengthLevel:
+            style === 'RANGED'
+              ? effectiveLevel(rangedProgress.level)
+              : effectiveLevel(strengthProgress.level, style === 'AGGRESSIVE' ? 3 : 0),
           defenceLevel: effectiveLevel(encounter.defenceLevel),
           attackBonus: worn.attack,
           strengthBonus: worn.strength,
@@ -263,11 +290,13 @@ export function registerCombatHandlers(
         }
       }
       const styleSkillId =
-        style === 'ACCURATE'
-          ? ATTACK_SKILL
-          : style === 'AGGRESSIVE'
-            ? STRENGTH_SKILL
-            : DEFENCE_SKILL;
+        style === 'RANGED'
+          ? RANGED_SKILL
+          : style === 'ACCURATE'
+            ? ATTACK_SKILL
+            : style === 'AGGRESSIVE'
+              ? STRENGTH_SKILL
+              : DEFENCE_SKILL;
       const styleXp = playerDamage * options.combatXpPerDamage;
       const hitpointsXp = playerDamage * options.hitpointsXpPerDamage;
       const styleSkill = options.skills.get(styleSkillId);

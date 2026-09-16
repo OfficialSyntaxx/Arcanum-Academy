@@ -66,7 +66,7 @@ function harness() {
   return {
     dispatch: (
       interactableId = SHORE_WOLF,
-      style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = 'ACCURATE',
+      style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' = 'ACCURATE',
     ) => router.dispatch(session(), 'combat.attack', { interactableId, style }),
     recover: () => router.dispatch(session(), 'combat.recover', {}),
     reclaimGrave: () => router.dispatch(session(), 'combat.reclaim_grave', {}),
@@ -81,7 +81,7 @@ function harness() {
     /** Attacks tick by tick until one strike lands for damage; returns that strike. */
     async strikeUntilDamage(
       interactableId: string,
-      style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' = 'ACCURATE',
+      style: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' = 'ACCURATE',
     ) {
       for (let i = 0; i < 200; i += 1) {
         const r = await router.dispatch(session(), 'combat.attack', { interactableId, style });
@@ -153,6 +153,25 @@ function harness() {
         if (!inventory.ok) throw Error(inventory.error.reason);
         return ok({ state: { ...state, inventory: inventory.value }, value: undefined });
       });
+      if (!r.ok) throw Error(r.error.reason);
+    },
+    /** Puts a piece of gear straight into its slot, skipping the satchel. */
+    async equip(definitionId: string) {
+      const slot = ITEM_CATALOG.get(definitionId as Parameters<typeof addItems>[1])?.equipment
+        ?.slot;
+      if (slot === undefined) throw Error(`${definitionId} is not equipment`);
+      const worn = {
+        instanceId: `inst.${definitionId}` as never,
+        definitionId: definitionId as never,
+        durability: 100,
+        acquiredAtMs: clock,
+      };
+      const r = await players.update(PLAYER, (state) =>
+        ok({
+          state: { ...state, equipment: { ...state.equipment, [slot]: worn } },
+          value: undefined,
+        }),
+      );
       if (!r.ok) throw Error(r.error.reason);
     },
     async setHitpoints(current: number) {
@@ -527,5 +546,29 @@ describe('rare drop tables', () => {
         expect(guaranteed.has(String(rare.itemId))).toBe(false);
       }
     }
+  });
+});
+
+describe('ranged combat style', () => {
+  const BOW = 'item.weapon.emberwood_shortbow';
+
+  it('refuses to fire without a bow equipped', async () => {
+    const h = harness();
+    const result = await h.dispatch(SHORE_WOLF, 'RANGED');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.reason).toBe('combat.ranged_needs_bow');
+  });
+
+  it('awards Ranged experience rather than Attack or Strength', async () => {
+    const h = harness();
+    await h.equip(BOW);
+    // Swing until something actually lands: a miss awards nothing, so an
+    // assertion on the first tick would pass or fail on the RNG.
+    const landed = await h.strikeUntilDamage(SHORE_WOLF, 'RANGED');
+    expect(landed.damage).toBeGreaterThan(0);
+    const state = await h.state();
+    expect(state.skills['skill.ranged']?.xp ?? 0).toBeGreaterThan(0);
+    expect(state.skills['skill.attack']?.xp ?? 0).toBe(0);
+    expect(state.skills['skill.strength']?.xp ?? 0).toBe(0);
   });
 });

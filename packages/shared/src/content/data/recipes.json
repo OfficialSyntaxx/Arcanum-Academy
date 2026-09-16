@@ -498,6 +498,31 @@
       "baseWasteRateBasisPoints": 1200,
       "wasteReductionPerSkillLevelBasisPoints": 35,
       "xpPerCraft": 64
+    },
+    {
+      "id": "recipe.weapon.emberwood_shortbow",
+      "name": "String Emberwood Shortbow",
+      "stationInteractableId": "int.timber.saw",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 5,
+      "inputs": [
+        {
+          "itemId": "item.plank.emberwood",
+          "quantity": 2
+        },
+        {
+          "itemId": "item.material.armabee_wax",
+          "quantity": 1
+        }
+      ],
+      "output": {
+        "itemId": "item.weapon.emberwood_shortbow",
+        "quantity": 1
+      },
+      "craftDurationMs": 7000,
+      "baseWasteRateBasisPoints": 1200,
+      "wasteReductionPerSkillLevelBasisPoints": 35,
+      "xpPerCraft": 40
     }
   ]
 }

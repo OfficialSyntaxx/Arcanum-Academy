@@ -148,25 +148,56 @@
       "id": "skill.attack",
       "name": "Attack",
       "category": "COMBAT",
-      "unlocks": [{ "atLevel": 1, "description": "Hunt Shore Wolves" }]
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Hunt Shore Wolves"
+        }
+      ]
     },
     {
       "id": "skill.strength",
       "name": "Strength",
       "category": "COMBAT",
-      "unlocks": [{ "atLevel": 1, "description": "Increase melee damage" }]
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Increase melee damage"
+        }
+      ]
     },
     {
       "id": "skill.defence",
       "name": "Defence",
       "category": "COMBAT",
-      "unlocks": [{ "atLevel": 1, "description": "Reduce incoming melee damage" }]
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Reduce incoming melee damage"
+        }
+      ]
     },
     {
       "id": "skill.hitpoints",
       "name": "Hitpoints",
       "category": "COMBAT",
-      "unlocks": [{ "atLevel": 1, "description": "Increase maximum health" }]
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Increase maximum health"
+        }
+      ]
+    },
+    {
+      "id": "skill.ranged",
+      "name": "Ranged",
+      "category": "COMBAT",
+      "unlocks": [
+        {
+          "atLevel": 1,
+          "description": "Attack at a distance with a bow"
+        }
+      ]
     }
   ]
 }
