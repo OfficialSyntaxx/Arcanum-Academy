@@ -26,6 +26,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import {
   dedup,
   draco,
+  joinPrimitives,
   mergeDocuments,
   prune,
   quantize,
@@ -213,6 +214,79 @@ function cropAboveHeight(primitive, height) {
   primitive.setIndices(indices.clone().setArray(newIndices));
 }
 
+/**
+ * Collapses a character's primitives to one per material.
+ *
+ * Quaternius ships an outfit as a node per garment - body, arms, belts, bracer,
+ * hood - and each is its own draw call even though nine of the ranger's ten
+ * primitives use the same material. That put the Courtyard at 236 draw calls
+ * against the §6.8.1 ceiling of 200, with the characters accounting for about
+ * 201 of it on their own.
+ *
+ * `join()` will not do this: it skips skinned meshes, because merging two
+ * primitives under different node transforms would break the skin. Here that
+ * risk is checked rather than assumed - every mesh node must sit at identity
+ * and share one skin, which is what a Quaternius rig does, and the merge is
+ * skipped entirely if that ever stops being true.
+ */
+function mergeByMaterial(document) {
+  const root = document.getRoot();
+  const meshNodes = root.listNodes().filter((node) => node.getMesh() !== null);
+  if (meshNodes.length < 2) return;
+
+  const skin = meshNodes[0].getSkin();
+  const identity = (node) => {
+    const t = node.getTranslation();
+    const r = node.getRotation();
+    const s = node.getScale();
+    return (
+      t.every((v) => Math.abs(v) < 1e-6) &&
+      Math.abs(r[3] - 1) < 1e-6 &&
+      s.every((v) => Math.abs(v - 1) < 1e-6)
+    );
+  };
+  if (skin === null || !meshNodes.every((node) => node.getSkin() === skin && identity(node))) {
+    console.warn('  merge skipped: mesh nodes are not a single skin at identity');
+    return;
+  }
+
+  // Grouped by material *and* by attribute signature and mode. Two primitives
+  // that share a material can still be unjoinable - one carrying a UV set or a
+  // vertex colour the other lacks - and joinPrimitives rejects the pair rather
+  // than inventing the missing data. Anything left in a group of one simply
+  // stays its own primitive, which is still fewer than we started with.
+  const groups = new Map();
+  for (const node of meshNodes) {
+    for (const primitive of node.getMesh().listPrimitives()) {
+      const material = primitive.getMaterial();
+      const signature = [
+        material?.getName() ?? 'none',
+        primitive.getMode(),
+        primitive.listSemantics().slice().sort().join(','),
+        primitive.getIndices() === null ? 'noindex' : 'indexed',
+      ].join('|');
+      const group = groups.get(signature);
+      if (group) group.primitives.push(primitive);
+      else groups.set(signature, { material, primitives: [primitive] });
+    }
+  }
+
+  const merged = document.createMesh('character');
+  for (const { material, primitives } of groups.values()) {
+    const single = primitives.length === 1 ? primitives[0] : joinPrimitives(primitives);
+    single.setMaterial(material);
+    merged.addPrimitive(single);
+    if (primitives.length > 1) for (const spent of primitives) spent.dispose();
+  }
+
+  const host = document.createNode('character').setMesh(merged).setSkin(skin);
+  root.listScenes()[0].addChild(host);
+  for (const node of meshNodes) {
+    node.getMesh().dispose();
+    node.dispose();
+  }
+}
+
 async function buildCreature(source, name, ratio, keepClips) {
   return grade(path.join(root, 'assets', source), name, ratio, 256, keepClips);
 }
@@ -246,6 +320,7 @@ async function grade(file, name, ratio, textureSize, keepClips = null, body = nu
       quality: 78,
     }),
     resample({ tolerance: 1e-3 }),
+    mergeByMaterial,
     // keepLeaves matters: a skeleton's leaf bones have no mesh and no children,
     // so an ordinary prune deletes them while the skin still lists them as
     // joints. three.js then clones a skeleton with holes in it and every rig

@@ -332,10 +332,20 @@ counts the drawables under the zone group alone. Re-running the mutation makes i
 against an expected > 20 and fail on all three viewports**, so the check has now been seen to
 fail. The totals are kept as a cheap "did WebGL submit anything at all" signal.
 
-**Note for the performance pass:** those measurements put the Courtyard at **236 draw calls
-against the §6.8.1 ceiling of 200** - and at 201 even with the world blanked, so the characters
-alone are at the ceiling. That is a real budget breach and wants attention before criterion 4's
-30 fps claim is believed.
+**That measurement found a real budget breach, since fixed.** The Courtyard was at **236 draw
+calls against the §6.8.1 ceiling of 200**, and 201 with the world blanked - the characters alone
+were at the ceiling. Quaternius ships an outfit as a node per garment, so a ranger was ten draw
+calls for two materials. The build now merges each character's primitives by material:
+
+|                   | draw calls                 | triangles |
+| ----------------- | -------------------------- | --------- |
+| Before            | 236 (over the 200 ceiling) | 214,392   |
+| **After merging** | **162**                    | 214,372   |
+
+Same geometry, 74 fewer draw calls, and the character GLBs got slightly smaller too. `join()`
+will not do this because it skips skinned meshes - merging across different node transforms
+would break the skin - so the merge checks that every mesh node sits at identity and shares one
+skin, and skips itself entirely if that ever stops being true.
 
 ### Review findings, fixed
 
@@ -395,9 +405,7 @@ number.
 5. **No Neck, Ring or Ammo slots**, because nothing would fill them. Ammunition is spent from
    the satchel rather than a worn slot, which is a deliberate simplification: a stack inside an
    equipment slot is a real system, not a field.
-6. **Draw calls are over budget: 236 against the §6.8.1 ceiling of 200**, with the characters
-   accounting for ~201 of that on their own. Merging each character's primitives by material is
-   the obvious lever (they carry 7-10 primitives but only 2-5 materials); `join()` will not do
-   it for skinned meshes, so it needs doing in the asset pipeline.
+6. **Draw calls are 162 against a target of 100** (ceiling 200). Under budget, but not at the
+   target. The remaining lever is the environment and HUD rather than the characters.
 7. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots. The owner
    has said Codex will take the device checks.
