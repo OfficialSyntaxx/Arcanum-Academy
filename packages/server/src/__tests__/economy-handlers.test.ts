@@ -552,6 +552,22 @@ describe('equipment', () => {
     expect(state.inventory.stacks).toContainEqual({ definitionId: SHIELD, quantity: 1 });
   });
 
+  it('refuses an inherited key as an equipment slot', async () => {
+    // Indexing an object with a caller-supplied string reaches inherited keys:
+    // `__proto__` resolves to Object.prototype, which is not undefined and so
+    // walks past a bare existence check. Nothing was grantable through it, but
+    // the safety depended on a later call rejecting the undefined id it
+    // produced. The slot is validated here instead.
+    const h = harness();
+    for (const slot of ['__proto__', 'constructor', 'toString', 'NOT_A_SLOT']) {
+      const result = await h.dispatch('equipment.unequip', { slot });
+      expect(result.ok, slot).toBe(false);
+      if (!result.ok) expect(result.error.reason, slot).toBe('equipment.unknown_slot');
+    }
+    // And the satchel is untouched by any of it.
+    expect((await h.state()).inventory.stacks).toEqual([]);
+  });
+
   it('refuses to unequip into a full satchel rather than losing the gear', async () => {
     const h = harness();
     await h.setLevel('skill.attack', 10, 2_000);

@@ -347,6 +347,27 @@ will not do this because it skips skinned meshes - merging across different node
 would break the skin - so the merge checks that every mesh node sits at identity and shares one
 skin, and skips itself entirely if that ever stops being true.
 
+### Security review
+
+A security pass over the whole branch found **no exploitable vulnerability**. The paths that
+matter were traced and are sound: `equip` removes before it returns a displaced piece and does
+both inside one transactional update, so a partial application cannot mint an item; the target
+slot comes from the catalog rather than the payload; the catalogs are `Map`-backed, so a crafted
+item id cannot reach an inherited object; rare drops are rolled server-side from the killing
+blow's seed and the roll is spent whether or not the prize fits, so a deliberately full satchel
+cannot re-roll a result.
+
+One robustness wart was hardened rather than left: `unequip` indexed `state.equipment` with the
+caller's string, and `__proto__` resolves to `Object.prototype`, which is not `undefined` and so
+walked past the existence check. Nothing was grantable through it - `addItems` rejected the
+undefined id a step later - but that is a _distant function's_ behaviour holding it safe rather
+than the handler's own. The slot is now checked against `EquipmentSlot`.
+
+Noted, not a finding: interaction range is validated against the position the client last
+reported, so a modified client can misreport where it stands. That predates this branch and is
+already documented as an accepted trust gap for single-player Ironman; `syncPresence()` changed
+when that value is sent, not who controls it.
+
 ### Review findings, fixed
 
 A review pass over the whole branch caught three defects I had introduced and self-reviewed past:

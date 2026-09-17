@@ -30,6 +30,7 @@ import {
   failure,
   FailureCode,
   ItemCategory,
+  EquipmentSlot,
   ok,
   Rng,
   type Failure,
@@ -562,6 +563,14 @@ export function registerEconomyHandlers(
   const unequip: CommandHandler = async (session: Session, payload: unknown) => {
     const slot = readString(payload, 'slot');
     if (slot === null) return err(invalid('equipment.slot_missing', 'slot is required'));
+    // Checked against the real slots rather than trusted as a key. Indexing an
+    // object with an arbitrary string reaches inherited keys: `__proto__`
+    // resolves to Object.prototype, which is not undefined and so walks past a
+    // bare existence check. It happens to fail a step later today, because
+    // addItems rejects the undefined definitionId that comes back - but that is
+    // a distant function's behaviour holding this safe, not this function's.
+    if (!Object.values(EquipmentSlot).includes(slot as never))
+      return err(invalid('equipment.unknown_slot', 'slot is not an equipment slot'));
     return players.update(session.playerId, (state): Result<Mutation<unknown>, Failure> => {
       const worn = state.equipment[slot];
       if (worn === undefined) return err(failure(FailureCode.NotFound, 'equipment.slot_empty'));
