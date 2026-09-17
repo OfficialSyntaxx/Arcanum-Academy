@@ -332,6 +332,14 @@ counts the drawables under the zone group alone. Re-running the mutation makes i
 against an expected > 20 and fail on all three viewports**, so the check has now been seen to
 fail. The totals are kept as a cheap "did WebGL submit anything at all" signal.
 
+**`npm run smoke:mutation` makes that proof repeatable** rather than a claim in a commit
+message. It blanks the geometry, rebuilds, runs the suite and succeeds only if the suite fails -
+a green suite under mutation exits non-zero, because it means the check has stopped being able
+to detect a missing world. Restoring includes rebuilding the client, since putting the source
+back while `dist` still holds the blanked bundle would leave a later smoke run failing for a
+reason no longer in the tree. It refuses to start against a dirty `scene-builder.ts`, because it
+restores by overwriting.
+
 **That measurement found a real budget breach, since fixed.** The Courtyard was at **236 draw
 calls against the §6.8.1 ceiling of 200**, and 201 with the world blanked - the characters alone
 were at the ceiling. Quaternius ships an outfit as a node per garment, so a ranger was ten draw

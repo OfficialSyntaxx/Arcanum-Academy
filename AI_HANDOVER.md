@@ -2191,6 +2191,13 @@ rather than against primitives — that is why this is last, not first.
 1. `npm run verify` is green.
 2. `npm run smoke` is green, and has been shown to fail when the world is blanked — a check
    nobody has seen fail is a check nobody should trust (§12, mutation testing).
+   **Run `npm run smoke:mutation` to prove this.** It blanks the zone geometry, rebuilds, runs
+   the suite, and succeeds only if the suite *fails*; it restores the source and rebuilds in a
+   `finally`, and refuses to start against a dirty `scene-builder.ts`. When this was first run
+   the suite **passed** with the world blanked — the world assertion was the renderer's total
+   draw calls and triangles, which the characters and HUD dominate, so an empty world cleared
+   them by two orders of magnitude. The assertion is now `data-world-meshes`, counting drawables
+   under the zone group alone.
 3. The owner looks at a screenshot from **his own iPhone, launched from the home screen**, and
    thinks it looks good. This is a human gate on purpose; no automated check can stand in for
    it.

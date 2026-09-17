@@ -27,7 +27,8 @@
     "dev:server": "npm run dev --workspace @alderfell/server",
     "verify": "npm run format:check && npm run lint && npm run boundaries && npm run typecheck && npm run test && npm run admin-isolation",
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo node_modules/.vite",
-    "smoke": "npm run build && playwright test"
+    "smoke": "npm run build && playwright test",
+    "smoke:mutation": "node tools/scripts/check-smoke-mutation.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
