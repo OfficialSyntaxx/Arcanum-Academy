@@ -96,33 +96,44 @@ describe('Tideglass treasure trail', () => {
       quests: completedQuest,
       location: { zoneId: 'zone.saltwake_ruins', roomId: 'x' },
     });
-    for (const [index, step] of TIDEGLASS_TRAIL.steps.entries()) {
-      if (index === 1) await h.seed({ location: { zoneId: 'zone.courtyard', roomId: 'spawn' } });
+    // Each step is walked in its own zone rather than assuming the trail turns
+    // for home after the first bearing: it now crosses every zone in the game.
+    for (const step of TIDEGLASS_TRAIL.steps) {
+      await h.seed({ location: { zoneId: step.zoneId, roomId: 'spawn' } });
       h.setPosition(step.position);
       expect(await h.dispatch(step.interactableId)).toMatchObject({ ok: true });
     }
     const state = await h.state();
     expect(state.tideglassTrail).toEqual({
       startedAtMs: 10_000,
-      step: 4,
+      step: TIDEGLASS_TRAIL.steps.length,
       completedAtMs: 10_000,
       rewardClaimed: true,
     });
     expect(state.coins).toBe(45);
-    const retry = await h.dispatch(TIDEGLASS_TRAIL.steps[3]!.interactableId);
+    const retry = await h.dispatch(TIDEGLASS_TRAIL.steps.at(-1)!.interactableId);
     expect(retry.ok).toBe(false);
     expect((await h.state()).coins).toBe(45);
   });
 
   it('caps the reward without invalid currency', async () => {
     const h = harness();
+    // Seeded from the catalog's own last step rather than a literal index, so
+    // lengthening the trail cannot quietly turn this into a test of the middle
+    // of the trail that never reaches the payout at all.
+    const lastIndex = TIDEGLASS_TRAIL.steps.length - 1;
+    const final = TIDEGLASS_TRAIL.steps[lastIndex]!;
     await h.seed({
       quests: completedQuest,
       coins: DEFAULT_TUNABLES.economy.currencyCap - 1,
-      location: { zoneId: 'zone.courtyard', roomId: 'spawn' },
-      tideglassTrail: { startedAtMs: 1, step: 3, completedAtMs: null, rewardClaimed: false },
+      location: { zoneId: final.zoneId, roomId: 'spawn' },
+      tideglassTrail: {
+        startedAtMs: 1,
+        step: lastIndex,
+        completedAtMs: null,
+        rewardClaimed: false,
+      },
     });
-    const final = TIDEGLASS_TRAIL.steps[3]!;
     h.setPosition(final.position);
     expect(await h.dispatch(final.interactableId)).toMatchObject({ ok: true });
     expect((await h.state()).coins).toBe(DEFAULT_TUNABLES.economy.currencyCap);

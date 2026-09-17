@@ -122,3 +122,8 @@
 - `rotation.x = Math.PI / 2` on a `ShapeGeometry` points its normal at -Y, face down. Positive is
   the intuitive sign and the wrong one. The coastal apron has carried it since it was written and
   has never actually been visible.
+- A bound derived from content must be derived, not typed in. `readClueProgress` clamped trail
+  progress with `Math.min(4, ...)` because the trail had four steps when it was written.
+  Lengthening the trail then lost progress silently: the handler returned success, the write was
+  clamped away on read, and nothing failed anywhere. Found only because a new step returned "ok"
+  while the stored step did not move.

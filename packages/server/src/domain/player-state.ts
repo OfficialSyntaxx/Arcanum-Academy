@@ -40,6 +40,7 @@ import {
   type SaltwakeProgress,
   EMPTY_SALTWAKE_PROGRESS,
   EMPTY_CLUE_PROGRESS,
+  TIDEGLASS_TRAIL,
   type ClueProgress,
 } from '@alderfell/shared';
 import type { PlayerRecord } from '../persistence/repository.js';
@@ -431,7 +432,16 @@ function readSaltwake(value: unknown): SaltwakeProgress {
 
 function readClueProgress(value: unknown): ClueProgress {
   if (!isRecord(value)) return EMPTY_CLUE_PROGRESS;
-  const step = Math.max(0, Math.min(4, Math.floor(readNumber(value.step, 0))));
+  // Clamped to the authored trail, not to a literal. This was `Math.min(4, …)`
+  // back when the trail had four steps, so extending it silently lost every
+  // step past the fourth: the handler returned success, the write was clamped
+  // away on read, and the player was told to inspect a site they had just
+  // inspected. A stored step beyond the catalog is still clamped, which is what
+  // should happen if the trail is ever shortened.
+  const step = Math.max(
+    0,
+    Math.min(TIDEGLASS_TRAIL.steps.length, Math.floor(readNumber(value.step, 0))),
+  );
   return {
     startedAtMs:
       typeof value.startedAtMs === 'number' && Number.isFinite(value.startedAtMs)

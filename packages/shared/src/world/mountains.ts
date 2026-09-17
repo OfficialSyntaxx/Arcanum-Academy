@@ -180,6 +180,15 @@ export const MOUNTAINS: Zone = {
 
   interactables: [
     {
+      id: ix('int.clue.foothill_mark'),
+      kind: InteractableKind.ClueSite,
+      position: { x: 1.4, z: -52.2 },
+      approach: wp('wp.foothill.camp'),
+      facing: Math.PI,
+      label: 'Foothill Tideglass Mark',
+      verb: 'Inspect',
+    },
+    {
       id: ix('int.mountains.portal'),
       kind: InteractableKind.ZonePortal,
       position: { x: 0, z: -80.6 },

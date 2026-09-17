@@ -288,6 +288,13 @@ The plaza medallion went from 11.6 m to 6.8 m and the Courtyard crowd from 18 to
   recipe its first customer. Melee stays free, which is what makes it the floor. Running dry
   drops the client back to melee with a line in the log rather than silently stalling an
   automatic fight.
+- **The Tideglass Trail now crosses the world.** It ran four steps, three of them inside the
+  Courtyard; it now runs seven, out through the Reach, the Ridge and the Frostgate before the
+  last bearing points home. Extending it uncovered a **silent data-loss bug**: the save reader
+  clamped trail progress with a literal `Math.min(4, ...)` left over from the four-step trail,
+  so every step past the fourth was accepted by the handler, written, and clamped away on read -
+  no error anywhere, the player simply sent back to a bearing they had already inspected. The
+  clamp now follows the authored trail.
 - **A weakness on every creature**, so the stance always matters. Shore Wolf and Emberwood
   Wolves answer to melee, since both are fought long before a bow or staff is realistic; the
   armabees and wisps want Ranged; the wolf packs and the Warden want Magic; the Sentinel wants
@@ -331,10 +338,10 @@ All gear bonuses and drop rates are **conservative placeholders and the owner's 
 3. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
    for character scale than anything left, but it moves waypoints and changes how the hub feels
    to cross, so it was left as an owner decision rather than a tweak.
-4. **Clue content still centres on the Courtyard**, though the quest chain and the diaries no
-   longer do. Diary rewards are all 15 coins, including the outer-zone ones: paying more the
-   further out a diary sends you is a reasonable idea and an **owner** decision, so the new
-   entries match the approved figure rather than setting their own.
+4. **Diary rewards are all 15 coins**, including the outer-zone ones: paying more the further
+   out a diary sends you is a reasonable idea and an **owner** decision, so the new entries match
+   the approved figure rather than setting their own. The Tideglass Trail's 45 coins is likewise
+   unchanged now that it is seven steps instead of four - also an owner call.
 5. **No Neck, Ring or Ammo slots**, because nothing would fill them. Ammunition is spent from
    the satchel rather than a worn slot, which is a deliberate simplification: a stack inside an
    equipment slot is a real system, not a field.

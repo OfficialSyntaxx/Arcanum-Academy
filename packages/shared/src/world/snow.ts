@@ -158,6 +158,15 @@ export const SNOW: Zone = {
 
   interactables: [
     {
+      id: ix('int.clue.spire_marker'),
+      kind: InteractableKind.ClueSite,
+      position: { x: -47.4, z: 6.0 },
+      approach: wp('wp.spire.clearing'),
+      facing: Math.PI,
+      label: 'Spire Bearing Stone',
+      verb: 'Inspect',
+    },
+    {
       id: ix('int.snow.portal'),
       kind: InteractableKind.ZonePortal,
       position: { x: 0, z: -79.9 },

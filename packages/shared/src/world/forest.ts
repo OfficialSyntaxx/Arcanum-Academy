@@ -212,6 +212,15 @@ export const FOREST: Zone = {
 
   interactables: [
     {
+      id: ix('int.clue.hollow_cairn'),
+      kind: InteractableKind.ClueSite,
+      position: { x: 1.4, z: 54.6 },
+      approach: wp('wp.grove.hollow'),
+      facing: Math.PI,
+      label: 'Hollow Cairn',
+      verb: 'Inspect',
+    },
+    {
       id: ix('int.forest.portal'),
       kind: InteractableKind.ZonePortal,
       position: { x: 0, z: -56.4 },
