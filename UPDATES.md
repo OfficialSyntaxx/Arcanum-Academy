@@ -294,6 +294,11 @@ The plaza medallion went from 11.6 m to 6.8 m and the Courtyard crowd from 18 to
   Aggressive. The Shore Wolf's weakness is deliberately **not** Accurate: that is the default
   stance, so a weakness to it would be granted automatically and felt by nobody. The first
   creature teaches the mechanic by making the player change something.
+- **The weakness is shown on the stance itself.** The effective stance gets a green edge and a
+  glyph in the combat HUD, on a different channel from the amber selected state, so a stance
+  that is both reads as both. Verified on a phone screenshot rather than assumed. A mechanic
+  the player cannot see is not a mechanic, and naming it only in prose would not survive the
+  half-second the player has to act on it.
 - **Three quests extending the chain into the outer zones** (The Reach Pack, The Foothill
   Forge, The Long Winter), each ending further from the plaza than the last.
 

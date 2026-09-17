@@ -1,7 +1,9 @@
 import {
   asId,
+  combatEncounterByInteractable,
   ITEM_CATALOG,
   SKILL_TABLE,
+  type InteractableId,
   type ItemDefinitionId,
   type SkillId,
 } from '@alderfell/shared';
@@ -77,6 +79,10 @@ export function CombatHud({
       ? 'Combat'
       : (SKILL_TABLE.get(asId<SkillId>(combat.styleSkillId))?.name ?? 'Combat');
   const fallen = player.current === 0;
+  // The weakness is authored content, so the client can read it straight from
+  // the catalog rather than waiting for the server to say so. A mechanic the
+  // player cannot see is not a mechanic.
+  const weakTo = combatEncounterByInteractable(asId<InteractableId>(combat.interactableId))?.weakTo;
 
   return (
     <section className="combat-hud" aria-label={`${combat.label} combat`}>
@@ -143,9 +149,19 @@ export function CombatHud({
                 type="button"
                 role="radio"
                 aria-checked={style === option}
+                // Marking the answer on the stance itself, rather than only
+                // naming it in prose, is what makes the triangle a decision the
+                // player can act on in the half-second they have to act on it.
+                data-effective={option === weakTo ? 'true' : undefined}
+                aria-label={
+                  option === weakTo
+                    ? `${STYLE_LABEL[option]} (effective against ${combat.label})`
+                    : STYLE_LABEL[option]
+                }
                 onClick={() => setStyle(option)}
               >
                 {STYLE_LABEL[option]}
+                {option === weakTo ? <span aria-hidden="true"> ▸</span> : null}
               </button>
             ))}
           </div>

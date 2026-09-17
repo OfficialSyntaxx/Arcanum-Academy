@@ -1436,6 +1436,21 @@
   border-color: var(--amber);
   color: var(--haze);
 }
+/*
+ * The stance this creature answers to.
+ *
+ * Deliberately a different channel from the selected state above: selection is
+ * amber fill, effectiveness is a green edge, so a stance that is both reads as
+ * both rather than one overwriting the other. The marker carries a glyph as
+ * well as colour, because colour alone is not a cue every player receives.
+ */
+.combat-hud__styles button[data-effective='true'] {
+  border-color: rgba(138, 198, 124, 0.85);
+  color: var(--haze);
+}
+.combat-hud__styles button[data-effective='true'][aria-checked='false'] {
+  background: rgba(138, 198, 124, 0.12);
+}
 .combat-hud button.combat-hud__eat {
   width: auto;
   flex: 1 1 8rem;
