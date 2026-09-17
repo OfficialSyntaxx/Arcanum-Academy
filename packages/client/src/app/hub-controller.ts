@@ -278,6 +278,22 @@ export class HubController {
     this.world.updateNavigationMarker(this.player.destination, this.now());
 
     this.publish(dtSeconds * 1000);
+    this.publishWorldDiagnostics();
+  }
+
+  /**
+   * Reports how much of the world is actually being drawn.
+   *
+   * The smoke suite used to judge "the world rendered" from the renderer's
+   * total draw calls, which cannot tell a dressed zone from an empty one: with
+   * every piece of scenery removed the totals only fell from 236 calls to 201,
+   * because the characters and HUD dominate them. Blanking the world passed the
+   * check. This counts the drawables under the zone group alone, so an empty
+   * zone reads as zero and the check has something it can actually fail on.
+   */
+  private publishWorldDiagnostics(): void {
+    if (!(globalThis as { __alderfellDiagnostics?: boolean }).__alderfellDiagnostics) return;
+    this.options.canvas.dataset['worldMeshes'] = String(this.world.drawnMeshCount);
   }
 
   /** Walks the player to the current prompt's approach point. */

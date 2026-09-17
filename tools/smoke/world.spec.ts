@@ -35,6 +35,19 @@ for (const [name, width, height] of [
         Number(await page.locator('canvas.app__canvas').getAttribute('data-render-triangles')),
       )
       .toBeGreaterThan(100);
+    // The zone's own scenery, not the renderer's totals.
+    //
+    // This check used to be the two totals above, and it could not fail: with
+    // every piece of scenery stripped out of the zone the totals only fell from
+    // 236 draw calls to 201 and from 214k triangles to 189k, because the
+    // characters and the HUD dominate them. A blanked world passed. G1 asks for
+    // a check that has been *seen* to fail, so this one counts the meshes under
+    // the zone group alone, which an empty world takes to zero.
+    await expect
+      .poll(async () =>
+        Number(await page.locator('canvas.app__canvas').getAttribute('data-world-meshes')),
+      )
+      .toBeGreaterThan(20);
     const hud = (await page.locator('.hub-hud').boundingBox())!;
     const bag = (await page.getByRole('button', { name: 'Satchel', exact: true }).boundingBox())!;
     expect(hud.x + hud.width <= bag.x || hud.y + hud.height <= bag.y).toBeTruthy();

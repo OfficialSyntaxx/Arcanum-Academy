@@ -311,6 +311,32 @@ The plaza medallion went from 11.6 m to 6.8 m and the Courtyard crowd from 18 to
 
 All gear bonuses and drop rates are **conservative placeholders and the owner's to revise**.
 
+### G1 criterion 2: the smoke suite could not fail
+
+§13.1 requires the smoke suite to have been **shown to fail when the world is blanked** - "a
+check nobody has seen fail is a check nobody should trust". Nobody had ever run that mutation.
+It was run, and **the suite passed with every piece of scenery stripped out of the zone.**
+
+The reason: the world check was the renderer's own totals, `data-render-calls > 5` and
+`data-render-triangles > 100`. Those totals cannot distinguish a dressed zone from an empty one,
+because characters and the HUD dominate them. Measured:
+
+|                    | draw calls | triangles   |
+| ------------------ | ---------- | ----------- |
+| Dressed zone       | 236        | 214,392     |
+| **Blanked zone**   | **201**    | **189,025** |
+| Threshold asserted | > 5        | > 100       |
+
+The check now reads `data-world-meshes`, published from `WorldService.drawnMeshCount`, which
+counts the drawables under the zone group alone. Re-running the mutation makes it report **0
+against an expected > 20 and fail on all three viewports**, so the check has now been seen to
+fail. The totals are kept as a cheap "did WebGL submit anything at all" signal.
+
+**Note for the performance pass:** those measurements put the Courtyard at **236 draw calls
+against the §6.8.1 ceiling of 200** - and at 201 even with the world blanked, so the characters
+alone are at the ceiling. That is a real budget breach and wants attention before criterion 4's
+30 fps claim is believed.
+
 ### Review findings, fixed
 
 A review pass over the whole branch caught three defects I had introduced and self-reviewed past:
@@ -369,5 +395,9 @@ number.
 5. **No Neck, Ring or Ammo slots**, because nothing would fill them. Ammunition is spent from
    the satchel rather than a worn slot, which is a deliberate simplification: a stack inside an
    equipment slot is a real system, not a field.
-6. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots. The owner
+6. **Draw calls are over budget: 236 against the §6.8.1 ceiling of 200**, with the characters
+   accounting for ~201 of that on their own. Merging each character's primitives by material is
+   the obvious lever (they carry 7-10 primitives but only 2-5 materials); `join()` will not do
+   it for skinned meshes, so it needs doing in the asset pipeline.
+7. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots. The owner
    has said Codex will take the device checks.

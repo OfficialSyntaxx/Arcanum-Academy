@@ -350,6 +350,21 @@ export class WorldService {
    * authored data, so this is a segment/box test rather than a raycast: no
    * scene traversal, no allocation, and it cannot disagree with collision.
    */
+  /**
+   * How many meshes of this zone's scenery are actually being drawn.
+   *
+   * Exposed for the smoke suite's world check. Total renderer draw calls cannot
+   * distinguish a dressed zone from an empty one - characters and HUD dominate
+   * them - so the check needs a number that goes to zero when the world does.
+   */
+  get drawnMeshCount(): number {
+    let drawn = 0;
+    this.geometry.group.traverseVisible((node) => {
+      if ((node as { isMesh?: boolean }).isMesh === true) drawn += 1;
+    });
+    return drawn;
+  }
+
   updateOcclusion(
     camera: { readonly x: number; readonly y: number; readonly z: number },
     player: Vec2,

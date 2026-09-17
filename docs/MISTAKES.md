@@ -127,3 +127,8 @@
   Lengthening the trail then lost progress silently: the handler returned success, the write was
   clamped away on read, and nothing failed anywhere. Found only because a new step returned "ok"
   while the stored step did not move.
+- A check that has never been seen to fail is not a check. The smoke suite asserted the world had
+  rendered via the renderer's total draw calls and triangles; blanking the zone entirely moved
+  those totals from 236/214k to 201/189k, far above the asserted 5/100, so a completely empty
+  world passed. Assert on the thing under test - meshes in the zone group - not on a total that
+  something else dominates.
