@@ -318,7 +318,10 @@ All gear bonuses and drop rates are **conservative placeholders and the owner's 
 3. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
    for character scale than anything left, but it moves waypoints and changes how the hub feels
    to cross, so it was left as an owner decision rather than a tweak.
-4. Diary and clue content still centres on the Courtyard, though the quest chain no longer does.
+4. **Clue content still centres on the Courtyard**, though the quest chain and the diaries no
+   longer do. Diary rewards are all 15 coins, including the outer-zone ones: paying more the
+   further out a diary sends you is a reasonable idea and an **owner** decision, so the new
+   entries match the approved figure rather than setting their own.
 5. **No Neck, Ring or Ammo slots**, because nothing would fill them. Ammunition is spent from
    the satchel rather than a worn slot, which is a deliberate simplification: a stack inside an
    equipment slot is a real system, not a field.

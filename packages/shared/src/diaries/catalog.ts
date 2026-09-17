@@ -48,6 +48,30 @@ export const DIARY_CATALOG: readonly DiaryDefinition[] = [
     rewardCoins: 15,
   },
   {
+    id: 'diary.reach.pack',
+    title: 'The Reach Answers',
+    description: 'Fell the Emberwood pack and an armabee in the glade.',
+    requiredDiscoveryIds: ['discovery.combat.emberwood_wolf', 'discovery.combat.emberwing'],
+    rewardCoins: 15,
+  },
+  {
+    id: 'diary.cinderfell.tally',
+    title: 'A Cinderfell Tally',
+    description: 'Clear the ridge pack and lay a wisp to rest.',
+    // Both wisps share one discovery, so this and the Frostgate ledger below
+    // can be half-answered by the same kill. Separating them would need a
+    // discovery per wisp, which is more bookkeeping than the difference earns.
+    requiredDiscoveryIds: ['discovery.combat.ridge_wolf', 'discovery.combat.wisp'],
+    rewardCoins: 15,
+  },
+  {
+    id: 'diary.frostgate.ledger',
+    title: 'The Frostgate Ledger',
+    description: 'Work the snowline: the frost pack, and a wisp laid to rest.',
+    requiredDiscoveryIds: ['discovery.combat.frost_wolf', 'discovery.combat.wisp'],
+    rewardCoins: 15,
+  },
+  {
     id: 'diary.saltwake.first_descent',
     title: 'The Saltwake Remembers',
     description: 'Enter the ruins, clear its guardians, and recover the Tideglass Charm.',

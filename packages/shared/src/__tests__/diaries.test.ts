@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIARY_CATALOG, diaryIsComplete, settleDiaryRewards } from '../index.js';
+import { DIARY_CATALOG, DISCOVERY_CATALOG, diaryIsComplete, settleDiaryRewards } from '../index.js';
 
 describe('Shorelands diaries', () => {
   it('derives completion and pays each 15-coin reward only once', () => {
@@ -17,8 +17,22 @@ describe('Shorelands diaries', () => {
     });
   });
 
-  it('keeps every starter diary at the approved reward', () => {
-    expect(DIARY_CATALOG).toHaveLength(4);
+  it('keeps every diary at the approved reward', () => {
+    // Fifteen coins is an owner-approved figure, so a new diary matches it
+    // rather than setting its own. Paying more for the outer zones is a
+    // reasonable idea and a balance decision, not something content authoring
+    // gets to decide on the way past.
+    expect(DIARY_CATALOG).toHaveLength(7);
     expect(DIARY_CATALOG.every((diary) => diary.rewardCoins === 15)).toBe(true);
+  });
+
+  it('names a real discovery in every diary requirement', () => {
+    const known = new Set(DISCOVERY_CATALOG.map((entry) => entry.id));
+    const problems = DIARY_CATALOG.flatMap((diary) =>
+      diary.requiredDiscoveryIds
+        .filter((id) => !known.has(id))
+        .map((id) => `${diary.id}: unknown discovery "${id}"`),
+    );
+    expect(problems).toEqual([]);
   });
 });
