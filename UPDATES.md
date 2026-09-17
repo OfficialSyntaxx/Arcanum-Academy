@@ -308,13 +308,26 @@ All gear bonuses and drop rates are **conservative placeholders and the owner's 
 
 1. **`DEFENSIVE` is never a weakness.** Every other style answers something; a creature "weak
    to being blocked" did not read as a real idea. Harmless, but the shape is asymmetric.
-2. **The sea reads as one flat slab meeting the land on a hard line.** An attempt at a shallows
-   band was made and **reverted**: the `ShapeGeometry` bands never rendered (very likely the
-   `rotation.x = Math.PI / 2` used by the apron points the face downward, and the apron itself
-   sits at y=-0.12 below the ground plane, so neither was ever confirmed visible). A large flat
-   blue region also fills the upper screen from the southern shore and a colour probe showed it
-   is **not** the sea slab, which appears only as a thin strip from the plaza. Whoever does the
-   coast pass should identify that surface first with a colour probe before adding geometry.
+2. **The sea reads as one flat slab meeting the land on a hard line.** Two attempts at a
+   shallow-water band were made and both **reverted**. What is now established, by colour probe
+   from the shore rather than by argument:
+
+   - The large flat expanse filling the upper screen from the southern shore **is** the sea
+     slab. (An earlier note here said it was not; that was wrong, and the error was probing
+     from the plaza and comparing against a screenshot taken at the shore. From the plaza the
+     sea is a distant strip; from the shore it fills the view. Same geometry, different
+     vantage point.)
+   - `rotation.x = Math.PI / 2` turns a `ShapeGeometry`'s normal to **-Y**, i.e. face down.
+     The coastal apron carries that sign, so **the apron has never been visible** as shipped,
+     and what reads as "the coast" is the sea slab behind it.
+   - Flipping the apron to `-Math.PI / 2` does make it render, and it then replaces that whole
+     expanse with flat dark green (`coastland`, 0x294f35). That is a real change to the
+     established look, not a bug fix, which is why it was not kept.
+
+   So the coast pass is an **art decision, not a defect**: either the apron is meant to be
+   invisible and the sea is the coast, or the apron should show and wants a palette of its own.
+   That call is the owner's; the mechanics above are settled and need no further probing.
+
 3. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
    for character scale than anything left, but it moves waypoints and changes how the hub feels
    to cross, so it was left as an owner decision rather than a tweak.

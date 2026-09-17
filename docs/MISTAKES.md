@@ -115,3 +115,10 @@
 - A sight-line test is not a "does it eat the frame" test. The Scribing Hall roof passed below the
   camera-to-player segment and still filled the bottom third of the phone screen. Fade whatever is
   nearer the camera than the player and close to the view axis, not only what the ray pierces.
+- Probe from the same vantage point as the screenshot you are explaining. A magenta probe of the
+  sea taken at the plaza, compared against a screenshot taken at the shore, "proved" the large
+  blue expanse was not the sea. It was the sea. Same geometry, different camera position, wrong
+  conclusion written into the handover.
+- `rotation.x = Math.PI / 2` on a `ShapeGeometry` points its normal at -Y, face down. Positive is
+  the intuitive sign and the wrong one. The coastal apron has carried it since it was written and
+  has never actually been visible.
