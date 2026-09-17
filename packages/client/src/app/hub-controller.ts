@@ -132,6 +132,8 @@ export class HubController {
   private readonly aggroRetryAtMs = new Map<string, number>();
   /** No creature picks a fight until this time; set when the player falls. */
   private aggroGraceUntilMs = 0;
+  /** The out-of-ammo refusal already answered, so it is answered exactly once. */
+  private handledAmmoError: string | null = null;
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
   private readonly now: () => number;
@@ -462,7 +464,12 @@ export class HubController {
       const outOfAmmo =
         store.lastCommandError === 'combat.out_of_arrows' ||
         store.lastCommandError === 'combat.out_of_dust';
-      if (outOfAmmo) {
+      // `lastCommandError` latches until the next command resolves, so acting on
+      // it directly fires this every frame: a flooded log, and a stance the
+      // player cannot re-select because it is overwritten on the next tick.
+      // Handle each refusal once, keyed on the error itself.
+      if (outOfAmmo && store.lastCommandError !== this.handledAmmoError) {
+        this.handledAmmoError = store.lastCommandError;
         const spent =
           store.lastCommandError === 'combat.out_of_arrows' ? 'arrows' : 'resonant dust';
         useAppStore.getState().setCombatStyle('ACCURATE');
@@ -471,6 +478,8 @@ export class HubController {
           source: 'world',
           message: `Out of ${spent}. Falling back to melee.`,
         });
+      } else if (!outOfAmmo) {
+        this.handledAmmoError = null;
       }
       const cooldownRefused = store.lastCommandError === 'combat.cooldown';
       const due =

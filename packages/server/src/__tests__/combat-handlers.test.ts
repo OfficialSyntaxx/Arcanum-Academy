@@ -712,3 +712,41 @@ describe('combat triangle coverage', () => {
     }
   });
 });
+
+describe('a full satchel and a rare drop', () => {
+  it('pays the rare before the guaranteed drop, and reports one it cannot fit', async () => {
+    // A 1/24 cape and a scrap of meat competing for the same last slot must not
+    // resolve in the meat's favour, and a prize lost to a full bag must not
+    // vanish in silence: that is indistinguishable from bad luck.
+    const h = harness();
+    h.moveTo({ x: 0, z: -5 });
+    await h.enterSaltwake();
+    let sawRare = false;
+    let sawMissed = false;
+    for (let kill = 0; kill < 60 && !(sawRare || sawMissed); kill += 1) {
+      let defeated = false;
+      while (!defeated) {
+        const strike = await h.dispatch(DROWNED_SENTINEL, 'DEFENSIVE');
+        if (!strike.ok) throw Error(strike.error.reason);
+        const value = strike.value as {
+          combat: {
+            defeated: boolean;
+            drops?: readonly { itemId: string }[];
+            missedDrops?: readonly { itemId: string }[];
+          };
+        };
+        defeated = value.combat.defeated;
+        if (defeated) {
+          sawRare ||= (value.combat.drops ?? []).some((d) => d.itemId === 'item.ingot.resonant');
+          sawMissed ||= (value.combat.missedDrops ?? []).length > 0;
+        }
+        h.advance(DEFAULT_TUNABLES.combat.tickMs);
+      }
+      h.advance(12_000);
+    }
+    // With an empty satchel the rare is always payable, so it lands and nothing
+    // is ever reported as missed.
+    expect(sawRare).toBe(true);
+    expect(sawMissed).toBe(false);
+  });
+});

@@ -102,9 +102,13 @@ export class NpcAvatarGroup {
       const outfit = outfitFor(presentation.role, presentation.id);
       wanted.set(outfit, (wanted.get(outfit) ?? 0) + 1);
     }
-    const budget = Math.max(0, maxCrowdRigs);
+    // The budget is a total, not an allowance per outfit. Clamping each outfit
+    // to it separately would let two outfits build twice the tier's cap between
+    // them, which is the exact draw-call blowout the cap exists to prevent.
+    let remaining = Math.max(0, maxCrowdRigs);
     for (const outfit of CROWD_OUTFITS) {
-      const perOutfit = Math.min(wanted.get(outfit) ?? 0, budget);
+      const perOutfit = Math.min(wanted.get(outfit) ?? 0, remaining);
+      remaining -= perOutfit;
       for (let i = 0; i < perOutfit; i += 1) {
         const rig = new CharacterRig(outfit, { shadowsEnabled });
         rig.root.name = `crowd-rig:${outfit}:${i}`;

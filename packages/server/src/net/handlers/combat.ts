@@ -319,23 +319,33 @@ export function registerCombatHandlers(
         inventory = spent.value;
       }
       const rareDropsAwarded: { itemId: string; quantity: number }[] = [];
+      const missedDrops: { itemId: string; quantity: number }[] = [];
       if (defeated) {
+        // Rare drops are paid first, on purpose. A one-in-twenty-four cape and
+        // a guaranteed scrap of meat compete for the same last free slot, and
+        // losing the cape to the meat is the wrong way round.
+        const dropRng = Rng.fromSeed(`${seed}:drop`);
+        for (const rare of encounter.rareDrops ?? []) {
+          // Rolled from the killing blow's own seed, so the outcome is fixed
+          // the moment the creature falls and cannot be re-rolled by replaying
+          // it. The roll is spent whether or not there is room for the prize,
+          // so a full satchel cannot be used to re-roll a bad result.
+          if (dropRng.nextInt(1, rare.oneInChance) !== 1) continue;
+          const awardedRare = addItems(inventory, rare.itemId, rare.quantity, options.items);
+          if (!awardedRare.ok) {
+            // The kill still stands and everything else is paid, but the player
+            // is told which prize their full satchel cost them: a rare that
+            // vanishes in silence is indistinguishable from bad luck.
+            missedDrops.push({ itemId: rare.itemId, quantity: rare.quantity });
+            continue;
+          }
+          inventory = awardedRare.value;
+          rareDropsAwarded.push({ itemId: rare.itemId, quantity: rare.quantity });
+        }
         for (const drop of encounter.drops) {
           const awardedDrop = addItems(inventory, drop.itemId, drop.quantity, options.items);
           if (!awardedDrop.ok) return err(awardedDrop.error);
           inventory = awardedDrop.value;
-        }
-        // Rolled from the killing blow's own seed, so the outcome is fixed the
-        // moment the creature falls and cannot be re-rolled by replaying it.
-        const dropRng = Rng.fromSeed(`${seed}:drop`);
-        for (const rare of encounter.rareDrops ?? []) {
-          if (dropRng.nextInt(1, rare.oneInChance) !== 1) continue;
-          const awardedRare = addItems(inventory, rare.itemId, rare.quantity, options.items);
-          // A full satchel must not destroy a rare drop; the kill still stands
-          // and the rest of the reward is paid, but the player is told.
-          if (!awardedRare.ok) continue;
-          inventory = awardedRare.value;
-          rareDropsAwarded.push({ itemId: rare.itemId, quantity: rare.quantity });
         }
       }
       const styleSkillId =
@@ -445,6 +455,7 @@ export function registerCombatHandlers(
             enemyHit: !defeated && enemyRoll.hit,
             coinsGained: coins,
             drops: defeated ? [...encounter.drops, ...rareDropsAwarded] : [],
+            missedDrops: defeated ? missedDrops : [],
             combatXpGained: styleXp,
             hitpointsXpGained: hitpointsXp,
             styleSkillId,

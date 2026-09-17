@@ -311,6 +311,30 @@ The plaza medallion went from 11.6 m to 6.8 m and the Courtyard crowd from 18 to
 
 All gear bonuses and drop rates are **conservative placeholders and the owner's to revise**.
 
+### Review findings, fixed
+
+A review pass over the whole branch caught three defects I had introduced and self-reviewed past:
+
+- **The crowd rig budget was applied per outfit, not as a total**, so two outfits could build
+  twice the device tier's cap between them - the exact draw-call blowout the cap exists to
+  prevent. Now a shared remaining budget.
+- **A rare drop into a full satchel vanished in silence** while the comment beside it claimed
+  the player was told. Rares are now paid _before_ the guaranteed drops, because a 1/24 cape and
+  a scrap of meat competing for the last slot should not resolve in the meat's favour, and one
+  that still will not fit is reported in `missedDrops` - a prize lost without a word is
+  indistinguishable from bad luck.
+- **The out-of-ammo fallback fired every frame.** `lastCommandError` latches until the next
+  command resolves, so the "say so once" comment was wrong: it flooded the log and overwrote any
+  stance the player re-selected. Now keyed on the error and answered once.
+
+### A note on the smoke suite
+
+The walk test intermittently exceeds its budget when the whole suite runs in one worker, while
+passing in isolation in about 19 seconds every time. It is software rendering under sequential
+load, not a regression - but it has now been raised from 30s to 60s once, and raising it again
+would be papering over it. If it keeps recurring, give it its own worker rather than a bigger
+number.
+
 ### Open items, roughly by value
 
 1. **`DEFENSIVE` is never a weakness.** Every other style answers something; a creature "weak
