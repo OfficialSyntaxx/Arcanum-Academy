@@ -308,12 +308,19 @@ All gear bonuses and drop rates are **conservative placeholders and the owner's 
 
 1. **`DEFENSIVE` is never a weakness.** Every other style answers something; a creature "weak
    to being blocked" did not read as a real idea. Harmless, but the shape is asymmetric.
-2. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
+2. **The sea reads as one flat slab meeting the land on a hard line.** An attempt at a shallows
+   band was made and **reverted**: the `ShapeGeometry` bands never rendered (very likely the
+   `rotation.x = Math.PI / 2` used by the apron points the face downward, and the apron itself
+   sits at y=-0.12 below the ground plane, so neither was ever confirmed visible). A large flat
+   blue region also fills the upper screen from the southern shore and a colour probe showed it
+   is **not** the sea slab, which appears only as a thin strip from the plaza. Whoever does the
+   coast pass should identify that surface first with a colour probe before adding geometry.
+3. **The plaza is still an empty 16 m square** (waypoints at ±8 m). Shrinking it would do more
    for character scale than anything left, but it moves waypoints and changes how the hub feels
    to cross, so it was left as an owner decision rather than a tweak.
-3. Diary and clue content still centres on the Courtyard, though the quest chain no longer does.
-4. **No Neck, Ring or Ammo slots**, because nothing would fill them. Ammunition is spent from
+4. Diary and clue content still centres on the Courtyard, though the quest chain no longer does.
+5. **No Neck, Ring or Ammo slots**, because nothing would fill them. Ammunition is spent from
    the satchel rather than a worn slot, which is a deliberate simplification: a stack inside an
    equipment slot is a real system, not a field.
-5. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots. The owner
+6. **Still no evidence from a real iPhone.** G1 cannot pass on headless screenshots. The owner
    has said Codex will take the device checks.
