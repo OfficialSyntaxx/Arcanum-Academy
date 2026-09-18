@@ -4,7 +4,8 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
-**Branch:** `Claudesep16`, cut from `main` on 2026-09-16. Nothing here has been merged.
+**Branch:** `Claudesep16`, cut from `main` on 2026-09-16 and admitted to `main` as G7-B after
+independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
 
 ---
@@ -203,8 +204,10 @@ Also recorded in `docs/MISTAKES.md`.
 
 ## State at the stopping point
 
-`npm run verify` green: **481 tests across 56 files**. The Playwright smoke suite is green too,
-**5 passed in 43 seconds**. Precache budget **2.2 MiB against a 3 MiB ceiling**. No merge to `main`.
+`npm run verify` green at admission: **506 tests across 57 files**. The Playwright smoke suite was
+previously green with **5 passed in 43 seconds**; the admission runner could not repeat it because no
+Chromium executable was installed. Production build, asset budget and admin isolation passed.
+Production precache at admission is **2.57 MiB against a 3 MiB ceiling**.
 
 ### Three real bugs the smoke suite finally surfaced
 
