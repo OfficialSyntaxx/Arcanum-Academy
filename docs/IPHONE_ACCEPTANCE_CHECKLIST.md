@@ -124,6 +124,17 @@ record the first failed item, a screenshot, and the device/OS version.
 - [ ] Try linking the same login to a different disposable player. Confirm it is refused and neither
       save changes.
 
+## G8-A: Public profiles and hiscores
+
+- [ ] Open **Profile** from the tab bar in portrait and landscape. Confirm it remains readable and
+      does not obstruct the important world controls.
+- [ ] Save a valid name with public listing disabled. Confirm it does not appear in hiscores.
+- [ ] Enable public listing, save, reopen Profile, and confirm the name, total level, combat level,
+      and total XP appear once.
+- [ ] Disable public listing, save, and confirm it disappears from hiscores.
+- [ ] Confirm no public view exposes a player ID, inventory, bank, location, quest state, or account
+      recovery information.
+
 ## Report back
 
 For any issue, send: checklist section, exact step, what you expected, what happened, portrait or

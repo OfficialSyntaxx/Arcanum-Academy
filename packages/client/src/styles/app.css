@@ -294,6 +294,40 @@
   gap: 0.5rem;
 }
 
+.profile-panel {
+  pointer-events: auto;
+  position: absolute;
+  z-index: 8;
+  right: var(--space-3);
+  bottom: calc(var(--inset-bottom) + 4rem);
+  width: min(26rem, calc(100vw - 2 * var(--space-3)));
+  max-height: min(38rem, 78vh);
+  overflow: auto;
+}
+.profile-panel form {
+  display: grid;
+  gap: var(--space-2);
+}
+.profile-panel input:not([type='checkbox']) {
+  width: 100%;
+}
+.profile-panel__check {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.profile-panel__scores {
+  padding-left: 1.5rem;
+}
+.profile-panel__scores li {
+  margin: var(--space-2) 0;
+}
+.profile-panel__scores span {
+  display: block;
+  color: var(--haze-dim);
+  font-size: var(--text-xs);
+}
+
 .support-panel form {
   gap: var(--space-3);
 }

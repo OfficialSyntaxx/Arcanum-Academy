@@ -47,6 +47,8 @@ import {
 } from './support-reports.js';
 import { registerSupportReportRoutes } from './support-routes.js';
 import { registerAccountRoutes } from './account-routes.js';
+import { registerProfileHandlers } from './net/handlers/profile.js';
+import { registerPublicProfileRoutes } from './public-profiles.js';
 
 /**
  * Server entry point.
@@ -136,6 +138,7 @@ async function main(): Promise<void> {
     now: () => Date.now(),
   });
   registerQuestHandlers(router, { players, now: () => Date.now() });
+  registerProfileHandlers(router, { players });
   registerDungeonHandlers(router, {
     players,
     now: () => Date.now(),
@@ -211,6 +214,11 @@ async function main(): Promise<void> {
   });
 
   const app = Fastify({ logger: false });
+  registerPublicProfileRoutes(app, {
+    repository,
+    slotCapacity: DEFAULT_TUNABLES.gathering.baseInventorySlots,
+    allowedOrigins: config.allowedOrigins,
+  });
   let diagnostics: DiagnosticStore = new DiagnosticBuffer();
   let reports: SupportReportStore = new SupportReportBuffer();
   if (postgres !== null) {

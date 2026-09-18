@@ -94,6 +94,7 @@ function readPositiveInteger(payload: unknown, key: string): number | null {
 /** The public shape of player state, safe to send and simple to apply. */
 function project(state: PlayerState) {
   return {
+    profile: state.profile,
     inventory: { stacks: state.inventory.stacks, slotCapacity: state.inventory.slotCapacity },
     bank: { stacks: state.bank.stacks, slotCapacity: state.bank.slotCapacity },
     coins: state.coins,

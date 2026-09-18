@@ -127,6 +127,10 @@ export function App() {
               onCompleteQuest={(questId) => economy?.completeQuest(questId)}
               onEquip={(itemId) => economy?.equip(itemId)}
               onUnequip={(slot) => economy?.unequip(slot)}
+              onUpdateProfile={(displayName, isPublic) =>
+                economy?.updateProfile(displayName, isPublic)
+              }
+              serverUrl={serverUrl}
               onRecoverCombat={() => economy?.recoverCombat()}
               onReclaimCombatGrave={() => economy?.reclaimCombatGrave()}
               onEatCombatFood={(interactableId, itemId) =>

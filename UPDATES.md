@@ -8,6 +8,18 @@ for the design; this file only records the state of this branch against it.
 independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
 
+## G8-A public profiles — Codex, 2026-09-18
+
+- Added an opt-in in-game Profile tab for a player-selected display name and public listing.
+- Added a read-only top-25 hiscores endpoint. It derives total level, total XP, and combat level
+  from authoritative saved progress; the client cannot submit a score or player ID.
+- Profiles are private by default and never expose inventory, bank, equipment, location, quest
+  state, recovery linkage, or operations data.
+- Added privacy-focused regression coverage and phone acceptance steps in
+  `docs/G8_A_PUBLIC_PROFILES.md`.
+
+Verified locally: 514 tests across 60 files, production builds, asset budget, and admin isolation.
+
 ## G7-A account recovery — Codex, 2026-09-18
 
 Implemented the identity gate that remained after G7-B admission:

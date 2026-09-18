@@ -18,6 +18,7 @@ import type { Transport } from '../net/transport.js';
 import { useAppStore, type EconomyState } from '../state/app-store.js';
 
 interface HarvestPatch {
+  readonly profile?: EconomyState['profile'];
   readonly inventory?: {
     readonly stacks?: readonly { definitionId: string; quantity: number }[];
     readonly slotCapacity?: number;
@@ -55,6 +56,7 @@ interface HarvestPatch {
 /** Command kinds this controller owns, so unrelated patches are ignored. */
 const OWNED = new Set([
   'player.sync',
+  'profile.update',
   'gathering.start',
   'gathering.collect',
   'gathering.stop',
@@ -91,6 +93,10 @@ export class EconomyController {
 
   sync(): void {
     this.send('player.sync');
+  }
+
+  updateProfile(displayName: string | null, isPublic: boolean): void {
+    this.send('profile.update', { displayName, isPublic });
   }
 
   startGathering(interactableId: string): void {
@@ -256,6 +262,7 @@ export class EconomyController {
     if (patch === undefined) return;
 
     const next: Partial<EconomyState> = {
+      ...(patch.profile !== undefined ? { profile: patch.profile } : {}),
       ...(patch.inventory?.stacks !== undefined ? { stacks: patch.inventory.stacks } : {}),
       ...(patch.inventory?.slotCapacity !== undefined
         ? { slotCapacity: patch.inventory.slotCapacity }

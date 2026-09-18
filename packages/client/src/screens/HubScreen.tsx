@@ -18,6 +18,7 @@ import { CombatHud, DungeonHud, GravestoneHud } from '../ui/CombatHud.js';
 import { QuestJournal } from '../ui/QuestJournal.js';
 import { CollectionLog } from '../ui/CollectionLog.js';
 import { Minimap } from '../ui/Minimap.js';
+import { PublicProfile } from '../ui/PublicProfile.js';
 
 /**
  * The hub overlay.
@@ -53,6 +54,8 @@ export interface HubScreenProps {
   readonly onEatCombatFood: (interactableId: string, itemId: string) => void;
   readonly onEquip: (itemId: string) => void;
   readonly onUnequip: (slot: string) => void;
+  readonly onUpdateProfile: (displayName: string | null, isPublic: boolean) => void;
+  readonly serverUrl: string;
 }
 
 /**
@@ -83,6 +86,8 @@ export function HubScreen({
   onEatCombatFood,
   onEquip,
   onUnequip,
+  onUpdateProfile,
+  serverUrl,
 }: HubScreenProps) {
   const gatheringNodeId = useAppStore((state) => state.economy.gatheringNodeId);
   const openStationId = useAppStore((state) => state.openStationId);
@@ -106,12 +111,14 @@ export function HubScreen({
   const [mapOpen, setMapOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     setSatchelView(null);
     setMapOpen(false);
     setJournalOpen(false);
     setCollectionOpen(false);
+    setProfileOpen(false);
   }, [travelRevision]);
 
   useEffect(() => {
@@ -143,6 +150,13 @@ export function HubScreen({
       {mapOpen && <WorldMap onNavigate={onNavigate} onClose={() => setMapOpen(false)} />}
       {journalOpen && <QuestJournal onClose={() => setJournalOpen(false)} />}
       {collectionOpen && <CollectionLog onClose={() => setCollectionOpen(false)} />}
+      {profileOpen && (
+        <PublicProfile
+          serverUrl={serverUrl}
+          onUpdate={onUpdateProfile}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
       {!inCombat && <InteractionPrompt onEngage={onEngage} />}
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
       <CollectionToast />
@@ -176,6 +190,13 @@ export function HubScreen({
           onClick={() => setCollectionOpen((open) => !open)}
         >
           Log
+        </button>
+        <button
+          type="button"
+          aria-pressed={profileOpen}
+          onClick={() => setProfileOpen((open) => !open)}
+        >
+          Profile
         </button>
       </nav>
       {satchelView === 'inventory' && (
