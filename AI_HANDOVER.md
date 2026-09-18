@@ -5,15 +5,17 @@
 **Written:** 2026-09-09 · **Updated:** 2026-09-18 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G7-B is implemented. Reliable skilling/economy, persistence, quest and diary
+**Code state:** G7-A and G7-B are implemented. Reliable skilling/economy, persistence, quest and diary
 progression, combat/death recovery, the three-room Saltwake dungeon, its Drowned Warden boss,
 production GLB creature presentation, and the first persisted treasure-clue trail are live. The
 save retains bounded immutable history, restore is backup-first and audited, and a separately
 authenticated read-only operations API can inspect redacted accounts and history through a separate,
-mobile-safe operations bundle. Audited snapshot restoration is live. The world now uses admitted,
+mobile-safe operations bundle. Audited snapshot restoration is live. Optional player account
+protection and clean-device recovery use a separate Netlify Identity tenant, a same-origin bridge,
+stable external subject mapping, and atomic bearer rotation. The world now uses admitted,
 optimized Quaternius character and creature GLBs, automatic OSRS-shaped combat, larger outer zones,
 regional encounters, equipment tiers, a minimap, and compact mobile HUD. Player account recovery
-remains the next foundational identity gate.
+is ready for its next content and presentation gate after production account-recovery acceptance.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -55,7 +57,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of G6-D.1 on 2026-09-16 it reports **468 tests across 56 files**.
+afterwards is yours. As of G7-A on 2026-09-18 it reports **512 tests across 59 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -2130,7 +2132,7 @@ to the repo.
 | **G4 — A world** | The Shorelands finished end to end: character art (§6.1.1), named NPCs, day/night, weather, and the exits stubbed for the remaining four regions. | You can walk for five minutes and every stop is worth a screenshot. |
 | **G5 — Content** | Quests, dungeons, clues, achievements, collection log, onboarding chain. | A stranger plays 45 minutes without guidance. |
 | **G6 — Operations** | Save snapshots, then the admin panel, then analytics and the in-game report button. | You can find, inspect and safely repair any account, and undo it. |
-| **G7-A — Account recovery** | Separate player Netlify Identity tenant. Email-bound account claim and token rotation. | An account survives clearing site data. |
+| **G7-A — Account recovery** ✅ | Separate player Netlify Identity tenant, opt-in claim, password recovery and atomic game-token rotation. Deployment: `docs/G7_A_ACCOUNT_RECOVERY_HANDOVER.md`. | An account survives clearing site data without exposing passwords or bridge credentials to the game. |
 | **G7-B — World and character admission** ✅ | Optimized CC0 rigs/creatures, automatic combat, expanded outer regions, equipment, minimap and mobile HUD. | The character and combat world read coherently on phone within the published asset budget. |
 | **G8 — Async multiplayer** | Hiscores, profiles, collection comparison. | Two accounts can see each other's progress. |
 | **G9+** | Live presence, grouping, standard mode + trading. | Per §8. |
