@@ -2,11 +2,22 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useAppStore } from '../state/app-store.js';
 
 interface Hiscore {
+  readonly publicId: string;
   readonly rank: number;
   readonly displayName: string;
   readonly totalLevel: number;
   readonly totalXp: number;
   readonly combatLevel: number;
+}
+
+interface Detail extends Hiscore {
+  readonly skills: readonly {
+    readonly name: string;
+    readonly level: number;
+    readonly xp: number;
+  }[];
+  readonly diaryHighlights: readonly string[];
+  readonly discoveries: number;
 }
 
 function profileUrl(serverUrl: string): string | null {
@@ -20,6 +31,11 @@ function profileUrl(serverUrl: string): string | null {
   } catch {
     return null;
   }
+}
+
+function detailUrl(serverUrl: string, publicId: string): string | null {
+  const base = profileUrl(serverUrl);
+  return base ? `${base.replace('/hiscores', '')}/${encodeURIComponent(publicId)}` : null;
 }
 
 export function PublicProfile({
@@ -36,6 +52,7 @@ export function PublicProfile({
   const [publiclyListed, setPubliclyListed] = useState(profile.isPublic);
   const [scores, setScores] = useState<readonly Hiscore[]>([]);
   const [scoreStatus, setScoreStatus] = useState('Loading hiscores…');
+  const [selected, setSelected] = useState<Detail | null>(null);
 
   useEffect(() => {
     const url = profileUrl(serverUrl);
@@ -55,6 +72,17 @@ export function PublicProfile({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onUpdate(name.trim() || null, publiclyListed);
+  }
+
+  function view(publicId: string) {
+    const url = detailUrl(serverUrl, publicId);
+    if (!url) return;
+    void fetch(url, { headers: { accept: 'application/json' } })
+      .then((response) =>
+        response.ok ? response.json() : Promise.reject(new Error('unavailable')),
+      )
+      .then((body: { profile?: Detail }) => setSelected(body.profile ?? null))
+      .catch(() => setScoreStatus('That public profile is unavailable.'));
   }
 
   return (
@@ -98,10 +126,10 @@ export function PublicProfile({
         ) : (
           <ol className="profile-panel__scores">
             {scores.map((score) => (
-              <li key={`${score.rank}-${score.displayName}`}>
-                <strong>
+              <li key={score.publicId}>
+                <button type="button" onClick={() => view(score.publicId)}>
                   #{score.rank} {score.displayName}
-                </strong>
+                </button>
                 <span>
                   Lvl {score.totalLevel} · Combat {score.combatLevel} ·{' '}
                   {score.totalXp.toLocaleString()} XP
@@ -111,6 +139,24 @@ export function PublicProfile({
           </ol>
         )}
       </section>
+      {selected && (
+        <section className="profile-panel__detail">
+          <h3>{selected.displayName}</h3>
+          <p>
+            {selected.discoveries} discoveries · {selected.diaryHighlights.length} diary milestones
+          </p>
+          <ul>
+            {selected.skills.map((skill) => (
+              <li key={skill.name}>
+                {skill.name}: <strong>{skill.level}</strong> · {skill.xp.toLocaleString()} XP
+              </li>
+            ))}
+          </ul>
+          {selected.diaryHighlights.length > 0 && (
+            <p>Highlights: {selected.diaryHighlights.join(', ')}</p>
+          )}
+        </section>
+      )}
     </aside>
   );
 }

@@ -1,17 +1,28 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { initialProgress } from '@alderfell/sim';
-import type { SkillProgress } from '@alderfell/shared';
+import { DIARY_CATALOG, SKILL_TABLE, type SkillProgress } from '@alderfell/shared';
 import { parsePlayerState } from './domain/player-state.js';
 import type { PlayerRepository } from './persistence/repository.js';
 
 const MAX_RESULTS = 25;
 
 interface PublicProfile {
+  readonly publicId: string;
   readonly displayName: string;
   readonly totalLevel: number;
   readonly totalXp: number;
   readonly combatLevel: number;
   readonly updatedAtMs: number;
+}
+
+interface PublicProfileDetail extends PublicProfile {
+  readonly skills: readonly {
+    readonly name: string;
+    readonly level: number;
+    readonly xp: number;
+  }[];
+  readonly diaryHighlights: readonly string[];
+  readonly discoveries: number;
 }
 
 export function registerPublicProfileRoutes(
@@ -40,9 +51,21 @@ export function registerPublicProfileRoutes(
     const profiles = records.value.records
       .flatMap((record) => {
         const parsed = parsePlayerState(record, options.slotCapacity);
-        if (!parsed.ok || !parsed.value.profile.isPublic || !parsed.value.profile.displayName)
+        if (
+          !parsed.ok ||
+          !parsed.value.profile.isPublic ||
+          !parsed.value.profile.displayName ||
+          !parsed.value.profile.publicId
+        )
           return [];
-        return [project(parsed.value.profile.displayName, parsed.value.skills, record.updatedAtMs)];
+        return [
+          project(
+            parsed.value.profile.publicId,
+            parsed.value.profile.displayName,
+            parsed.value.skills,
+            record.updatedAtMs,
+          ),
+        ];
       })
       .sort(
         (a, b) =>
@@ -54,9 +77,49 @@ export function registerPublicProfileRoutes(
       .map((profile, index) => ({ rank: index + 1, ...profile }));
     return reply.header('cache-control', 'public, max-age=30').send({ hiscores: profiles });
   });
+  app.get('/profiles/:publicId', async (request, reply) => {
+    allow(request, reply);
+    const publicId = (request.params as { publicId?: string }).publicId;
+    if (!publicId || !/^[A-Za-z0-9_-]{8,80}$/.test(publicId))
+      return reply.code(404).send({ error: 'not_found' });
+    const records = await options.repository.listPlayers({ limit: 1000 });
+    if (!records.ok) return reply.code(503).send({ error: 'unavailable' });
+    for (const record of records.value.records) {
+      const parsed = parsePlayerState(record, options.slotCapacity);
+      if (
+        !parsed.ok ||
+        !parsed.value.profile.isPublic ||
+        parsed.value.profile.publicId !== publicId ||
+        !parsed.value.profile.displayName
+      )
+        continue;
+      const base = project(
+        publicId,
+        parsed.value.profile.displayName,
+        parsed.value.skills,
+        record.updatedAtMs,
+      );
+      const skills = SKILL_TABLE.skills.map((skill) => ({
+        name: skill.name,
+        ...progress(parsed.value.skills, skill.id),
+      }));
+      const diaryHighlights = DIARY_CATALOG.filter(
+        (diary) => parsed.value.diaryRewards[diary.id] !== undefined,
+      ).map((diary) => diary.title);
+      const detail: PublicProfileDetail = {
+        ...base,
+        skills,
+        diaryHighlights,
+        discoveries: Object.keys(parsed.value.discoveries).length,
+      };
+      return reply.header('cache-control', 'public, max-age=30').send({ profile: detail });
+    }
+    return reply.code(404).send({ error: 'not_found' });
+  });
 }
 
 function project(
+  publicId: string,
   displayName: string,
   skills: Readonly<Record<string, SkillProgress>>,
   updatedAtMs: number,
@@ -72,5 +135,10 @@ function project(
     progress('skill.defence').level,
     progress('skill.hitpoints').level,
   );
-  return { displayName, totalLevel, totalXp, combatLevel, updatedAtMs };
+  return { publicId, displayName, totalLevel, totalXp, combatLevel, updatedAtMs };
+}
+
+function progress(skills: Readonly<Record<string, SkillProgress>>, id: string) {
+  const value = skills[id] ?? initialProgress();
+  return { level: value.level, xp: value.xp };
 }

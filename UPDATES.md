@@ -8,6 +8,13 @@ for the design; this file only records the state of this branch against it.
 independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
 
+## G8-B public profile detail — Codex, 2026-09-18
+
+- Added an opaque, opt-in public profile address, never derived from the internal player ID.
+- Hiscores entries now open public skill detail, discovery totals, and paid-diary highlights.
+- Kept display names non-unique, private state excluded, and the feature read-only.
+- Verified locally: 514 tests across 60 files, production builds, asset budget, and admin isolation.
+
 ## G8-A public profiles — Codex, 2026-09-18
 
 - Added an opt-in in-game Profile tab for a player-selected display name and public listing.

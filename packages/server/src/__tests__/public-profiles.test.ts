@@ -46,14 +46,11 @@ describe('public profiles', () => {
     });
     await app.ready();
     expect((await app.inject('/profiles/hiscores')).json()).toEqual({ hiscores: [] });
-    expect(
-      (
-        await router.dispatch(session(player), 'profile.update', {
-          displayName: 'Moss Runner',
-          isPublic: true,
-        })
-      ).ok,
-    ).toBe(true);
+    const published = await router.dispatch(session(player), 'profile.update', {
+      displayName: 'Moss Runner',
+      isPublic: true,
+    });
+    expect(published.ok).toBe(true);
     const response = await app.inject({
       method: 'GET',
       url: '/profiles/hiscores',
@@ -72,6 +69,14 @@ describe('public profiles', () => {
     });
     expect(response.body).not.toContain(player);
     expect(response.body).not.toContain('inventory');
+    if (!published.ok) throw new Error('profile publish failed');
+    const publicId = (published.value as { profile: { publicId: string } }).profile.publicId;
+    const detail = await app.inject(`/profiles/${publicId}`);
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json()).toMatchObject({
+      profile: { publicId, displayName: 'Moss Runner', skills: expect.any(Array), discoveries: 0 },
+    });
+    expect(detail.body).not.toContain(player);
     await app.close();
   });
 

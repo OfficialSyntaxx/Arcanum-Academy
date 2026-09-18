@@ -1,4 +1,4 @@
-import { err, failure, FailureCode, ok } from '@alderfell/shared';
+import { err, failure, FailureCode, generateId, ok } from '@alderfell/shared';
 import type { PlayerService } from '../../domain/player-service.js';
 import type { RegistryCommandRouter } from '../gateway.js';
 
@@ -27,11 +27,14 @@ export function registerProfileHandlers(
         }),
       );
     }
-    return options.players.update(session.playerId, (state) =>
-      ok({
-        state: { ...state, profile: input },
-        value: { profile: input },
-      }),
-    );
+    return options.players.update(session.playerId, (state) => {
+      const profile = {
+        publicId: input.isPublic
+          ? (state.profile.publicId ?? generateId())
+          : state.profile.publicId,
+        ...input,
+      };
+      return ok({ state: { ...state, profile }, value: { profile } });
+    });
   });
 }

@@ -58,7 +58,11 @@ export interface DialogueState {
  * patch, so nothing in this slice can drift from the authoritative record.
  */
 export interface EconomyState {
-  readonly profile: { readonly displayName: string | null; readonly isPublic: boolean };
+  readonly profile: {
+    readonly publicId: string | null;
+    readonly displayName: string | null;
+    readonly isPublic: boolean;
+  };
   readonly stacks: readonly { definitionId: string; quantity: number }[];
   readonly slotCapacity: number;
   readonly bankStacks: readonly { definitionId: string; quantity: number }[];
@@ -146,7 +150,7 @@ export interface EconomyState {
 }
 
 export const EMPTY_ECONOMY: EconomyState = {
-  profile: { displayName: null, isPublic: false },
+  profile: { publicId: null, displayName: null, isPublic: false },
   stacks: [],
   slotCapacity: 0,
   bankStacks: [],

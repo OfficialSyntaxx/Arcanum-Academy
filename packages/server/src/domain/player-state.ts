@@ -101,6 +101,7 @@ export interface GravestoneState {
 export interface PlayerState {
   /** Opt-in public identity. No account, contact, or device information belongs here. */
   readonly profile: {
+    readonly publicId: string | null;
     readonly displayName: string | null;
     readonly isPublic: boolean;
   };
@@ -149,7 +150,7 @@ export interface PlayerState {
 
 export function createInitialState(slotCapacity: number, nowMs: number): PlayerState {
   return {
-    profile: { displayName: null, isPublic: false },
+    profile: { publicId: null, displayName: null, isPublic: false },
     location: { zoneId: 'zone.courtyard', roomId: 'wp.plaza.center' },
     saltwake: EMPTY_SALTWAKE_PROGRESS,
     tideglassTrail: EMPTY_CLUE_PROGRESS,
@@ -197,12 +198,20 @@ function readNumber(value: unknown, fallback: number): number {
 }
 
 function readProfile(value: unknown): PlayerState['profile'] {
-  if (!isRecord(value)) return { displayName: null, isPublic: false };
+  if (!isRecord(value)) return { publicId: null, displayName: null, isPublic: false };
+  const publicId =
+    typeof value.publicId === 'string' && /^[A-Za-z0-9_-]{8,80}$/.test(value.publicId)
+      ? value.publicId
+      : null;
   const displayName =
     typeof value.displayName === 'string' && value.displayName.trim().length > 0
       ? value.displayName.trim().slice(0, 24)
       : null;
-  return { displayName, isPublic: value.isPublic === true && displayName !== null };
+  return {
+    publicId,
+    displayName,
+    isPublic: value.isPublic === true && displayName !== null && publicId !== null,
+  };
 }
 
 function readHitpoints(value: unknown): PlayerState['hitpoints'] {
