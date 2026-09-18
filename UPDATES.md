@@ -13,6 +13,8 @@ independent verification on 2026-09-18.
 - Kept the project on free hosting and left live presence and trading disabled.
 - Separated private self-position reporting, needed for authoritative range checks, from returning
   other players' location data. The default presence response now contains no neighbours.
+- Future enabled presence projects neighbours to ephemeral avatar IDs and render transforms only;
+  it never exposes session or player identifiers.
 - Added an explicit `LIVE_PRESENCE_ENABLED` configuration gate, regression coverage, and the
   paid-hosting cutover checklist in `docs/G9_LIVE_PRESENCE_GATE.md`.
 

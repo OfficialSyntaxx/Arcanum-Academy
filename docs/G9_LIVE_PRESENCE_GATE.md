@@ -32,3 +32,8 @@ Only enable `LIVE_PRESENCE_ENABLED=true` after all of the following are true:
 With the default configuration, connect two different accounts and send valid position reports.
 Each account must receive `s:presence_delta` with an empty `neighbours` array while normal
 range-gated actions continue to work. The gateway and configuration tests enforce this contract.
+
+When the paid-host gate is eventually satisfied, every neighbour is projected to only an ephemeral
+avatar ID and its render transform (`x`, `z`, `facing`). The payload does not include internal
+player IDs, session IDs, account data, inventory, quest state, or location outside the local
+visibility radius.

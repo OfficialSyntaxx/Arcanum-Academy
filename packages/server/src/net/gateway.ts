@@ -5,6 +5,7 @@ import {
   encodeFrame,
   failure,
   FailureCode,
+  generateId,
   ServerOpcode,
   type Failure,
   type Logger,
@@ -93,11 +94,19 @@ export interface PresenceTracker {
     playerId: PlayerId,
     position: { x: number; z: number; facing: number },
   ): boolean;
-  neighbours(sessionId: SessionId): readonly unknown[];
+  neighbours(sessionId: SessionId): readonly PresenceNeighbour[];
   /** Latest accepted position for an authoritative range check. */
   positionFor(sessionId: SessionId): { readonly x: number; readonly z: number } | null;
   leave(sessionId: SessionId): void;
   sweep(): number;
+}
+
+/** Internal presence record. It is projected before crossing the network. */
+export interface PresenceNeighbour {
+  readonly sessionId: SessionId;
+  readonly x: number;
+  readonly z: number;
+  readonly facing: number;
 }
 
 export interface GatewayOptions {
@@ -123,6 +132,15 @@ interface Connection {
   lastSeenMs: number;
   outboundSeq: number;
   lastInboundSeq: number;
+  /** Ephemeral opaque handle for a future visible-presence avatar. */
+  readonly presenceId: string;
+}
+
+interface PublicPresenceEntry {
+  readonly id: string;
+  readonly x: number;
+  readonly z: number;
+  readonly facing: number;
 }
 
 export interface HandshakePayload {
@@ -171,6 +189,7 @@ export class Gateway {
       lastSeenMs: this.now(),
       outboundSeq: 0,
       lastInboundSeq: -1,
+      presenceId: generateId(this.now()),
     };
     this.connections.add(connection);
 
@@ -187,6 +206,22 @@ export class Gateway {
     connection.socket.send(
       encodeFrame(createEnvelope(op, connection.outboundSeq, payload, this.now())),
     );
+  }
+
+  /**
+   * Projects internal presence records into the only shape a renderer needs.
+   * Session and player identifiers stay on the server: an avatar is identified
+   * only for the life of its current socket connection.
+   */
+  private publicNeighbours(sessionId: SessionId): readonly PublicPresenceEntry[] {
+    const handles = new Map<SessionId, string>();
+    for (const connection of this.connections) {
+      if (connection.session !== null) handles.set(connection.session.id, connection.presenceId);
+    }
+    return this.options.presence.neighbours(sessionId).flatMap((entry) => {
+      const id = handles.get(entry.sessionId);
+      return id === undefined ? [] : [{ id, x: entry.x, z: entry.z, facing: entry.facing }];
+    });
   }
 
   private reject(connection: Connection, error: Failure, close: number | null): void {
@@ -260,7 +295,7 @@ export class Gateway {
         }
         this.send(connection, ServerOpcode.PresenceDelta, {
           neighbours: this.options.livePresenceEnabled
-            ? this.options.presence.neighbours(connection.session.id)
+            ? this.publicNeighbours(connection.session.id)
             : [],
         });
         return;

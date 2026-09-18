@@ -360,7 +360,17 @@ describe('hub presence', () => {
 
     const delta = h.lastOf(ServerOpcode.PresenceDelta);
     expect(delta).toBeDefined();
-    expect((delta!.payload as { neighbours: unknown[] }).neighbours).toHaveLength(1);
+    const neighbours = (
+      delta!.payload as {
+        neighbours: readonly { id: string; x: number; z: number; facing: number }[];
+      }
+    ).neighbours;
+    expect(neighbours).toHaveLength(1);
+    expect(neighbours[0]).toMatchObject({ x: 0, z: 0, facing: 0 });
+    expect(neighbours[0]!.id).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(JSON.stringify(neighbours)).not.toContain('player-');
+    expect(neighbours[0]).not.toHaveProperty('sessionId');
+    expect(neighbours[0]).not.toHaveProperty('playerId');
   });
 
   it('refuses a malformed position without dropping the connection', async () => {
