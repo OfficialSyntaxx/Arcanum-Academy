@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useAppStore } from '../state/app-store.js';
+import { comparePublicProfile, type PublicSkillProgress } from './profile-comparison.js';
 
 interface Hiscore {
   readonly publicId: string;
@@ -11,11 +12,7 @@ interface Hiscore {
 }
 
 interface Detail extends Hiscore {
-  readonly skills: readonly {
-    readonly name: string;
-    readonly level: number;
-    readonly xp: number;
-  }[];
+  readonly skills: readonly PublicSkillProgress[];
   readonly diaryHighlights: readonly string[];
   readonly discoveries: number;
 }
@@ -48,6 +45,9 @@ export function PublicProfile({
   readonly onClose: () => void;
 }) {
   const profile = useAppStore((state) => state.economy.profile);
+  const ownSkills = useAppStore((state) => state.economy.skills);
+  const ownDiscoveries = useAppStore((state) => state.economy.discoveries);
+  const ownDiaryRewards = useAppStore((state) => state.economy.diaryRewards);
   const [name, setName] = useState(profile.displayName ?? '');
   const [publiclyListed, setPubliclyListed] = useState(profile.isPublic);
   const [scores, setScores] = useState<readonly Hiscore[]>([]);
@@ -84,6 +84,10 @@ export function PublicProfile({
       .then((body: { profile?: Detail }) => setSelected(body.profile ?? null))
       .catch(() => setScoreStatus('That public profile is unavailable.'));
   }
+
+  const comparison = selected
+    ? comparePublicProfile(ownSkills, ownDiscoveries, ownDiaryRewards, selected)
+    : null;
 
   return (
     <aside className="panel profile-panel" aria-label="Public profile and hiscores">
@@ -141,19 +145,56 @@ export function PublicProfile({
       </section>
       {selected && (
         <section className="profile-panel__detail">
-          <h3>{selected.displayName}</h3>
+          <div className="profile-panel__detail-head">
+            <h3>{selected.displayName}</h3>
+            <button type="button" onClick={() => setSelected(null)} aria-label="Close comparison">
+              ×
+            </button>
+          </div>
           <p>
             {selected.discoveries} discoveries · {selected.diaryHighlights.length} diary milestones
           </p>
-          <ul>
-            {selected.skills.map((skill) => (
-              <li key={skill.name}>
-                {skill.name}: <strong>{skill.level}</strong> · {skill.xp.toLocaleString()} XP
-              </li>
-            ))}
-          </ul>
-          {selected.diaryHighlights.length > 0 && (
-            <p>Highlights: {selected.diaryHighlights.join(', ')}</p>
+          {comparison && (
+            <div
+              className="profile-panel__comparison"
+              aria-label={`Compare with ${selected.displayName}`}
+            >
+              <p className="panel__eyebrow">Compare with you</p>
+              <div className="profile-panel__compare-totals">
+                <strong>You</strong>
+                <strong>{selected.displayName}</strong>
+                <span>Level {comparison.totals.ownLevel}</span>
+                <span>Level {comparison.totals.otherLevel}</span>
+                <span>{comparison.totals.ownXp.toLocaleString()} XP</span>
+                <span>{comparison.totals.otherXp.toLocaleString()} XP</span>
+                <span>{comparison.totals.ownDiscoveries} discoveries</span>
+                <span>{comparison.totals.otherDiscoveries} discoveries</span>
+                <span>{comparison.totals.ownDiaries} milestones</span>
+                <span>{comparison.totals.otherDiaries} milestones</span>
+              </div>
+              <h4>Skills</h4>
+              <ul className="profile-panel__compare-skills">
+                {comparison.skills.map((skill) => (
+                  <li key={skill.name}>
+                    <span>{skill.name}</span>
+                    <span>
+                      L{skill.own.level} · {skill.own.xp.toLocaleString()} XP
+                    </span>
+                    <span>
+                      L{skill.other.level} · {skill.other.xp.toLocaleString()} XP
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {(comparison.ownDiaryTitles.length > 0 || selected.diaryHighlights.length > 0) && (
+                <p className="profile-panel__compare-highlights">
+                  Your milestones: {comparison.ownDiaryTitles.join(', ') || 'None'}
+                  <br />
+                  {selected.displayName}'s milestones:{' '}
+                  {selected.diaryHighlights.join(', ') || 'None'}
+                </p>
+              )}
+            </div>
           )}
         </section>
       )}

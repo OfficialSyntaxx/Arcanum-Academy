@@ -8,6 +8,15 @@ for the design; this file only records the state of this branch against it.
 independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
 
+## G8-C public profile comparison — Codex, 2026-09-18
+
+- Added a local, side-by-side comparison for an opted-in public profile and the player's confirmed
+  own progression: totals, discoveries, diary milestones, and all authored skills.
+- The client derives its side locally from its existing authoritative projection; it submits no
+  comparison data and introduces no social write or tracking surface.
+- Added focused comparison coverage and iPhone acceptance steps in
+  `docs/G8_C_PROFILE_COMPARISON.md`.
+
 ## G8-B public profile detail — Codex, 2026-09-18
 
 - Added an opaque, opt-in public profile address, never derived from the internal player ID.

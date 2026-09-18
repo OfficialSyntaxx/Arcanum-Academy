@@ -135,6 +135,16 @@ record the first failed item, a screenshot, and the device/OS version.
 - [ ] Confirm no public view exposes a player ID, inventory, bank, location, quest state, or account
       recovery information.
 
+## G8-C: Public profile comparison
+
+- [ ] With two opted-in characters, open a hiscore entry in **Profile** and confirm its comparison
+      shows your totals, discoveries, diary milestones, and skills beside the selected public record.
+- [ ] Advance a skill or diary on one account, reopen the profile after its save, and confirm the
+      comparison updates that account's public numbers without changing the other side locally.
+- [ ] Confirm a private character remains absent from hiscores and cannot be selected for comparison.
+- [ ] In portrait and landscape, scroll the skill rows, close the comparison, and confirm Profile
+      remains readable without covering critical world controls.
+
 ## Report back
 
 For any issue, send: checklist section, exact step, what you expected, what happened, portrait or
