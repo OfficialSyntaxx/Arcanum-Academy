@@ -8,6 +8,24 @@ for the design; this file only records the state of this branch against it.
 independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
 
+## G7-A account recovery — Codex, 2026-09-18
+
+Implemented the identity gate that remained after G7-B admission:
+
+- opt-in player signup, sign-in, password reset, character protection and clean-device recovery;
+- a same-origin Netlify Function that authenticates the player and sends only the stable Netlify
+  subject to Render through a server-only bridge secret;
+- durable one-to-one external-account mapping with atomic Alderfell bearer rotation;
+- generic error responses, concealed unconfigured routes, rate limiting, and no browser-bundled
+  server URL or secret;
+- mobile account UI behind the existing compact connection strip;
+- deployment and two-browser acceptance instructions in
+  `docs/G7_A_ACCOUNT_RECOVERY_HANDOVER.md`.
+
+Verified locally: 512 tests across 59 files, typecheck, formatting, lint, architecture boundaries,
+admin isolation, production builds, and client asset budget. Production configuration and the
+two-browser recovery acceptance remain operator steps.
+
 ---
 
 ## Why this branch exists
