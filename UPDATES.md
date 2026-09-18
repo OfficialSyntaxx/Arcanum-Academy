@@ -8,6 +8,14 @@ for the design; this file only records the state of this branch against it.
 independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
 
+## G9 live-presence gate — Codex, 2026-09-18
+
+- Kept the project on free hosting and left live presence and trading disabled.
+- Separated private self-position reporting, needed for authoritative range checks, from returning
+  other players' location data. The default presence response now contains no neighbours.
+- Added an explicit `LIVE_PRESENCE_ENABLED` configuration gate, regression coverage, and the
+  paid-hosting cutover checklist in `docs/G9_LIVE_PRESENCE_GATE.md`.
+
 ## G8-D public profile links — Codex, 2026-09-18
 
 - Added a same-origin, opaque-ID profile link and native mobile share control for selected public

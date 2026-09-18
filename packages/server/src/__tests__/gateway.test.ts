@@ -18,7 +18,13 @@ import { SessionStore } from '../session/session-store.js';
 import { IdentityService, InMemoryIdentityStore } from '../domain/identity.js';
 import { PresenceService } from '../domain/presence.js';
 
-function harness(options: { maxConnections?: number; maxCommandsPerSecond?: number } = {}) {
+function harness(
+  options: {
+    maxConnections?: number;
+    maxCommandsPerSecond?: number;
+    livePresenceEnabled?: boolean;
+  } = {},
+) {
   let clock = 1_000;
   const now = () => clock;
   const sent: { op: string; payload: unknown }[] = [];
@@ -50,6 +56,7 @@ function harness(options: { maxConnections?: number; maxCommandsPerSecond?: numb
     heartbeatTimeoutMs: 15_000,
     handshakeTimeoutMs: 10_000,
     maxCommandsPerSecond: options.maxCommandsPerSecond ?? 30,
+    livePresenceEnabled: options.livePresenceEnabled ?? false,
     now,
   });
   let seq = 0;
@@ -326,8 +333,23 @@ describe('identity', () => {
 });
 
 describe('hub presence', () => {
-  it('answers a position report with the neighbours in range', async () => {
+  it('keeps other players out of presence replies while live presence is disabled', async () => {
     const h = harness();
+    const first = h.gateway.accept(h.socket)!;
+    await h.handshake(first);
+    first.receive(h.frame(ClientOpcode.PresenceUpdate, { x: 0, z: 0, facing: 0 }));
+
+    const second = h.gateway.accept(h.socket)!;
+    await h.handshake(second);
+    second.receive(h.frame(ClientOpcode.PresenceUpdate, { x: 3, z: 0, facing: 0 }));
+
+    const delta = h.lastOf(ServerOpcode.PresenceDelta);
+    expect(delta).toBeDefined();
+    expect((delta!.payload as { neighbours: unknown[] }).neighbours).toEqual([]);
+  });
+
+  it('answers a position report with neighbours only when live presence is enabled', async () => {
+    const h = harness({ livePresenceEnabled: true });
     const first = h.gateway.accept(h.socket)!;
     await h.handshake(first);
     first.receive(h.frame(ClientOpcode.PresenceUpdate, { x: 0, z: 0, facing: 0 }));

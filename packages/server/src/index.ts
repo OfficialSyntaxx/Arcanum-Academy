@@ -211,6 +211,7 @@ async function main(): Promise<void> {
     heartbeatTimeoutMs: DEFAULT_TUNABLES.network.heartbeatTimeoutMs,
     handshakeTimeoutMs: 10_000,
     maxCommandsPerSecond: DEFAULT_TUNABLES.network.maxCommandsPerSecond,
+    livePresenceEnabled: config.LIVE_PRESENCE_ENABLED,
   });
 
   const app = Fastify({ logger: false });

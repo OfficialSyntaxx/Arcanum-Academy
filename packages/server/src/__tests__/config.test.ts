@@ -12,6 +12,11 @@ describe('loadConfig', () => {
     expect(loadConfig({ PORT: '9000' }).PORT).toBe(9000);
   });
 
+  it('keeps live player locations private unless explicitly enabled', () => {
+    expect(loadConfig({}).LIVE_PRESENCE_ENABLED).toBe(false);
+    expect(loadConfig({ LIVE_PRESENCE_ENABLED: 'true' }).LIVE_PRESENCE_ENABLED).toBe(true);
+  });
+
   it('splits the allowed origin list', () => {
     const config = loadConfig({ ALLOWED_ORIGINS: 'https://a.example, https://b.example' });
     expect(config.allowedOrigins).toEqual(['https://a.example', 'https://b.example']);

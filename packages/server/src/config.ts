@@ -59,6 +59,19 @@ const schema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
+  /**
+   * Returns nearby players' positions to clients. A player still reports their
+   * own position while this is off because the authoritative interaction and
+   * combat range checks depend on it. Keeping that internal projection does
+   * not make another player's location visible.
+   *
+   * Live presence needs an always-on deployment. It remains off for the free
+   * tier, where sleep and cold starts would make the shared world unreliable.
+   */
+  LIVE_PRESENCE_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 });
 
 export type ServerConfig = Readonly<

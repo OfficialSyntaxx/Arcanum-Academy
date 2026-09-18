@@ -110,6 +110,8 @@ export interface GatewayOptions {
   readonly heartbeatTimeoutMs: number;
   readonly handshakeTimeoutMs: number;
   readonly maxCommandsPerSecond: number;
+  /** Whether a position report may reveal nearby players to this client. */
+  readonly livePresenceEnabled?: boolean;
   readonly now?: () => number;
 }
 
@@ -257,7 +259,9 @@ export class Gateway {
           return;
         }
         this.send(connection, ServerOpcode.PresenceDelta, {
-          neighbours: this.options.presence.neighbours(connection.session.id),
+          neighbours: this.options.livePresenceEnabled
+            ? this.options.presence.neighbours(connection.session.id)
+            : [],
         });
         return;
       }
