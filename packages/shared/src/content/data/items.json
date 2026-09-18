@@ -692,6 +692,64 @@
       "stackCap": 1000,
       "baseValue": 2,
       "iconKey": "ammo-emberwood-arrow"
+    },
+    {
+      "id": "item.ore.cinder",
+      "name": "Cinder Ore",
+      "description": "Dense black ore shot through with a heat that will not quite leave your gloves.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 28,
+      "iconKey": "ore-cinder"
+    },
+    {
+      "id": "item.material.cinder_core",
+      "name": "Cinder Core",
+      "description": "The warm knot left when a bound wisp finally loses its shape.",
+      "category": "MATERIAL",
+      "rarity": "UNCOMMON",
+      "stackCap": 999,
+      "baseValue": 36,
+      "iconKey": "cinder-core"
+    },
+    {
+      "id": "item.ingot.cindersteel",
+      "name": "Cindersteel Ingot",
+      "description": "Cinder ore set around a wisp core in the crucible. It holds a steady defensive heat.",
+      "category": "MATERIAL",
+      "rarity": "RARE",
+      "stackCap": 999,
+      "baseValue": 105,
+      "iconKey": "ingot-cindersteel"
+    },
+    {
+      "id": "item.armour.cindersteel_buckler",
+      "name": "Cindersteel Buckler",
+      "description": "A compact shield that turns the cavern's heat away from its bearer.",
+      "category": "EQUIPMENT",
+      "rarity": "RARE",
+      "stackCap": 1,
+      "baseValue": 480,
+      "iconKey": "armour-cindersteel-buckler",
+      "equipment": {
+        "slot": "SHIELD",
+        "attackBonus": 0,
+        "strengthBonus": 0,
+        "defenceBonus": 23,
+        "requiredSkillId": "skill.defence",
+        "requiredSkillLevel": 10
+      }
+    },
+    {
+      "id": "item.charm.cinderheart",
+      "name": "Cinderheart Sigil",
+      "description": "A cooled fragment of Cinderheart's core. A unique proof that the cavern's flame yielded.",
+      "category": "MATERIAL",
+      "rarity": "EPIC",
+      "stackCap": 1,
+      "baseValue": 0,
+      "iconKey": "charm-cinderheart"
     }
   ]
 }

@@ -215,8 +215,18 @@ export function registerCombatHandlers(
         state.quests[encounter.requiredQuestId]?.status === undefined
       )
         return err(failure(FailureCode.Conflict, 'combat.encounter_locked'));
-      if (encounter.boss && !state.saltwake.galleryCleared)
+      if (
+        encounter.boss &&
+        encounter.interactableId === 'int.combat.drowned_warden' &&
+        !state.saltwake.galleryCleared
+      )
         return err(failure(FailureCode.Conflict, 'combat.gallery_not_cleared'));
+      if (
+        encounter.requiredDefeats?.some(
+          (required) => (state.combatTargets[required]?.defeats ?? 0) < 1,
+        )
+      )
+        return err(failure(FailureCode.Conflict, 'combat.encounter_locked'));
       if (state.hitpoints.respawnAtMs !== null)
         return err(failure(FailureCode.Conflict, 'combat.player_recovering'));
       const attackProgress = skillProgress(state, ATTACK_SKILL);

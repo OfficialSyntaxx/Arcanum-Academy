@@ -54,6 +54,8 @@ export interface CombatEncounterDefinition {
   readonly weakTo?: 'ACCURATE' | 'AGGRESSIVE' | 'DEFENSIVE' | 'RANGED' | 'MAGIC';
   readonly zoneId?: string;
   readonly requiredQuestId?: string;
+  /** Confirmed encounters this player must have defeated before engaging. */
+  readonly requiredDefeats?: readonly InteractableId[];
   readonly boss?: boolean;
 }
 
@@ -321,6 +323,50 @@ export const CINDER_WISP = wisp(
   9,
   11,
 );
+
+/** The first Cinderhollow guardian: a voluntary step above the ridge packs. */
+export const CINDERBOUND_WISP: CombatEncounterDefinition = Object.freeze({
+  interactableId: asId<InteractableId>('int.combat.cinderbound_wisp'),
+  label: 'Cinderbound Wisp',
+  creature: 'ghost',
+  position: { x: 6, z: -29 },
+  maxHitpoints: 12,
+  attackLevel: 7,
+  strengthLevel: 6,
+  defenceLevel: 10,
+  aggressive: false,
+  rewardCoins: 16,
+  weakTo: 'RANGED',
+  drops: Object.freeze([
+    { itemId: asId<ItemDefinitionId>('item.material.cinder_core'), quantity: 1 },
+  ]),
+  respawnMs: 10_000,
+  playerRecoveryMs: 5_000,
+  requiredCombatLevel: 4,
+  zoneId: 'zone.cinderhollow',
+});
+
+/** Cinderhollow's compact finale, unlocked by proving the outer-cavern loop. */
+export const CINDERHEART: CombatEncounterDefinition = Object.freeze({
+  interactableId: asId<InteractableId>('int.combat.cinderheart'),
+  label: 'Cinderheart',
+  creature: 'ghost-skull',
+  position: { x: 0, z: 43 },
+  maxHitpoints: 22,
+  attackLevel: 14,
+  strengthLevel: 13,
+  defenceLevel: 14,
+  aggressive: false,
+  rewardCoins: 30,
+  weakTo: 'MAGIC',
+  drops: Object.freeze([{ itemId: asId<ItemDefinitionId>('item.charm.cinderheart'), quantity: 1 }]),
+  respawnMs: 20_000,
+  playerRecoveryMs: 6_000,
+  requiredCombatLevel: 10,
+  requiredDefeats: Object.freeze([asId<InteractableId>('int.combat.cinderbound_wisp')]),
+  zoneId: 'zone.cinderhollow',
+  boss: true,
+});
 export const RIME_WISP = wisp(
   'int.combat.rime_wisp',
   'Rime Wisp',
@@ -351,6 +397,8 @@ export const COMBAT_ENCOUNTERS = Object.freeze([
   GLADE_ARMABEE,
   ...RIDGE_WOLVES,
   CINDER_WISP,
+  CINDERBOUND_WISP,
+  CINDERHEART,
   ...FROST_WOLVES,
   RIME_WISP,
   DROWNED_SENTINEL,

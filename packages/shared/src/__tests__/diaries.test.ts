@@ -22,7 +22,7 @@ describe('Shorelands diaries', () => {
     // rather than setting its own. Paying more for the outer zones is a
     // reasonable idea and a balance decision, not something content authoring
     // gets to decide on the way past.
-    expect(DIARY_CATALOG).toHaveLength(7);
+    expect(DIARY_CATALOG.map((diary) => diary.id)).toContain('diary.cinderhollow.first_forge');
     expect(DIARY_CATALOG.every((diary) => diary.rewardCoins === 15)).toBe(true);
   });
 

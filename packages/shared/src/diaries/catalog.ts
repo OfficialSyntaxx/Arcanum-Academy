@@ -83,6 +83,29 @@ export const DIARY_CATALOG: readonly DiaryDefinition[] = [
     ],
     rewardCoins: 15,
   },
+  {
+    id: 'diary.cinderhollow.first_forge',
+    title: 'Cinderhollow First Forge',
+    description: 'Mine Cinder Ore, unbind a wisp, and temper Cindersteel.',
+    requiredDiscoveryIds: [
+      'discovery.gather.cinder_ore',
+      'discovery.combat.cinderbound_wisp',
+      'discovery.craft.cindersteel',
+    ],
+    rewardCoins: 15,
+  },
+  {
+    id: 'diary.cinderhollow.cinderheart',
+    title: 'Heart of the Hollow',
+    description: 'Complete the First Forge and defeat Cinderheart.',
+    requiredDiscoveryIds: [
+      'discovery.gather.cinder_ore',
+      'discovery.combat.cinderbound_wisp',
+      'discovery.craft.cindersteel',
+      'discovery.dungeon.cinderheart',
+    ],
+    rewardCoins: 15,
+  },
 ];
 
 export function diaryIsComplete(

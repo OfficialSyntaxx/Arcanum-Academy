@@ -15,6 +15,19 @@ independent verification on 2026-09-18.
 - Cinderhollow is a volcanic Cindermark branch that will turn the existing resonant-ingot and
   forged-gear progression into a new exploration, crafting, and solo combat route.
 - Scope, constraints, and staged delivery are recorded in `docs/G10_CINDERHOLLOW_EXPANSION.md`.
+- Completed G10-A and G10-B: the live route now leads into a Mining 8 Cinder Ore Vein, a
+  non-aggressive combat-4 Cinderbound Wisp, and the Cinder Crucible. Three ore plus a wisp core
+  temper into Cindersteel; three ingots and one solo-gathered Emberwood Plank create the
+  Defence-10 Cindersteel Buckler (+23 defence).
+- The loop is Ironman-safe: no shop material, trade, presence, or new server runtime is involved.
+- Confirmed mining, Cinderbound Wisp defeat, and Cindersteel tempering each unlock a discovery;
+  completing all three settles the existing 15-coin diary reward exactly once.
+- Completed the Cinderheart finale: a non-aggressive level-10 boss in the Crucible Chamber, gated
+  by one confirmed Cinderbound Wisp defeat and using the existing deterministic two-phase boss
+  behavior. Its first defeat records a unique discovery, grants a non-tradeable Cinderheart Sigil,
+  and completes the 15-coin Heart of the Hollow diary.
+- Verified locally: 523 tests across 62 files, full production builds, a 2.60 MiB PWA budget, and
+  admin isolation.
 
 ## G9 live-presence gate — Codex, 2026-09-18
 

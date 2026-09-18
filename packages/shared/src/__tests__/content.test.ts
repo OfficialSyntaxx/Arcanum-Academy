@@ -14,6 +14,7 @@ import {
   FOREST,
   MOUNTAINS,
   SNOW,
+  CINDERHOLLOW,
   InteractableKind,
   ItemCategory,
   SkillCategory,
@@ -135,11 +136,28 @@ describe('shipped content', () => {
         ...FOREST.interactables,
         ...MOUNTAINS.interactables,
         ...SNOW.interactables,
+        ...CINDERHOLLOW.interactables,
       ].find((entry) => entry.id === definition.interactableId);
       expect(interactable, `${definition.id} names a real interactable`).toBeDefined();
       expect(interactable!.kind).toBe(InteractableKind.GatheringNode);
       expect(NODE_CATALOG.byInteractable(definition.interactableId)).toBe(definition);
     }
+  });
+
+  it('ships the Cinderhollow mining, combat, and smithing loop as solo-obtainable content', () => {
+    const vein = NODE_CATALOG.get(asId<NodeId>('node.cinderhollow.ore_vein'));
+    expect(vein?.requiredSkillLevel).toBe(8);
+    expect(vein?.dropTable.some((drop) => drop.itemId === 'item.ore.cinder')).toBe(true);
+
+    const ingot = RECIPE_BOOK.get(asId<RecipeId>('recipe.ingot.cindersteel'));
+    const buckler = RECIPE_BOOK.get(asId<RecipeId>('recipe.armour.cindersteel_buckler'));
+    expect(ingot?.stationInteractableId).toBe('int.cinderhollow.forge');
+    expect(ingot?.inputs.some((input) => input.itemId === 'item.material.cinder_core')).toBe(true);
+    expect(buckler?.output.itemId).toBe('item.armour.cindersteel_buckler');
+    expect(
+      ITEM_CATALOG.get(asId<ItemDefinitionId>('item.armour.cindersteel_buckler'))?.equipment
+        ?.defenceBonus,
+    ).toBe(23);
   });
 
   it('resolves every drop, input and output to a defined item', () => {

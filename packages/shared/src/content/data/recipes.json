@@ -573,6 +573,38 @@
       "baseWasteRateBasisPoints": 800,
       "wasteReductionPerSkillLevelBasisPoints": 30,
       "xpPerCraft": 20
+    },
+    {
+      "id": "recipe.ingot.cindersteel",
+      "name": "Temper Cindersteel Ingot",
+      "stationInteractableId": "int.cinderhollow.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 10,
+      "inputs": [
+        { "itemId": "item.ore.cinder", "quantity": 3 },
+        { "itemId": "item.material.cinder_core", "quantity": 1 }
+      ],
+      "output": { "itemId": "item.ingot.cindersteel", "quantity": 1 },
+      "craftDurationMs": 9000,
+      "baseWasteRateBasisPoints": 900,
+      "wasteReductionPerSkillLevelBasisPoints": 30,
+      "xpPerCraft": 68
+    },
+    {
+      "id": "recipe.armour.cindersteel_buckler",
+      "name": "Shape Cindersteel Buckler",
+      "stationInteractableId": "int.cinderhollow.forge",
+      "requiredSkillId": "skill.refining",
+      "requiredSkillLevel": 12,
+      "inputs": [
+        { "itemId": "item.ingot.cindersteel", "quantity": 3 },
+        { "itemId": "item.plank.emberwood", "quantity": 1 }
+      ],
+      "output": { "itemId": "item.armour.cindersteel_buckler", "quantity": 1 },
+      "craftDurationMs": 12000,
+      "baseWasteRateBasisPoints": 1100,
+      "wasteReductionPerSkillLevelBasisPoints": 30,
+      "xpPerCraft": 92
     }
   ]
 }

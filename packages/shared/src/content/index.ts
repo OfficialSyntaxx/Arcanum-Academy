@@ -24,6 +24,7 @@ import { COURTYARD } from '../world/courtyard.js';
 import { FOREST } from '../world/forest.js';
 import { MOUNTAINS } from '../world/mountains.js';
 import { SNOW } from '../world/snow.js';
+import { CINDERHOLLOW } from '../world/cinderhollow.js';
 import type { ItemDefinition } from '../items/types.js';
 import type { NodeDefinition } from '../gathering/types.js';
 import type { RecipeDefinition } from '../crafting/types.js';
@@ -103,7 +104,7 @@ export const NODE_CATALOG: NodeCatalog = expect(
   buildNodeCatalog(nodeDefinitions, {
     items: ITEM_CATALOG,
     skills: SKILL_TABLE,
-    zones: [COURTYARD, FOREST, MOUNTAINS, SNOW],
+    zones: [COURTYARD, FOREST, MOUNTAINS, SNOW, CINDERHOLLOW],
   }),
   'shipped gathering content is invalid',
 );
@@ -112,7 +113,7 @@ export const RECIPE_BOOK: RecipeBook = expect(
   buildRecipeBook(recipeDefinitions, {
     items: ITEM_CATALOG,
     skills: SKILL_TABLE,
-    zones: [COURTYARD, FOREST, MOUNTAINS, SNOW],
+    zones: [COURTYARD, FOREST, MOUNTAINS, SNOW, CINDERHOLLOW],
   }),
   'shipped recipe content is invalid',
 );

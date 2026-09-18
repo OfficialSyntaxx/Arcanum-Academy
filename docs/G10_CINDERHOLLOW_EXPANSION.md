@@ -44,10 +44,14 @@ clear reason to explore beyond the current world rather than another disconnecte
 
 1. **G10-A — World route:** zone definition, portal, terrain palette, cave landmark, minimap and
    collision-safe traversal.
-2. **G10-B — Solo loop:** new resource, recipe, regional encounter, and discovery-backed quest
-   progression.
-3. **G10-C — Cinderheart:** compact dungeon/boss finale, first-clear reward, diary/collection
-   integration, and real-phone acceptance evidence.
+2. **G10-B — Solo loop:** complete — Mining 8 Cinder Ore Vein, combat-4 Cinderbound Wisp, Cinder
+   Crucible recipes, the Ironman-only Cindersteel Buckler (Defence 10, +23 defence), and a
+   discovery-backed 15-coin First Forge diary. The wisp is non-aggressive so the cavern remains
+   explorable before the player is ready to farm its cores.
+3. **G10-C — Cinderheart:** complete in code — a level-10, Magic-weak, two-phase Cinderheart boss
+   in the Crucible Chamber. It unlocks after one Cinderbound Wisp defeat, awards the unique
+   Cinderheart Sigil, and completes the 15-coin Heart of the Hollow diary. Real-phone acceptance
+   remains a player-side check before calling the zone visually signed off.
 
 Each slice must pass the full verification gate, production build, asset budget, and mobile
 acceptance checks before the next one begins.

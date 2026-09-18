@@ -360,6 +360,21 @@
           "maxQuantity": 1
         }
       ]
+    },
+    {
+      "id": "node.cinderhollow.ore_vein",
+      "interactableId": "int.cinderhollow.ore_vein",
+      "kind": "CRYSTAL",
+      "requiredSkillId": "skill.mining",
+      "requiredSkillLevel": 8,
+      "harvestIntervalMs": 3400,
+      "xpPerHarvest": 22,
+      "depletionHarvests": 30,
+      "regenerationMs": 420000,
+      "dropTable": [
+        { "itemId": "item.ore.cinder", "weight": 820, "minQuantity": 1, "maxQuantity": 2 },
+        { "itemId": "item.crystal.resonant", "weight": 180, "minQuantity": 1, "maxQuantity": 1 }
+      ]
     }
   ]
 }
