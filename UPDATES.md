@@ -8,6 +8,15 @@ for the design; this file only records the state of this branch against it.
 independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
 
+## G8-D public profile links — Codex, 2026-09-18
+
+- Added a same-origin, opaque-ID profile link and native mobile share control for selected public
+  profiles.
+- Opening a link loads its public comparison; closing it removes the parameter. The server remains
+  the sole authority for whether that opaque value resolves to a currently opted-in profile.
+- Added link validation coverage and iPhone acceptance steps in
+  `docs/G8_D_PUBLIC_PROFILE_LINKS.md`.
+
 ## G8-C public profile comparison — Codex, 2026-09-18
 
 - Added a local, side-by-side comparison for an opted-in public profile and the player's confirmed

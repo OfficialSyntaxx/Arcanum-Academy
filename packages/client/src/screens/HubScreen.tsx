@@ -19,6 +19,7 @@ import { QuestJournal } from '../ui/QuestJournal.js';
 import { CollectionLog } from '../ui/CollectionLog.js';
 import { Minimap } from '../ui/Minimap.js';
 import { PublicProfile } from '../ui/PublicProfile.js';
+import { clearPublicProfileLink, publicProfileIdFromUrl } from '../ui/public-profile-link.js';
 
 /**
  * The hub overlay.
@@ -111,13 +112,26 @@ export function HubScreen({
   const [mapOpen, setMapOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [sharedProfileId, setSharedProfileId] = useState(() =>
+    publicProfileIdFromUrl(window.location.href),
+  );
+  const [profileOpen, setProfileOpen] = useState(sharedProfileId !== null);
+
+  function closeProfile() {
+    const link = clearPublicProfileLink(window.location.href);
+    if (link) window.history.replaceState(null, '', link);
+    setSharedProfileId(null);
+    setProfileOpen(false);
+  }
 
   useEffect(() => {
     setSatchelView(null);
     setMapOpen(false);
     setJournalOpen(false);
     setCollectionOpen(false);
+    const link = clearPublicProfileLink(window.location.href);
+    if (link) window.history.replaceState(null, '', link);
+    setSharedProfileId(null);
     setProfileOpen(false);
   }, [travelRevision]);
 
@@ -154,7 +168,8 @@ export function HubScreen({
         <PublicProfile
           serverUrl={serverUrl}
           onUpdate={onUpdateProfile}
-          onClose={() => setProfileOpen(false)}
+          initialPublicId={sharedProfileId}
+          onClose={closeProfile}
         />
       )}
       {!inCombat && <InteractionPrompt onEngage={onEngage} />}
@@ -194,7 +209,7 @@ export function HubScreen({
         <button
           type="button"
           aria-pressed={profileOpen}
-          onClick={() => setProfileOpen((open) => !open)}
+          onClick={() => (profileOpen ? closeProfile() : setProfileOpen(true))}
         >
           Profile
         </button>

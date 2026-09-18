@@ -145,6 +145,16 @@ record the first failed item, a screenshot, and the device/OS version.
 - [ ] In portrait and landscape, scroll the skill rows, close the comparison, and confirm Profile
       remains readable without covering critical world controls.
 
+## G8-D: Public profile links
+
+- [ ] Select an opted-in hiscore entry, press **Share**, and confirm iOS presents the native share
+      sheet with an `arcanum-academy.netlify.app` link rather than a player ID or account token.
+- [ ] Open that link in a clean/private browser. Confirm Profile opens directly to the selected
+      public comparison and the game still remains playable.
+- [ ] Close the comparison or Profile. Confirm the `profile` URL parameter is removed.
+- [ ] Disable the selected character's public listing, then reopen its prior shared link. Confirm it
+      reveals no public profile details.
+
 ## Report back
 
 For any issue, send: checklist section, exact step, what you expected, what happened, portrait or

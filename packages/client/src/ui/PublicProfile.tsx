@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useAppStore } from '../state/app-store.js';
 import { comparePublicProfile, type PublicSkillProgress } from './profile-comparison.js';
+import { clearPublicProfileLink, publicProfileLink } from './public-profile-link.js';
 
 interface Hiscore {
   readonly publicId: string;
@@ -39,10 +40,12 @@ export function PublicProfile({
   serverUrl,
   onUpdate,
   onClose,
+  initialPublicId = null,
 }: {
   readonly serverUrl: string;
   readonly onUpdate: (displayName: string | null, isPublic: boolean) => void;
   readonly onClose: () => void;
+  readonly initialPublicId?: string | null;
 }) {
   const profile = useAppStore((state) => state.economy.profile);
   const ownSkills = useAppStore((state) => state.economy.skills);
@@ -69,20 +72,61 @@ export function PublicProfile({
       .catch(() => setScoreStatus('Hiscores are temporarily unavailable.'));
   }, [serverUrl]);
 
+  useEffect(() => {
+    if (initialPublicId === null) return;
+    loadProfile(initialPublicId, false);
+    // The pane mounts once per open. Re-fetching because local progression
+    // changed would be wasteful and does not alter the selected public record.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPublicId, serverUrl]);
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onUpdate(name.trim() || null, publiclyListed);
   }
 
-  function view(publicId: string) {
+  function loadProfile(publicId: string, updateAddress: boolean) {
     const url = detailUrl(serverUrl, publicId);
     if (!url) return;
     void fetch(url, { headers: { accept: 'application/json' } })
       .then((response) =>
         response.ok ? response.json() : Promise.reject(new Error('unavailable')),
       )
-      .then((body: { profile?: Detail }) => setSelected(body.profile ?? null))
+      .then((body: { profile?: Detail }) => {
+        const selectedProfile = body.profile ?? null;
+        setSelected(selectedProfile);
+        if (selectedProfile !== null && updateAddress) setProfileAddress(selectedProfile.publicId);
+      })
       .catch(() => setScoreStatus('That public profile is unavailable.'));
+  }
+
+  function view(publicId: string) {
+    loadProfile(publicId, true);
+  }
+
+  function setProfileAddress(publicId: string) {
+    const link = publicProfileLink(window.location.href, publicId);
+    if (link) window.history.replaceState(null, '', link);
+  }
+
+  function clearProfileAddress() {
+    const link = clearPublicProfileLink(window.location.href);
+    if (link) window.history.replaceState(null, '', link);
+  }
+
+  async function shareSelected() {
+    if (selected === null) return;
+    const link = publicProfileLink(window.location.href, selected.publicId);
+    if (!link) return;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${selected.displayName} · Alderfell`, url: link });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(link);
+      }
+    } catch {
+      // Cancelling the iOS share sheet is an ordinary no-op.
+    }
   }
 
   const comparison = selected
@@ -147,9 +191,21 @@ export function PublicProfile({
         <section className="profile-panel__detail">
           <div className="profile-panel__detail-head">
             <h3>{selected.displayName}</h3>
-            <button type="button" onClick={() => setSelected(null)} aria-label="Close comparison">
-              ×
-            </button>
+            <div>
+              <button type="button" onClick={shareSelected}>
+                Share
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelected(null);
+                  clearProfileAddress();
+                }}
+                aria-label="Close comparison"
+              >
+                ×
+              </button>
+            </div>
           </div>
           <p>
             {selected.discoveries} discoveries · {selected.diaryHighlights.length} diary milestones
