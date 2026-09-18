@@ -88,6 +88,16 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
     ambientColour: 0x4f8f8c,
     ambientIntensity: 0.72,
   },
+  'cinderhollow.emberglow': {
+    sky: 0x291b24,
+    fog: 0x34232a,
+    fogNear: 54,
+    fogFar: 138,
+    sunColour: 0xff9257,
+    sunIntensity: 0.78,
+    ambientColour: 0x9b5d4b,
+    ambientIntensity: 0.62,
+  },
 };
 
 const FALLBACK: Atmosphere = PRESETS['courtyard.afternoon']!;

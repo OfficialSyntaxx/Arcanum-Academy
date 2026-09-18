@@ -25,7 +25,7 @@
 
 import type { InteractableId, NpcDefinitionId, WaypointId } from '../ids.js';
 import { BuildingDoorSide, InteractableKind, NpcActivity, NpcRole, type Zone } from './types.js';
-import { COURTYARD_ZONE_ID, MOUNTAINS_ZONE_ID } from './zone-ids.js';
+import { CINDERHOLLOW_ZONE_ID, COURTYARD_ZONE_ID, MOUNTAINS_ZONE_ID } from './zone-ids.js';
 
 const wp = (id: string): WaypointId => id as WaypointId;
 const ix = (id: string): InteractableId => id as InteractableId;
@@ -72,6 +72,7 @@ export const MOUNTAINS: Zone = {
         wp('wp.mine.path'),
         wp('wp.ascent.path'),
         wp('wp.foothill.forge'),
+        wp('wp.cinderhollow.gate'),
       ],
       tags: ['plaza', 'social', 'spawn'],
     },
@@ -81,6 +82,13 @@ export const MOUNTAINS: Zone = {
       radius: 2,
       links: [wp('wp.foothill.camp')],
       tags: ['crafting'],
+    },
+    {
+      id: wp('wp.cinderhollow.gate'),
+      position: { x: 45.6, z: -57.6 },
+      radius: 3,
+      links: [wp('wp.foothill.camp')],
+      tags: ['portal', 'landmark'],
     },
 
     // --- Cindermark Mine (west) ---------------------------------------------
@@ -243,6 +251,16 @@ export const MOUNTAINS: Zone = {
       facing: 0,
       label: "Watch Captain's Board",
       verb: 'Read',
+    },
+    {
+      id: ix('int.cinderhollow.portal'),
+      kind: InteractableKind.ZonePortal,
+      position: { x: 52, z: -61 },
+      approach: wp('wp.cinderhollow.gate'),
+      facing: Math.PI * 0.5,
+      label: 'Descent to Cinderhollow',
+      verb: 'Descend',
+      targetZone: CINDERHOLLOW_ZONE_ID,
     },
 
     // --- The wilds ---------------------------------------------------------

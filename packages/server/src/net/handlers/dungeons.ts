@@ -39,6 +39,8 @@ function travelAllowed(state: PlayerState, target: string): boolean {
   const source = state.location.zoneId;
   if (source === target) return true;
   if (target === 'zone.courtyard') return true;
+  if (target === 'zone.cinderhollow') return source === 'zone.mountains';
+  if (target === 'zone.mountains') return source === 'zone.cinderhollow';
   if (source !== 'zone.courtyard') return false;
   if (target === 'zone.saltwake_ruins') {
     const status = state.quests['quest.beneath_the_saltline']?.status;

@@ -84,6 +84,21 @@ describe('Saltwake dungeon lifecycle', () => {
     expect(state.discoveries).toHaveProperty('discovery.dungeon.saltwake_entered');
   });
 
+  it('permits the Cindermark-to-Cinderhollow route and its return only', async () => {
+    const h = harness();
+    expect(await h.dispatch('world.travel', { targetZoneId: 'zone.cinderhollow' })).toMatchObject({
+      ok: false,
+    });
+    await h.seed({ location: { zoneId: 'zone.mountains', roomId: 'wp.cinderhollow.gate' } });
+    expect(await h.dispatch('world.travel', { targetZoneId: 'zone.cinderhollow' })).toMatchObject({
+      ok: true,
+    });
+    expect((await h.state()).location.zoneId).toBe('zone.cinderhollow');
+    expect(await h.dispatch('world.travel', { targetZoneId: 'zone.mountains' })).toMatchObject({
+      ok: true,
+    });
+  });
+
   it('claims the one-time charm and permanently opens the shortcut', async () => {
     const h = harness();
     await h.seed({

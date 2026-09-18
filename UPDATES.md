@@ -8,6 +8,14 @@ for the design; this file only records the state of this branch against it.
 independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
 
+## G10 Cinderhollow expansion — Codex, 2026-09-18
+
+- Began the next single-player world/content phase after deciding paid multiplayer hosting is not
+  useful before the game has players.
+- Cinderhollow is a volcanic Cindermark branch that will turn the existing resonant-ingot and
+  forged-gear progression into a new exploration, crafting, and solo combat route.
+- Scope, constraints, and staged delivery are recorded in `docs/G10_CINDERHOLLOW_EXPANSION.md`.
+
 ## G9 live-presence gate — Codex, 2026-09-18
 
 - Kept the project on free hosting and left live presence and trading disabled.

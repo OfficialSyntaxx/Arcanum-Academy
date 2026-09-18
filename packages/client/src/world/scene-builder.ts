@@ -104,6 +104,7 @@ const GROUND_PALETTES: Readonly<Record<string, readonly number[]>> = {
   'zone.mountains': [0x5c6358, 0x66705f, 0x707867, 0x5f6a5a],
   'zone.snow': [0xd9e2ea, 0xe4ebf1, 0xeef3f7, 0xdde6ed],
   'zone.saltwake_ruins': [0x355f36, 0x426f3c, 0x4d7841, 0x3d6734],
+  'zone.cinderhollow': [0x3a292c, 0x4a3030, 0x533832, 0x34252a],
 };
 
 export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeometry {
