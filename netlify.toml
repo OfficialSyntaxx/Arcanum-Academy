@@ -19,6 +19,10 @@
 [build.environment]
   NODE_VERSION = "22"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # The client is a single-page app: every route must serve index.html rather
 # than 404, or a deep link and a refresh both break.
 [[redirects]]

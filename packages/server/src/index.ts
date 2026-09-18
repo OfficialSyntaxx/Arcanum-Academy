@@ -46,6 +46,7 @@ import {
   type SupportReportStore,
 } from './support-reports.js';
 import { registerSupportReportRoutes } from './support-routes.js';
+import { registerAccountRoutes } from './account-routes.js';
 
 /**
  * Server entry point.
@@ -236,6 +237,10 @@ async function main(): Promise<void> {
       logger: logger.child('admin'),
     });
     logger.info('read-only admin routes registered');
+  }
+  if (config.ACCOUNT_BRIDGE_SECRET !== undefined) {
+    registerAccountRoutes(app, { secret: config.ACCOUNT_BRIDGE_SECRET, identity });
+    logger.info('player account recovery routes registered');
   }
 
   app.get('/healthz', async () => ({ status: 'ok' }));

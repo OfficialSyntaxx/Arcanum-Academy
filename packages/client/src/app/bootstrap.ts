@@ -29,6 +29,7 @@ import {
 import { useAppStore } from '../state/app-store.js';
 import { HubController } from './hub-controller.js';
 import { startDiagnosticReporter } from './diagnostic-reporter.js';
+import { AccountService } from './account-service.js';
 
 /**
  * Composition root.
@@ -54,6 +55,7 @@ export interface ClientServices {
   economy: EconomyController;
   hub: HubController;
   engine: Engine;
+  account: AccountService;
 }
 
 const IDENTITY_KEY = 'identity';
@@ -101,6 +103,7 @@ export async function bootstrap(options: BootstrapOptions): Promise<Container<Cl
   const opened = await IndexedDbStore.open();
   const storage: KeyValueStore = opened.ok ? opened.value : new MemoryStore();
   container.register('storage', () => storage);
+  container.register('account', () => new AccountService(storage));
   if (opened.ok) {
     store.setBootStep('storage', { status: 'done' });
   } else {

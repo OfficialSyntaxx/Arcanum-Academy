@@ -9,6 +9,7 @@ import { StatusBar } from '../ui/StatusBar.js';
 import { ErrorBoundary } from '../ui/ErrorBoundary.js';
 import { GamePhase } from '@alderfell/sim';
 import { submitSupportReport } from './support-reporter.js';
+import type { AccountService } from './account-service.js';
 
 const LOCAL_SERVER_URL = 'ws://localhost:8787';
 
@@ -59,6 +60,7 @@ export function App() {
   const setPhase = useAppStore((state) => state.setPhase);
   const [hub, setHub] = useState<HubController | null>(null);
   const [economy, setEconomy] = useState<EconomyController | null>(null);
+  const [account, setAccount] = useState<AccountService | null>(null);
   const [serverUrl] = useState(resolveServerUrl);
   const Screen = resolveScreen(phase);
 
@@ -82,6 +84,7 @@ export function App() {
         // The controller syncs itself once the gateway accepts a handshake;
         // asking here would race that and be refused.
         setEconomy(container.resolve('economy'));
+        setAccount(container.resolve('account'));
         dispose = () => container.dispose();
       })
       .catch((error: unknown) => {
@@ -92,6 +95,7 @@ export function App() {
     return () => {
       disposed = true;
       setHub(null);
+      setAccount(null);
       void dispose?.();
     };
   }, [serverUrl, setFault, setPhase]);
@@ -100,7 +104,10 @@ export function App() {
     <div className="app">
       <canvas ref={canvasRef} className="app__canvas" aria-hidden="true" />
       <div className="app__overlay">
-        <StatusBar onSubmitReport={(input) => submitSupportReport(serverUrl, input)} />
+        <StatusBar
+          account={account}
+          onSubmitReport={(input) => submitSupportReport(serverUrl, input)}
+        />
         <ErrorBoundary onError={(error) => setFault(error.message)}>
           {hub !== null && isHubPhase(phase) ? (
             <HubScreen

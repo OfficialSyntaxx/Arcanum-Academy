@@ -1,7 +1,23 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import {
+  AuthError,
+  getUser,
+  handleAuthCallback,
+  login,
+  logout,
+  requestPasswordRecovery,
+  signup,
+  updateUser,
+  type User,
+} from '@netlify/identity';
 import { GamePhase } from '@alderfell/sim';
 import { useAppStore } from '../state/app-store.js';
 import type { DiagnosticEntry } from '../state/app-store.js';
+
+interface CharacterAccountActions {
+  linkCurrentCharacter(): Promise<void>;
+  recoverCharacter(): Promise<void>;
+}
 
 type SupportCategory = 'bug' | 'gameplay' | 'account' | 'feedback';
 
@@ -23,8 +39,10 @@ const STATUS_LABEL: Record<string, string> = {
 /** Persistent connection and performance readout. Visible in every phase. */
 export function StatusBar({
   onSubmitReport,
+  account,
 }: {
   readonly onSubmitReport: (input: SupportRequest) => Promise<string>;
+  readonly account: CharacterAccountActions | null;
 }) {
   const transportStatus = useAppStore((state) => state.transportStatus);
   const latencyMs = useAppStore((state) => state.latencyMs);
@@ -32,6 +50,7 @@ export function StatusBar({
   const diagnosticsOpen = useAppStore((state) => state.diagnosticsOpen);
   const setDiagnosticsOpen = useAppStore((state) => state.setDiagnosticsOpen);
   const [reportOpen, setReportOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const hudCollapsed = useAppStore((state) => state.hudCollapsed);
   const phase = useAppStore((state) => state.phase);
   const inGame = phase === GamePhase.WorldExploration || phase === GamePhase.SocialHub;
@@ -68,6 +87,9 @@ export function StatusBar({
             <button type="button" onClick={() => setReportOpen(true)}>
               Report
             </button>
+            <button type="button" onClick={() => setAccountOpen(true)}>
+              Account
+            </button>
           </>
         )}
       </div>
@@ -75,7 +97,183 @@ export function StatusBar({
       {reportOpen && (
         <SupportReportPanel onSubmit={onSubmitReport} onClose={() => setReportOpen(false)} />
       )}
+      {accountOpen && account && (
+        <AccountPanel account={account} onClose={() => setAccountOpen(false)} />
+      )}
     </>
+  );
+}
+
+function AccountPanel({
+  account,
+  onClose,
+}: {
+  readonly account: CharacterAccountActions;
+  readonly onClose: () => void;
+}) {
+  const [user, setUser] = useState<User | null>(null);
+  const [mode, setMode] = useState<'login' | 'signup' | 'recovery' | 'password'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const callback = await handleAuthCallback();
+        if (callback?.type === 'recovery') setMode('password');
+        if (active) setUser(await getUser());
+      } catch {
+        if (active) setStatus('The account link is invalid or expired.');
+      } finally {
+        if (active) setBusy(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setStatus('');
+    try {
+      if (mode === 'signup') {
+        await signup(email.trim(), password);
+        setStatus('Check your email to confirm the account, then sign in here.');
+        setMode('login');
+      } else if (mode === 'recovery') {
+        await requestPasswordRecovery(email.trim());
+        setStatus('If that account exists, a reset link is on its way.');
+      } else if (mode === 'password') {
+        await updateUser({ password });
+        setUser(await getUser());
+        history.replaceState(null, '', location.pathname);
+        setStatus('Password updated.');
+      } else {
+        setUser(await login(email.trim(), password));
+        setPassword('');
+      }
+    } catch (error) {
+      setStatus(
+        error instanceof AuthError && error.status === 401
+          ? 'Email or password is incorrect.'
+          : 'The account request failed.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function transfer(action: 'link' | 'recover') {
+    setBusy(true);
+    setStatus('');
+    try {
+      if (action === 'link') await account.linkCurrentCharacter();
+      else await account.recoverCharacter();
+      setStatus(
+        action === 'link' ? 'Character protected. Reloading…' : 'Character recovered. Reloading…',
+      );
+      window.setTimeout(() => window.location.reload(), 500);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'The account request failed.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <aside className="diagnostics-panel support-panel account-panel" aria-label="Character account">
+      <div className="diagnostics-panel__head">
+        <strong>Character account</strong>
+        <button type="button" onClick={onClose}>
+          Close
+        </button>
+      </div>
+      {busy ? (
+        <p>Checking secure login…</p>
+      ) : user ? (
+        <>
+          <p>
+            Signed in as <strong>{user.email}</strong>
+          </p>
+          <p>
+            Protect this device’s character once, or recover your protected character on a new
+            device.
+          </p>
+          <div className="account-panel__actions">
+            <button type="button" onClick={() => void transfer('link')}>
+              Protect this character
+            </button>
+            <button type="button" onClick={() => void transfer('recover')}>
+              Recover my character
+            </button>
+            <button type="button" onClick={() => void logout().then(() => setUser(null))}>
+              Sign out
+            </button>
+          </div>
+        </>
+      ) : (
+        <form onSubmit={(event) => void submit(event)}>
+          <p>
+            {mode === 'signup'
+              ? 'Create a recovery login.'
+              : mode === 'recovery'
+                ? 'Reset your password.'
+                : mode === 'password'
+                  ? 'Choose a new password.'
+                  : 'Sign in to protect or recover a character.'}
+          </p>
+          {mode !== 'password' && (
+            <label>
+              Email
+              <input
+                type="email"
+                required
+                autoComplete="username"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+          )}
+          {mode !== 'recovery' && (
+            <label>
+              Password
+              <input
+                type="password"
+                required
+                minLength={8}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+          )}
+          <button type="submit">
+            {mode === 'signup'
+              ? 'Create login'
+              : mode === 'recovery'
+                ? 'Send reset link'
+                : mode === 'password'
+                  ? 'Save password'
+                  : 'Sign in'}
+          </button>
+          {mode !== 'password' && (
+            <div className="account-panel__links">
+              <button type="button" onClick={() => setMode(mode === 'signup' ? 'login' : 'signup')}>
+                {mode === 'signup' ? 'Back to sign in' : 'Create login'}
+              </button>
+              <button type="button" onClick={() => setMode('recovery')}>
+                Forgot password?
+              </button>
+            </div>
+          )}
+        </form>
+      )}
+      {status && <p role="status">{status}</p>}
+    </aside>
   );
 }
 

@@ -299,7 +299,8 @@
 }
 
 .support-panel select,
-.support-panel textarea {
+.support-panel textarea,
+.support-panel input {
   width: 100%;
   padding: var(--space-2);
   border: var(--border-hairline);
@@ -307,6 +308,20 @@
   color: var(--haze);
   background: var(--ink);
   font: inherit;
+}
+
+.account-panel__actions,
+.account-panel__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.account-panel__actions button:first-child {
+  background: var(--gilt);
+  color: var(--ink);
+  padding: var(--space-2) var(--space-3);
 }
 
 .diagnostics-panel__head {

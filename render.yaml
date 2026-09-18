@@ -69,3 +69,7 @@ services:
         sync: false
       - key: ADMIN_ALLOWED_ORIGINS
         sync: false
+      # Server-to-server credential shared only with the player site's Netlify
+      # Function. Leave absent to keep /account/link and /account/recover hidden.
+      - key: ACCOUNT_BRIDGE_SECRET
+        sync: false

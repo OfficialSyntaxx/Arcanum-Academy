@@ -110,6 +110,20 @@ record the first failed item, a screenshot, and the device/OS version.
 - [ ] Uncover the Tidepool Cache and confirm exactly 45 coins are added once. Revisit and refresh;
       confirm no second reward is granted and the active clue card is gone.
 
+## G7-A: Player account recovery
+
+- [ ] Enable/configure the separate player Identity tenant using
+      `docs/G7_A_ACCOUNT_RECOVERY_HANDOVER.md`; do not reuse the operations tenant.
+- [ ] On the existing character, open **Account**, create and confirm a login, sign in, and choose
+      **Protect this character**. Confirm reload returns the same player ID and progress.
+- [ ] In a clean/private second browser, sign into the same login and choose **Recover my
+      character**. Confirm the original player ID and progress return.
+- [ ] Confirm the older browser no longer authenticates with its rotated token, then recover there
+      if needed.
+- [ ] Complete a password reset and confirm the reset login can still recover the protected player.
+- [ ] Try linking the same login to a different disposable player. Confirm it is refused and neither
+      save changes.
+
 ## Report back
 
 For any issue, send: checklist section, exact step, what you expected, what happened, portrait or

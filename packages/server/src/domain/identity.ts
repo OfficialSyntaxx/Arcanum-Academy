@@ -44,6 +44,17 @@ export interface IdentityStore {
   put(playerId: PlayerId, tokenHash: string): Promise<Result<true, Failure>>;
   /** Resolves a token hash to its player, or null when nothing matches. */
   find(tokenHash: string): Promise<Result<PlayerId | null, Failure>>;
+  /** Links a proved external subject and replaces the device bearer atomically. */
+  linkExternal(
+    subject: string,
+    currentTokenHash: string,
+    replacementTokenHash: string,
+  ): Promise<Result<PlayerId, Failure>>;
+  /** Issues a replacement bearer for an already-linked external subject. */
+  recoverExternal(
+    subject: string,
+    replacementTokenHash: string,
+  ): Promise<Result<PlayerId, Failure>>;
 }
 
 export function hashToken(token: string): string {
@@ -97,10 +108,45 @@ export class IdentityService {
     }
     return ok(found.value);
   }
+
+  async linkExternal(
+    subject: string,
+    currentToken: string,
+  ): Promise<Result<IssuedIdentity, Failure>> {
+    if (!validSubject(subject)) {
+      return err(failure(FailureCode.Validation, 'identity.external_subject_invalid'));
+    }
+    if (typeof currentToken !== 'string' || currentToken.length === 0) {
+      return err(failure(FailureCode.Unauthorized, 'identity.token_missing'));
+    }
+    const token = randomBytes(TOKEN_BYTES).toString('base64url');
+    const linked = await this.store.linkExternal(
+      subject,
+      hashToken(currentToken),
+      hashToken(token),
+    );
+    if (!linked.ok) return err(linked.error);
+    return ok({ playerId: linked.value, token });
+  }
+
+  async recoverExternal(subject: string): Promise<Result<IssuedIdentity, Failure>> {
+    if (!validSubject(subject)) {
+      return err(failure(FailureCode.Validation, 'identity.external_subject_invalid'));
+    }
+    const token = randomBytes(TOKEN_BYTES).toString('base64url');
+    const recovered = await this.store.recoverExternal(subject, hashToken(token));
+    if (!recovered.ok) return err(recovered.error);
+    return ok({ playerId: recovered.value, token });
+  }
+}
+
+function validSubject(subject: string): boolean {
+  return typeof subject === 'string' && subject.length >= 8 && subject.length <= 200;
 }
 
 export class InMemoryIdentityStore implements IdentityStore {
   private readonly byHash = new Map<string, PlayerId>();
+  private readonly bySubject = new Map<string, PlayerId>();
 
   async put(playerId: PlayerId, tokenHash: string): Promise<Result<true, Failure>> {
     if ([...this.byHash.values()].includes(playerId)) {
@@ -116,6 +162,43 @@ export class InMemoryIdentityStore implements IdentityStore {
     }
     return ok(null);
   }
+
+  async linkExternal(
+    subject: string,
+    currentTokenHash: string,
+    replacementTokenHash: string,
+  ): Promise<Result<PlayerId, Failure>> {
+    const found = await this.find(currentTokenHash);
+    if (!found.ok) return err(found.error);
+    if (found.value === null)
+      return err(failure(FailureCode.Unauthorized, 'identity.token_unknown'));
+    const playerId = found.value;
+    const subjectOwner = this.bySubject.get(subject);
+    const playerSubject = [...this.bySubject].find(([, owner]) => owner === playerId)?.[0];
+    if (
+      (subjectOwner !== undefined && subjectOwner !== playerId) ||
+      (playerSubject !== undefined && playerSubject !== subject)
+    ) {
+      return err(failure(FailureCode.Conflict, 'identity.external_already_linked'));
+    }
+    this.bySubject.set(subject, playerId);
+    this.byHash.delete(currentTokenHash);
+    this.byHash.set(replacementTokenHash, playerId);
+    return ok(playerId);
+  }
+
+  async recoverExternal(
+    subject: string,
+    replacementTokenHash: string,
+  ): Promise<Result<PlayerId, Failure>> {
+    const playerId = this.bySubject.get(subject);
+    if (playerId === undefined) {
+      return err(failure(FailureCode.Unauthorized, 'identity.external_not_linked'));
+    }
+    for (const [hash, owner] of this.byHash) if (owner === playerId) this.byHash.delete(hash);
+    this.byHash.set(replacementTokenHash, playerId);
+    return ok(playerId);
+  }
 }
 
 const CREATE_TABLE = `
@@ -123,6 +206,16 @@ const CREATE_TABLE = `
     token_hash TEXT PRIMARY KEY,
     player_id  TEXT NOT NULL UNIQUE,
     issued_at  BIGINT NOT NULL
+  )
+`;
+
+const CREATE_EXTERNAL_TABLE = `
+  CREATE TABLE IF NOT EXISTS external_player_identities (
+    provider   TEXT NOT NULL,
+    subject    TEXT NOT NULL,
+    player_id  TEXT NOT NULL UNIQUE,
+    linked_at  BIGINT NOT NULL,
+    PRIMARY KEY (provider, subject)
   )
 `;
 
@@ -139,6 +232,7 @@ export class PostgresIdentityStore implements IdentityStore {
   async initialise(): Promise<Result<true, Failure>> {
     try {
       await this.client.query(CREATE_TABLE);
+      await this.client.query(CREATE_EXTERNAL_TABLE);
       return ok(true);
     } catch (error) {
       return err(storageFailure('initialise identities', error));
@@ -180,6 +274,77 @@ export class PostgresIdentityStore implements IdentityStore {
       return ok(row === undefined ? null : asId<PlayerId>(row.player_id));
     } catch (error) {
       return err(storageFailure('resolve identity', error));
+    }
+  }
+
+  async linkExternal(
+    subject: string,
+    currentTokenHash: string,
+    replacementTokenHash: string,
+  ): Promise<Result<PlayerId, Failure>> {
+    try {
+      const result = await this.client.query<{ player_id: string }>(
+        `WITH owner AS (
+           SELECT player_id FROM player_identities WHERE token_hash = $1
+         ), inserted AS (
+           INSERT INTO external_player_identities (provider, subject, player_id, linked_at)
+           SELECT 'netlify', $2, player_id, $4 FROM owner
+           ON CONFLICT DO NOTHING
+           RETURNING player_id
+         ), permitted AS (
+           SELECT player_id FROM inserted
+           UNION
+           SELECT external.player_id
+           FROM external_player_identities external, owner
+           WHERE external.provider = 'netlify' AND external.subject = $2
+             AND external.player_id = owner.player_id
+         ), rotated AS (
+           UPDATE player_identities identities
+           SET token_hash = $3, issued_at = $4
+           FROM permitted
+           WHERE identities.player_id = permitted.player_id
+           RETURNING identities.player_id
+         ) SELECT player_id FROM rotated`,
+        [currentTokenHash, subject, replacementTokenHash, this.now()],
+      );
+      const row = result.rows[0];
+      if (row === undefined) {
+        const owner = await this.find(currentTokenHash);
+        if (!owner.ok) return err(owner.error);
+        return err(
+          failure(
+            owner.value === null ? FailureCode.Unauthorized : FailureCode.Conflict,
+            owner.value === null ? 'identity.token_unknown' : 'identity.external_already_linked',
+          ),
+        );
+      }
+      return ok(asId<PlayerId>(row.player_id));
+    } catch (error) {
+      return err(storageFailure('link external identity', error));
+    }
+  }
+
+  async recoverExternal(
+    subject: string,
+    replacementTokenHash: string,
+  ): Promise<Result<PlayerId, Failure>> {
+    try {
+      const result = await this.client.query<{ player_id: string }>(
+        `UPDATE player_identities identities
+         SET token_hash = $2, issued_at = $3
+         FROM external_player_identities external
+         WHERE external.provider = 'netlify' AND external.subject = $1
+           AND identities.player_id = external.player_id
+         RETURNING identities.player_id`,
+        [subject, replacementTokenHash, this.now()],
+      );
+      const row = result.rows[0];
+      if (row === undefined) {
+        return err(failure(FailureCode.Unauthorized, 'identity.external_not_linked'));
+      }
+      return ok(asId<PlayerId>(row.player_id));
+    } catch (error) {
+      return err(storageFailure('recover external identity', error));
     }
   }
 }

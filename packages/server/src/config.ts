@@ -21,6 +21,8 @@ const schema = z.object({
   ADMIN_READ_TOKEN: z.string().trim().min(32).optional(),
   /** Comma-separated browser origins allowed to call the separate operations API. */
   ADMIN_ALLOWED_ORIGINS: z.string().default(''),
+  /** Server-to-server credential for the player Identity recovery bridge. */
+  ACCOUNT_BRIDGE_SECRET: z.string().trim().min(32).optional(),
   /** Hard cap on concurrent sockets per process. Protects memory under load. */
   MAX_CONNECTIONS: z.coerce.number().int().positive().default(2_000),
   /** Seconds a disconnected session stays resumable. */
