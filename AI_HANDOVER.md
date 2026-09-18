@@ -5,7 +5,7 @@
 **Written:** 2026-09-09 · **Updated:** 2026-09-18 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G7-A, G7-B, and G8-A are implemented. Reliable skilling/economy, persistence, quest and diary
+**Code state:** G7-A, G7-B, G8-A, and G8-B are implemented. Reliable skilling/economy, persistence, quest and diary
 progression, combat/death recovery, the three-room Saltwake dungeon, its Drowned Warden boss,
 production GLB creature presentation, and the first persisted treasure-clue trail are live. The
 save retains bounded immutable history, restore is backup-first and audited, and a separately
@@ -15,8 +15,8 @@ protection and clean-device recovery use a separate Netlify Identity tenant, a s
 stable external subject mapping, and atomic bearer rotation. The world now uses admitted,
 optimized Quaternius character and creature GLBs, automatic OSRS-shaped combat, larger outer zones,
 regional encounters, equipment tiers, a minimap, and compact mobile HUD. Player account recovery
-also has opt-in public profiles and hiscores derived from authoritative saves. It is ready for the
-next social-read phase after production account-recovery acceptance.
+also has opt-in public profiles, hiscores, skill breakdowns, and diary highlights derived from
+authoritative saves. It is ready for the next social-read phase after production account-recovery acceptance.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -58,7 +58,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of G8-A on 2026-09-18 it reports **514 tests across 60 files**.
+afterwards is yours. As of G8-B on 2026-09-18 it reports **514 tests across 60 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -2136,6 +2136,7 @@ to the repo.
 | **G7-A — Account recovery** ✅ | Separate player Netlify Identity tenant, opt-in claim, password recovery and atomic game-token rotation. Deployment: `docs/G7_A_ACCOUNT_RECOVERY_HANDOVER.md`. | An account survives clearing site data without exposing passwords or bridge credentials to the game. |
 | **G7-B — World and character admission** ✅ | Optimized CC0 rigs/creatures, automatic combat, expanded outer regions, equipment, minimap and mobile HUD. | The character and combat world read coherently on phone within the published asset budget. |
 | **G8-A — Public profile foundation** ✅ | Opt-in display names, privacy-safe public aggregate profiles and top-25 hiscores. See `docs/G8_A_PUBLIC_PROFILES.md`. | A player can share progress without exposing private save or account data. |
+| **G8-B — Public profile detail** ✅ | Opaque public profile addresses, server-derived skill breakdowns, discovery counts, diary highlights, and read-only in-game comparison. See `docs/G8_B_PUBLIC_PROFILE_DETAIL.md`. | Players can inspect opted-in progress without social mutation or private-save exposure. |
 | **G8 — Async multiplayer** | Hiscores, profiles, collection comparison. | Two accounts can see each other's progress. |
 | **G9+** | Live presence, grouping, standard mode + trading. | Per §8. |
 
