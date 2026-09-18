@@ -5,7 +5,7 @@
 **Written:** 2026-09-09 · **Updated:** 2026-09-18 · **Author:** Claude Code, with Codex implementation updates
 **Owner:** Syntaxx (`OfficialSyntaxx`) · **Status:** canonical. This document supersedes the
 project docs in the other three repositories.
-**Code state:** G7-A, G7-B, G8-A, G8-B, and G8-C are implemented. Reliable skilling/economy, persistence, quest and diary
+**Code state:** G7-A, G7-B, G8-A, G8-B, G8-C, and G8-D are implemented. Reliable skilling/economy, persistence, quest and diary
 progression, combat/death recovery, the three-room Saltwake dungeon, its Drowned Warden boss,
 production GLB creature presentation, and the first persisted treasure-clue trail are live. The
 save retains bounded immutable history, restore is backup-first and audited, and a separately
@@ -15,9 +15,9 @@ protection and clean-device recovery use a separate Netlify Identity tenant, a s
 stable external subject mapping, and atomic bearer rotation. The world now uses admitted,
 optimized Quaternius character and creature GLBs, automatic OSRS-shaped combat, larger outer zones,
 regional encounters, equipment tiers, a minimap, and compact mobile HUD. Player account recovery
-also has opt-in public profiles, hiscores, skill breakdowns, diary highlights, and local read-only
-progress comparison derived from authoritative saves. It is ready for the next social-read phase after
-production account-recovery acceptance.
+also has opt-in public profiles, hiscores, skill breakdowns, diary highlights, local read-only
+progress comparison, and shareable opaque profile links derived from authoritative saves. The async
+social-read phase is complete; live presence remains gated on always-on hosting.
 
 > **The game is called Alderfell.** The name is inherited from `isorpg`, whose project is
 > being folded into this one. Package scope: `@alderfell/*`.
@@ -59,7 +59,7 @@ npm run verify              # format + lint + boundaries + typecheck + test
 ```
 
 `npm run verify` is the gate and it must be green before you start, so that anything red
-afterwards is yours. As of G8-C on 2026-09-18 it reports **516 tests across 61 files**.
+afterwards is yours. As of G8-D on 2026-09-18 it reports **518 tests across 62 files**.
 
 To actually play it, you need both halves — the client is a static bundle, the gateway is a
 long-running process:
@@ -2139,7 +2139,8 @@ to the repo.
 | **G8-A — Public profile foundation** ✅ | Opt-in display names, privacy-safe public aggregate profiles and top-25 hiscores. See `docs/G8_A_PUBLIC_PROFILES.md`. | A player can share progress without exposing private save or account data. |
 | **G8-B — Public profile detail** ✅ | Opaque public profile addresses, server-derived skill breakdowns, discovery counts, and diary highlights. See `docs/G8_B_PUBLIC_PROFILE_DETAIL.md`. | Players can inspect opted-in progress without social mutation or private-save exposure. |
 | **G8-C — Profile comparison** ✅ | Client-local side-by-side progression comparison against an opted-in profile. See `docs/G8_C_PROFILE_COMPARISON.md`. | Two players can compare public progress without uploading local state or creating a social-write surface. |
-| **G8 — Async multiplayer** | Hiscores, profiles, collection comparison. | Two accounts can see each other's progress. |
+| **G8-D — Public profile links** ✅ | Same-origin share links containing only an opaque public profile ID. See `docs/G8_D_PUBLIC_PROFILE_LINKS.md`. | Players can return to or share public comparisons without exposing an account or save. |
+| **G8 — Async multiplayer** ✅ | Hiscores, profiles, collection comparison, and shareable public links. | Two accounts can see and safely share each other's opted-in progress. |
 | **G9+** | Live presence, grouping, standard mode + trading. | Per §8. |
 
 ---
