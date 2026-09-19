@@ -219,6 +219,46 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
     rewardCoins: 120,
   },
   {
+    id: 'quest.heart_of_cinderhollow',
+    title: 'Heart of Cinderhollow',
+    description:
+      'Prospector Brix has heard the old crucible stirring beneath the Cindermark. Mine enough Cinder Ore to feed it, unbind its keeper, and bring back proof that the heart has finally cooled.',
+    hint: 'Descend from the Foothill Camp into Cinderhollow. Mine 6 Cinder Ore, defeat a Cinderbound Wisp, then challenge Cinderheart in the Crucible Chamber.',
+    prerequisites: ['quest.the_foothill_forge'],
+    objectives: [
+      {
+        kind: 'ITEM',
+        id: 'cinderhollow.ore',
+        itemIds: [asId<ItemDefinitionId>('item.ore.cinder')],
+        requiredQuantity: 6,
+        label: 'Mine 6 Cinder Ore',
+      },
+      {
+        kind: 'KILL',
+        id: 'cinderhollow.wisp',
+        encounterIds: [asId<InteractableId>('int.combat.cinderbound_wisp')],
+        requiredQuantity: 1,
+        label: 'Defeat a Cinderbound Wisp',
+      },
+      {
+        kind: 'KILL',
+        id: 'cinderhollow.heart',
+        encounterIds: [asId<InteractableId>('int.combat.cinderheart')],
+        requiredQuantity: 1,
+        label: 'Defeat Cinderheart',
+      },
+      {
+        kind: 'ITEM',
+        id: 'cinderhollow.sigil',
+        itemIds: [asId<ItemDefinitionId>('item.charm.cinderheart')],
+        requiredQuantity: 1,
+        label: 'Claim the Cinderheart Sigil',
+        consume: false,
+      },
+    ],
+    rewardCoins: 150,
+  },
+  {
     id: 'quest.the_long_winter',
     title: 'The Long Winter',
     description:

@@ -95,6 +95,14 @@ describe('resource quest catalog', () => {
       }
     }
   });
+
+  it('threads Cinderhollow through a permanent boss proof', () => {
+    const quest = questById('quest.heart_of_cinderhollow');
+    expect(quest).toMatchObject({ rewardCoins: 150, prerequisites: ['quest.the_foothill_forge'] });
+    expect(
+      quest?.objectives.find((objective) => objective.id === 'cinderhollow.sigil'),
+    ).toMatchObject({ consume: false });
+  });
 });
 
 describe('quest content references', () => {

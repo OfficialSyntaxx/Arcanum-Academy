@@ -41,6 +41,13 @@ describe('quest-aware NPC dialogue', () => {
         'Fallback',
       ),
     ).toContain('Azure Ink');
+    expect(
+      questDialogueForNpc(
+        'npc.brix',
+        { 'quest.heart_of_cinderhollow': quest(QuestStatus.Active) },
+        'Fallback',
+      ),
+    ).toContain('Cinderheart');
   });
 
   it('preserves authored barks where no quest response applies', () => {

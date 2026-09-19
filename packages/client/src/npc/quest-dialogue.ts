@@ -66,6 +66,15 @@ export function questDialogueForNpc(npcId: string, quests: QuestRecord, fallback
         return 'The notice board is in these stacks. Start there when you are ready to make your mark.';
       }
       return fallback;
+    case 'npc.brix':
+      if (active(quests, 'quest.heart_of_cinderhollow'))
+        return 'The descent is east of this camp. Mine the black vein, unbind its wisp, then take that cooled Sigil from Cinderheart.';
+      if (
+        complete(quests, 'quest.the_foothill_forge') &&
+        !complete(quests, 'quest.heart_of_cinderhollow')
+      )
+        return 'The forge is breathing again. Read the board before you follow that heat beneath the ridge.';
+      return fallback;
     default:
       return fallback;
   }

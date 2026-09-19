@@ -4,6 +4,12 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G11 guided Cinderhollow expedition — Codex, 2026-09-19
+
+- Added **Heart of Cinderhollow** after The Foothill Forge and before The Long Winter.
+- It guides mining, the Cinderbound Wisp, Cinderheart, and permanent Sigil proof; Brix supplies contextual guidance.
+- Reuses existing mobile UI and adds no assets, hosting, trading, presence, or client-authoritative progression.
+
 **Branch:** `Claudesep16`, cut from `main` on 2026-09-16 and admitted to `main` as G7-B after
 independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
