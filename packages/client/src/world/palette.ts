@@ -98,6 +98,16 @@ const PRESETS: Readonly<Record<string, Atmosphere>> = {
     ambientColour: 0x9b5d4b,
     ambientIntensity: 0.62,
   },
+  'ashen.overlook': {
+    sky: 0x4a3035,
+    fog: 0x594044,
+    fogNear: 68,
+    fogFar: 156,
+    sunColour: 0xffad72,
+    sunIntensity: 0.88,
+    ambientColour: 0xb5745f,
+    ambientIntensity: 0.7,
+  },
 };
 
 const FALLBACK: Atmosphere = PRESETS['courtyard.afternoon']!;

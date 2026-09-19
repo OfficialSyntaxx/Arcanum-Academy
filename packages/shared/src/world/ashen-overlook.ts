@@ -16,7 +16,7 @@ export const ASHEN_OVERLOOK: Zone = {
     canals: [],
   },
   spawn: wp('wp.ashen.overlook.entry'),
-  atmosphere: 'cinderhollow.emberglow',
+  atmosphere: 'ashen.overlook',
   ambientPopulation: 0,
   waypoints: [
     {

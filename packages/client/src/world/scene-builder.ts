@@ -105,6 +105,7 @@ const GROUND_PALETTES: Readonly<Record<string, readonly number[]>> = {
   'zone.snow': [0xd9e2ea, 0xe4ebf1, 0xeef3f7, 0xdde6ed],
   'zone.saltwake_ruins': [0x355f36, 0x426f3c, 0x4d7841, 0x3d6734],
   'zone.cinderhollow': [0x3a292c, 0x4a3030, 0x533832, 0x34252a],
+  'zone.ashen_overlook': [0x352d31, 0x433438, 0x514044, 0x2c292d],
 };
 
 export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeometry {
@@ -526,6 +527,31 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
     beaconStone.raycast = () => {};
     beaconEmbers.raycast = () => {};
     group.add(beaconStone, beaconEmbers);
+  }
+
+  if (zone.id === 'zone.ashen_overlook') {
+    // A small crown of basalt makes the optional vista read as a destination,
+    // not a blank extension of the cavern. It is non-colliding scenery built
+    // entirely from the existing low-poly material palette.
+    const stones = [
+      { x: -5.4, z: 22, height: 4.2 },
+      { x: 0, z: 25, height: 5.4 },
+      { x: 5.4, z: 22, height: 3.6 },
+    ] as const;
+    const geometry = track(new ConeGeometry(0.8, 1, 6));
+    const pillars = new InstancedMesh(geometry, stoneRaised, stones.length);
+    stones.forEach((site, index) => {
+      const y = heightAt(terrain, site);
+      scratchMatrix.compose(
+        new Vector3(site.x, y + site.height / 2, site.z),
+        scratchQuaternion.setFromAxisAngle(UP_AXIS, index * 0.55),
+        new Vector3(1, site.height, 1),
+      );
+      pillars.setMatrixAt(index, scratchMatrix);
+    });
+    pillars.instanceMatrix.needsUpdate = true;
+    pillars.raycast = () => {};
+    group.add(pillars);
   }
 
   // --- Interactable markers --------------------------------------------

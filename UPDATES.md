@@ -4,6 +4,26 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G23 Ashen Overlook terrain palette — staged release batch, 2026-09-19
+
+- Gave Ashen Overlook its own ash-and-ember ground palette instead of inheriting the green
+  Shorelands fallback, preserving the new branch's volcanic identity.
+- Renderer-only color data: no asset, reward, progression, collision, server, social, or hosting
+  change.
+
+## G24 Ashen Overlook atmosphere — staged release batch, 2026-09-19
+
+- Gave the open overlook a distinct, clearer ember-sky atmosphere instead of the enclosed
+  Cinderhollow cavern preset.
+- Renderer configuration only: no assets, rewards, progression, collision, server, social, or
+  hosting change.
+
+## G22 Ashen Overlook vista crown — staged release batch, 2026-09-19
+
+- Framed Ember Vista with three non-colliding procedural basalt pillars, giving the optional
+  Ashen Overlook branch a visible scenic destination without any interactive content.
+- No asset, light, collision, reward, progression, server, social, or hosting change.
+
 ## G17 Cinderhollow ember beacons — staged release batch, 2026-09-19
 
 - Added three non-colliding procedural ember beacons at the outer gallery, ore rim, and crucible
