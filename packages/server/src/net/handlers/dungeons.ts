@@ -66,6 +66,7 @@ export function registerDungeonHandlers(
       if (!travelAllowed(state, target))
         return err(failure(FailureCode.Conflict, 'world.destination_locked'));
       const enteringSaltwake = target === 'zone.saltwake_ruins';
+      const enteringCinderhollow = target === 'zone.cinderhollow';
       let next: PlayerState = {
         ...state,
         location: {
@@ -80,6 +81,8 @@ export function registerDungeonHandlers(
       };
       if (enteringSaltwake)
         next = applyDiscovery(next, 'event.saltwake.entered', nowMs, options.currencyCap);
+      if (enteringCinderhollow)
+        next = applyDiscovery(next, 'event.cinderhollow.entered', nowMs, options.currencyCap);
       return ok({ state: next, value: project(next) });
     });
   };

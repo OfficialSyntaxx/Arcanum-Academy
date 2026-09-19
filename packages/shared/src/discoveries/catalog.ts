@@ -136,6 +136,12 @@ export const DISCOVERY_CATALOG: readonly DiscoveryDefinition[] = [
     description: 'Enter the Saltwake Ruins.',
   },
   {
+    id: 'discovery.dungeon.cinderhollow_entered',
+    category: DiscoveryCategory.Dungeon,
+    title: 'Through the Cindermark',
+    description: 'Descend into the Cinderhollow Caverns.',
+  },
+  {
     id: 'discovery.dungeon.sentinel',
     category: DiscoveryCategory.Dungeon,
     title: 'Gallery Unbound',
@@ -183,6 +189,7 @@ const DISCOVERY_BY_SOURCE: Readonly<Record<string, string>> = {
   'int.combat.cinderheart': 'discovery.dungeon.cinderheart',
   'event.grave.reclaimed': 'discovery.recovery.grave',
   'event.saltwake.entered': 'discovery.dungeon.saltwake_entered',
+  'event.cinderhollow.entered': 'discovery.dungeon.cinderhollow_entered',
   'int.combat.drowned_sentinel': 'discovery.dungeon.sentinel',
   'int.combat.drowned_warden': 'discovery.dungeon.warden',
   'event.saltwake.tideglass_claimed': 'discovery.dungeon.tideglass',

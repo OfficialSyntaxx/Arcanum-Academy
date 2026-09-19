@@ -9,6 +9,7 @@ describe('discovery catalog', () => {
         'discovery.gather.cinder_ore',
         'discovery.combat.cinderbound_wisp',
         'discovery.craft.cindersteel',
+        'discovery.dungeon.cinderhollow_entered',
       ]),
     );
   });
@@ -20,5 +21,8 @@ describe('discovery catalog', () => {
     expect(recordDiscovery(first, id, 456)).toBe(first);
     expect(recordDiscovery(first, discoveryForSource('not.real'), 456)).toBe(first);
     expect(discoveryForSource('node.cinderhollow.ore_vein')).toBe('discovery.gather.cinder_ore');
+    expect(discoveryForSource('event.cinderhollow.entered')).toBe(
+      'discovery.dungeon.cinderhollow_entered',
+    );
   });
 });

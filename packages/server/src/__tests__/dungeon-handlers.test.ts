@@ -94,9 +94,16 @@ describe('Saltwake dungeon lifecycle', () => {
       ok: true,
     });
     expect((await h.state()).location.zoneId).toBe('zone.cinderhollow');
+    expect((await h.state()).discoveries).toHaveProperty('discovery.dungeon.cinderhollow_entered');
     expect(await h.dispatch('world.travel', { targetZoneId: 'zone.mountains' })).toMatchObject({
       ok: true,
     });
+    expect(await h.dispatch('world.travel', { targetZoneId: 'zone.cinderhollow' })).toMatchObject({
+      ok: true,
+    });
+    expect(Object.keys((await h.state()).discoveries)).toEqual([
+      'discovery.dungeon.cinderhollow_entered',
+    ]);
   });
 
   it('claims the one-time charm and permanently opens the shortcut', async () => {

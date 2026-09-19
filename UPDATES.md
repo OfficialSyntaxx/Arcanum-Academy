@@ -4,6 +4,13 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G14 Cinderhollow first descent — Codex, 2026-09-19
+
+- Reaching Cinderhollow Caverns for the first time now records the **Through the Cindermark**
+  exploration discovery through the existing server-authoritative travel and Collection Log paths.
+- It is idempotent and gives no coins, diary reward, item, combat advantage, asset, social surface,
+  tracking, or hosting change.
+
 ## G13 mobile exploration clarity — Codex, 2026-09-19
 
 - The compact in-world Journey tracker now names the authored destination of its next active
