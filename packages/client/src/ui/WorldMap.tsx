@@ -58,6 +58,19 @@ export function WorldMap({
               );
             }),
         )}
+        {zone.waypoints
+          .filter((waypoint) => waypoint.label !== undefined)
+          .map((waypoint) => (
+            <text
+              key={waypoint.id}
+              className="world-map__landmark"
+              x={x(waypoint.position.x)}
+              y={y(waypoint.position.z) - 7}
+              textAnchor="middle"
+            >
+              {waypoint.label}
+            </text>
+          ))}
         {places.map((place, index) => (
           <g key={place.id}>
             <circle cx={x(place.position.x)} cy={y(place.position.z)} r="9" fill="#e7a23d" />

@@ -1371,6 +1371,15 @@
   background: #394b31;
   border-radius: 4px;
 }
+.world-map__landmark {
+  fill: #f1e6c8;
+  font: 600 6px var(--font-label);
+  letter-spacing: 0.03em;
+  paint-order: stroke;
+  stroke: #17130f;
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+}
 .world-map__places {
   display: grid;
   grid-template-columns: 1fr 1fr;

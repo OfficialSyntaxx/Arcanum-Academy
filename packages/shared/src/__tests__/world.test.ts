@@ -63,6 +63,16 @@ describe('buildNavGraph', () => {
     expect(result.value.indexOf(zone.spawn)).toBeGreaterThanOrEqual(0);
   });
 
+  it("gives Cinderhollow's full route concise local-map landmark names", () => {
+    expect(CINDERHOLLOW.waypoints.map((waypoint) => waypoint.label)).toEqual([
+      'Cavern Mouth',
+      'Ember Gallery',
+      'Cindermark Fork',
+      'Ore Rim',
+      'Crucible Chamber',
+    ]);
+  });
+
   it('resolves every real zone id through the catalog, and an unknown id to null', () => {
     expect(ZONES_BY_ID.size).toBe(6);
     expect(zoneById(COURTYARD.id)).toBe(COURTYARD);

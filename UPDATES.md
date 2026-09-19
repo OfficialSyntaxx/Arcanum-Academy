@@ -4,6 +4,13 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G15 Cinderhollow wayfinding — Codex, 2026-09-19
+
+- Named the five authored Cinderhollow landmarks on the existing local map: Cavern Mouth, Ember
+  Gallery, Cindermark Fork, Ore Rim, and Crucible Chamber.
+- Reuses the existing waypoint graph, map, and movement controls; no pins, rewards, power,
+  persistence, assets, hosting, or social systems changed.
+
 ## G14 Cinderhollow first descent — Codex, 2026-09-19
 
 - Reaching Cinderhollow Caverns for the first time now records the **Through the Cindermark**

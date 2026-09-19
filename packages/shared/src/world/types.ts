@@ -34,6 +34,8 @@ export interface Waypoint {
   readonly id: WaypointId;
   readonly position: Vec2;
   readonly radius: number;
+  /** Optional player-facing landmark name for the local map. */
+  readonly label?: string;
   /** Bidirectional neighbours. Validated for symmetry at load time. */
   readonly links: readonly WaypointId[];
   /** Optional tag used by NPC schedules and quest targeting. */
