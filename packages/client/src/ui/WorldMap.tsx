@@ -2,6 +2,18 @@ import { useEffect, useRef } from 'react';
 import { InteractableKind, zoneById, type ZoneId } from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
 
+/** Kinds that can be selected as a destination without starting their action. */
+export function isMapDestination(kind: InteractableKind): boolean {
+  return (
+    kind === InteractableKind.GatheringNode ||
+    kind === InteractableKind.CraftingStation ||
+    kind === InteractableKind.QuestBoard ||
+    kind === InteractableKind.CombatEncounter ||
+    kind === InteractableKind.ClueSite ||
+    kind === InteractableKind.ZonePortal
+  );
+}
+
 /** Wayfinding only. Selecting a destination walks the real path; work still
  * starts at the resource or station, through the normal contextual action. */
 export function WorldMap({
@@ -18,14 +30,7 @@ export function WorldMap({
     dialog.current?.showModal();
   }, []);
   if (!zone) return null;
-  const places = zone.interactables.filter(
-    (item) =>
-      item.kind === InteractableKind.GatheringNode ||
-      item.kind === InteractableKind.CraftingStation ||
-      item.kind === InteractableKind.QuestBoard ||
-      item.kind === InteractableKind.CombatEncounter ||
-      item.kind === InteractableKind.ZonePortal,
-  );
+  const places = zone.interactables.filter((item) => isMapDestination(item.kind));
   const width = zone.bounds.maxX - zone.bounds.minX;
   const height = zone.bounds.maxZ - zone.bounds.minZ;
   const x = (value: number) => ((value - zone.bounds.minX) / width) * 280 + 10;

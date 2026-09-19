@@ -4,6 +4,14 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G16 Tideglass clue wayfinding — Codex, 2026-09-19
+
+- Added authored clue sites to the existing local-map destination list, including Cinderhollow's
+  Tideglass Brand, so the active trail can be approached through the same touch-safe flow as other
+  content.
+- The clue tracker now derives its total from the authored Tideglass Trail instead of showing a
+  stale fixed count. The ordered server validation and existing 45-coin reward are unchanged.
+
 ## G15 Cinderhollow wayfinding — Codex, 2026-09-19
 
 - Named the five authored Cinderhollow landmarks on the existing local map: Cavern Mouth, Ember

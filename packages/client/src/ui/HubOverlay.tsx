@@ -34,6 +34,12 @@ export function InteractionPrompt({ onEngage }: { onEngage: () => void }) {
 }
 
 /** Server-confirmed guidance for the first ordered treasure trail. */
+export function clueProgressLabel(startedAtMs: number | null, step: number): string {
+  return startedAtMs === null
+    ? 'New treasure trail'
+    : `Clue ${step + 1} of ${TIDEGLASS_TRAIL.steps.length}`;
+}
+
 export function ClueTracker() {
   const progress = useAppStore((state) => state.economy.tideglassTrail);
   const quests = useAppStore((state) => state.economy.quests);
@@ -49,7 +55,7 @@ export function ClueTracker() {
   return (
     <aside className="clue-tracker" aria-label="Treasure trail clue">
       <span className="journey-tracker__eyebrow">
-        {progress.startedAtMs === null ? 'New treasure trail' : `Clue ${progress.step + 1} of 4`}
+        {clueProgressLabel(progress.startedAtMs, progress.step)}
       </span>
       <strong>{TIDEGLASS_TRAIL.title}</strong>
       <p>{step.hint}</p>
