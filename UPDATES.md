@@ -4,6 +4,26 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G25 Ashen Overlook basalt steps — staged release batch, 2026-09-19
+
+- Split the overlook route at its existing terrace transition and render a short, non-colliding
+  basalt stair so the visible route now matches the authored elevation change.
+- No reward, progression, movement authority, collision, asset, server, social, or hosting change.
+
+## G26 Ashen Overlook horizon rim — staged release batch, 2026-09-19
+
+- Placed a sparse, non-colliding outer basalt ridge beyond Ember Vista so the scenic plateau has
+  a volcanic horizon instead of ending against an empty square boundary.
+- Renderer-only geometry using existing materials: no playable area, reward, progression, asset,
+  server, social, or hosting change.
+
+## G27 elevation-aware local maps — staged release batch, 2026-09-19
+
+- Local maps now render authored elevation transitions as dashed route segments, making the new
+  Ashen Overlook Basalt Steps legible before a player begins walking.
+- Presentation only: route planning, movement, interaction, reward, persistence, asset, server,
+  social, and hosting behavior remain unchanged.
+
 ## G23 Ashen Overlook terrain palette — staged release batch, 2026-09-19
 
 - Gave Ashen Overlook its own ash-and-ember ground palette instead of inheriting the green

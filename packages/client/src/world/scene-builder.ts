@@ -552,6 +552,51 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
     pillars.instanceMatrix.needsUpdate = true;
     pillars.raycast = () => {};
     group.add(pillars);
+
+    // The playable terrace ends before the far skyline. A sparse outer rim
+    // keeps the vista from reading as a raised square dropped into empty space;
+    // it lives beyond the walkable bounds and is deliberately non-colliding.
+    const rimSites = [
+      { x: -39, z: 37, height: 9.6, width: 7.5 },
+      { x: -24, z: 43, height: 12.4, width: 9.2 },
+      { x: -6, z: 45, height: 10.5, width: 8.4 },
+      { x: 14, z: 44, height: 14.2, width: 10.2 },
+      { x: 33, z: 39, height: 11.8, width: 8.6 },
+    ] as const;
+    const rimGeometry = track(new ConeGeometry(1, 1, 7));
+    const rim = new InstancedMesh(rimGeometry, stoneRaised, rimSites.length);
+    rimSites.forEach((site, index) => {
+      const y = heightAt(terrain, site);
+      scratchMatrix.compose(
+        new Vector3(site.x, y + site.height / 2, site.z),
+        scratchQuaternion.setFromAxisAngle(UP_AXIS, index * 0.43),
+        new Vector3(site.width, site.height, site.width * 0.78),
+      );
+      rim.setMatrixAt(index, scratchMatrix);
+    });
+    rim.instanceMatrix.needsUpdate = true;
+    rim.raycast = () => {};
+    group.add(rim);
+
+    // The entry floor and vista terrace differ in height. Make the authored
+    // transition physically legible instead of leaving a flat path to stop at
+    // the retaining edge. These are scenery-only blocks, so tap and collision
+    // continue to use the same authoritative waypoint graph as before.
+    const stepCount = 6;
+    const stepGeometry = track(new BoxGeometry(2.5, 1, 0.72));
+    const steps = new InstancedMesh(stepGeometry, stoneRaised, stepCount);
+    const lowerHeight = heightAt(terrain, { x: 0, z: -9 });
+    const upperHeight = heightAt(terrain, { x: 0, z: -5 });
+    const rise = (upperHeight - lowerHeight) / stepCount;
+    for (let index = 0; index < stepCount; index += 1) {
+      const height = rise * (index + 1);
+      scratchMatrix.makeScale(1, height, 1);
+      scratchMatrix.setPosition(0, lowerHeight + height / 2, -8.65 + (index + 0.5) * 0.62);
+      steps.setMatrixAt(index, scratchMatrix);
+    }
+    steps.instanceMatrix.needsUpdate = true;
+    steps.raycast = () => {};
+    group.add(steps);
   }
 
   // --- Interactable markers --------------------------------------------

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { InteractableKind, zoneById, type ZoneId } from '@alderfell/shared';
+import { heightAt, InteractableKind, zoneById, type Vec2, type ZoneId } from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
 
 /** Kinds that can be selected as a destination without starting their action. */
@@ -42,6 +42,15 @@ export function mapDestinationType(kind: InteractableKind): string {
   }
 }
 
+/** A dashed map segment means the authored route crosses a terrain rise. */
+export function isElevationTransition(
+  terrain: Parameters<typeof heightAt>[0],
+  from: Vec2,
+  to: Vec2,
+): boolean {
+  return heightAt(terrain, from) !== heightAt(terrain, to);
+}
+
 /** Wayfinding only. Selecting a destination walks the real path; work still
  * starts at the resource or station, through the normal contextual action. */
 export function WorldMap({
@@ -78,6 +87,11 @@ export function WorldMap({
             .filter((id) => id > waypoint.id)
             .map((id) => {
               const target = zone.waypoints.find((node) => node.id === id)!;
+              const climbs = isElevationTransition(
+                zone.terrain,
+                waypoint.position,
+                target.position,
+              );
               return (
                 <line
                   key={`${waypoint.id}:${id}`}
@@ -87,6 +101,7 @@ export function WorldMap({
                   y2={y(target.position.z)}
                   stroke="#b8a985"
                   strokeWidth="2"
+                  strokeDasharray={climbs ? '5 3' : undefined}
                 />
               );
             }),

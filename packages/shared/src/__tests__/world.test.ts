@@ -76,6 +76,17 @@ describe('buildNavGraph', () => {
     ]);
   });
 
+  it('routes Ashen Overlook through a named elevation transition', () => {
+    expect(ASHEN_OVERLOOK.waypoints.map((waypoint) => waypoint.label)).toEqual([
+      'Cliff Path',
+      'Basalt Steps',
+      'Basalt Steps',
+      'Ember Vista',
+    ]);
+    expect(ASHEN_OVERLOOK.waypoints[0]!.links).toEqual([ASHEN_OVERLOOK.waypoints[1]!.id]);
+    expect(ASHEN_OVERLOOK.waypoints.at(-1)!.links).toEqual([ASHEN_OVERLOOK.waypoints[2]!.id]);
+  });
+
   it('resolves every real zone id through the catalog, and an unknown id to null', () => {
     expect(ZONES_BY_ID.size).toBe(7);
     expect(zoneById(COURTYARD.id)).toBe(COURTYARD);

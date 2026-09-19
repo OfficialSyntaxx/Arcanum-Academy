@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { InteractableKind, TIDEGLASS_TRAIL } from '@alderfell/shared';
+import { ASHEN_OVERLOOK, InteractableKind, TIDEGLASS_TRAIL } from '@alderfell/shared';
 import { clueProgressLabel } from '../ui/HubOverlay.js';
-import { isMapDestination, mapDestinationType } from '../ui/WorldMap.js';
+import { isElevationTransition, isMapDestination, mapDestinationType } from '../ui/WorldMap.js';
 
 describe('clue wayfinding', () => {
   it('includes authored clue sites among map destinations', () => {
@@ -17,5 +17,20 @@ describe('clue wayfinding', () => {
   it('derives the tracker total from the authored trail', () => {
     expect(clueProgressLabel(null, 0)).toBe('New treasure trail');
     expect(clueProgressLabel(1, 5)).toBe(`Clue 6 of ${TIDEGLASS_TRAIL.steps.length}`);
+  });
+
+  it('marks the authored Ashen Overlook stair transition on the local map', () => {
+    const lower = ASHEN_OVERLOOK.waypoints[1]!;
+    const upper = ASHEN_OVERLOOK.waypoints[2]!;
+    expect(isElevationTransition(ASHEN_OVERLOOK.terrain, lower.position, upper.position)).toBe(
+      true,
+    );
+    expect(
+      isElevationTransition(
+        ASHEN_OVERLOOK.terrain,
+        ASHEN_OVERLOOK.waypoints[0]!.position,
+        lower.position,
+      ),
+    ).toBe(false);
   });
 });
