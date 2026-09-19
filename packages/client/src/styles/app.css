@@ -1380,6 +1380,11 @@
   stroke-width: 1.5px;
   stroke-linejoin: round;
 }
+.world-map__legend {
+  margin-top: 0.45rem !important;
+  color: var(--haze-dim);
+  font: 0.75rem var(--font-label);
+}
 .world-map__places {
   display: grid;
   grid-template-columns: 1fr 1fr;

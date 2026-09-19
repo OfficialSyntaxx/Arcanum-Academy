@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ASHEN_OVERLOOK, InteractableKind, TIDEGLASS_TRAIL } from '@alderfell/shared';
 import { clueProgressLabel } from '../ui/HubOverlay.js';
-import { isElevationTransition, isMapDestination, mapDestinationType } from '../ui/WorldMap.js';
+import { isMapDestination, mapDestinationType } from '../ui/WorldMap.js';
+import { hasElevationChange } from '../core/elevation.js';
 
 describe('clue wayfinding', () => {
   it('includes authored clue sites among map destinations', () => {
@@ -22,11 +23,9 @@ describe('clue wayfinding', () => {
   it('marks the authored Ashen Overlook stair transition on the local map', () => {
     const lower = ASHEN_OVERLOOK.waypoints[1]!;
     const upper = ASHEN_OVERLOOK.waypoints[2]!;
-    expect(isElevationTransition(ASHEN_OVERLOOK.terrain, lower.position, upper.position)).toBe(
-      true,
-    );
+    expect(hasElevationChange(ASHEN_OVERLOOK.terrain, lower.position, upper.position)).toBe(true);
     expect(
-      isElevationTransition(
+      hasElevationChange(
         ASHEN_OVERLOOK.terrain,
         ASHEN_OVERLOOK.waypoints[0]!.position,
         lower.position,

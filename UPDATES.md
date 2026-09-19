@@ -4,6 +4,27 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G30 elevation route legend — staged release batch, 2026-09-19
+
+- Local maps with real terrain rises now explain their dashed route cue in compact mobile copy,
+  preventing an authored climb from reading as a broken path.
+- UI copy and styling only: no route, movement, reward, persistence, asset, server, social, or
+  hosting change.
+
+## G29 elevation-aware minimaps — staged release batch, 2026-09-19
+
+- Reused the authored terrain-height rule on the rotating minimap, so climbs use the same dashed
+  route cue as the full local map while the player is moving.
+- Mobile presentation only: navigation, collision, interaction, progression, assets, server,
+  social, and hosting behavior remain unchanged.
+
+## G28 elevation-following world paths — staged release batch, 2026-09-19
+
+- The visible path renderer now follows authored height changes instead of omitting links that
+  cross a terrace. Cinderhollow's routes and future elevated zones retain readable travel lines.
+- This is renderer-only: navigation, collision, movement authority, rewards, progression, assets,
+  server, social features, and hosting are unchanged.
+
 ## G25 Ashen Overlook basalt steps — staged release batch, 2026-09-19
 
 - Split the overlook route at its existing terrace transition and render a short, non-colliding

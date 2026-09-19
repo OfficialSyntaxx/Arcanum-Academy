@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { heightAt, InteractableKind, zoneById, type Vec2, type ZoneId } from '@alderfell/shared';
+import { InteractableKind, zoneById, type ZoneId } from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
+import { hasElevationChange } from '../core/elevation.js';
 
 /** Kinds that can be selected as a destination without starting their action. */
 export function isMapDestination(kind: InteractableKind): boolean {
@@ -42,15 +43,6 @@ export function mapDestinationType(kind: InteractableKind): string {
   }
 }
 
-/** A dashed map segment means the authored route crosses a terrain rise. */
-export function isElevationTransition(
-  terrain: Parameters<typeof heightAt>[0],
-  from: Vec2,
-  to: Vec2,
-): boolean {
-  return heightAt(terrain, from) !== heightAt(terrain, to);
-}
-
 /** Wayfinding only. Selecting a destination walks the real path; work still
  * starts at the resource or station, through the normal contextual action. */
 export function WorldMap({
@@ -72,6 +64,14 @@ export function WorldMap({
   const height = zone.bounds.maxZ - zone.bounds.minZ;
   const x = (value: number) => ((value - zone.bounds.minX) / width) * 280 + 10;
   const y = (value: number) => ((value - zone.bounds.minZ) / height) * 180 + 10;
+  const hasClimb = zone.waypoints.some((waypoint) =>
+    waypoint.links.some((id) => {
+      const target = zone.waypoints.find((node) => node.id === id);
+      return (
+        target !== undefined && hasElevationChange(zone.terrain, waypoint.position, target.position)
+      );
+    }),
+  );
   return (
     <dialog ref={dialog} className="panel world-map" onCancel={onClose} aria-labelledby="map-title">
       <div className="world-map__head">
@@ -87,11 +87,7 @@ export function WorldMap({
             .filter((id) => id > waypoint.id)
             .map((id) => {
               const target = zone.waypoints.find((node) => node.id === id)!;
-              const climbs = isElevationTransition(
-                zone.terrain,
-                waypoint.position,
-                target.position,
-              );
+              const climbs = hasElevationChange(zone.terrain, waypoint.position, target.position);
               return (
                 <line
                   key={`${waypoint.id}:${id}`}
@@ -139,6 +135,7 @@ export function WorldMap({
           </g>
         ))}
       </svg>
+      {hasClimb && <p className="world-map__legend">Dashed paths climb or descend.</p>}
       <div className="world-map__places">
         {places.map((place, index) => (
           <button

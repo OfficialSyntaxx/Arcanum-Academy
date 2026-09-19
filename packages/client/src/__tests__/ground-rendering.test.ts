@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
-import { COURTYARD } from '@alderfell/shared';
-import { buildBaseGround } from '../world/scene-builder.js';
+import { InstancedMesh, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
+import { CINDERHOLLOW, COURTYARD } from '@alderfell/shared';
+import { buildBaseGround, buildZoneGeometry } from '../world/scene-builder.js';
+
+const testQuality = {
+  tier: 'low' as const,
+  pixelRatio: 1,
+  shadowsEnabled: false,
+  antialias: false,
+  maxAmbientActors: 6,
+  particleBudget: 96,
+  targetFps: 60,
+};
 
 describe('ground surface', () => {
   it('does not cover the sunken mine with the base floor', () => {
@@ -15,5 +25,13 @@ describe('ground surface', () => {
     expect(ray.intersectObject(ground).length).toBeGreaterThan(0);
     geometry.dispose();
     material.dispose();
+  });
+
+  it('keeps authored Cinderhollow elevation links visible as paths', () => {
+    const geometry = buildZoneGeometry(CINDERHOLLOW, testQuality);
+    const paths = geometry.group.getObjectByName('authored-paths');
+    expect(paths).toBeInstanceOf(InstancedMesh);
+    expect((paths as InstancedMesh).count).toBe(5);
+    geometry.dispose();
   });
 });

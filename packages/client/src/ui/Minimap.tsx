@@ -1,5 +1,6 @@
 import { InteractableKind, zoneById, type ZoneId } from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
+import { hasElevationChange } from '../core/elevation.js';
 
 /** Metres from the player to the minimap's edge. */
 const RANGE = 26;
@@ -59,6 +60,7 @@ export function Minimap({ onOpenMap }: { readonly onOpenMap: () => void }) {
                   return null;
                 const [x1, y1] = project(waypoint.position.x, waypoint.position.z);
                 const [x2, y2] = project(target.position.x, target.position.z);
+                const climbs = hasElevationChange(zone.terrain, waypoint.position, target.position);
                 return (
                   <line
                     key={`${waypoint.id}:${id}`}
@@ -69,6 +71,7 @@ export function Minimap({ onOpenMap }: { readonly onOpenMap: () => void }) {
                     stroke="#c9b98f"
                     strokeWidth="3"
                     strokeOpacity="0.55"
+                    strokeDasharray={climbs ? '5 3' : undefined}
                   />
                 );
               }),

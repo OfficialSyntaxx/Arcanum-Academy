@@ -343,11 +343,9 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
 
   // --- Walkways -----------------------------------------------------------
   // One thin strip per link in the waypoint graph, so the paths the player can
-  // actually walk are the paths the player can actually see. A link is only
-  // rendered when both ends sit at the same floor height: a link that climbs
-  // from one terrace to another is a stair the world does not model yet, and
-  // a flat strip drawn straight through the riser between them would read as
-  // a bug rather than as level design.
+  // actually walk are the paths the player can actually see. Links spanning
+  // two authored terrain heights become a shallow ramp; collision and routing
+  // remain data-driven, while the visual path no longer vanishes at a terrace.
   const pathMaterial = track(
     new MeshStandardMaterial({ color: Palette.path, roughness: 0.88, metalness: 0.03 }),
   );
@@ -362,7 +360,6 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
       if (!target) continue;
       const fromHeight = heightAt(terrain, waypoint.position);
       const toHeight = heightAt(terrain, target.position);
-      if (fromHeight !== toHeight) continue;
       walkwaySegments.push({
         from: new Vector3(waypoint.position.x, fromHeight, waypoint.position.z),
         to: new Vector3(target.position.x, toHeight, target.position.z),
@@ -375,16 +372,17 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
     const WALKWAY_THICKNESS = 0.06;
     const walkwayGeometry = track(new BoxGeometry(1, 1, 1));
     const walkways = new InstancedMesh(walkwayGeometry, pathMaterial, walkwaySegments.length);
+    walkways.name = 'authored-paths';
     walkways.receiveShadow = quality.shadowsEnabled;
     walkwaySegments.forEach((segment, index) => {
       const dx = segment.to.x - segment.from.x;
+      const dy = segment.to.y - segment.from.y;
       const dz = segment.to.z - segment.from.z;
-      const length = Math.sqrt(dx * dx + dz * dz);
-      const angle = Math.atan2(-dz, dx);
-      scratchQuaternion.setFromAxisAngle(UP_AXIS, angle);
+      const length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      scratchQuaternion.setFromUnitVectors(RIGHT_AXIS, new Vector3(dx, dy, dz).normalize());
       const midpoint = new Vector3(
         (segment.from.x + segment.to.x) / 2,
-        (segment.from.y + segment.to.y) / 2 + WALKWAY_THICKNESS / 2 + 0.02,
+        (segment.from.y + segment.to.y) / 2,
         (segment.from.z + segment.to.z) / 2,
       );
       scratchMatrix.compose(
@@ -1060,6 +1058,7 @@ const scratchMatrix = new Matrix4();
 const scratchQuaternion = new Quaternion();
 const unitScale = new Vector3(1, 1, 1);
 const UP_AXIS = new Vector3(0, 1, 0);
+const RIGHT_AXIS = new Vector3(1, 0, 0);
 
 /** A deliberately uneven non-playable shoreline around the Courtyard. */
 function buildCoastalApron(): ShapeGeometry {
