@@ -69,6 +69,15 @@ export const CINDERHOLLOW: Zone = {
   ],
   interactables: [
     {
+      id: ix('int.clue.cinderhollow_brand'),
+      kind: InteractableKind.ClueSite,
+      position: { x: -4.5, z: 3.8 },
+      approach: wp('wp.cinderhollow.fork'),
+      facing: Math.PI,
+      label: 'Tideglass Brand',
+      verb: 'Inspect',
+    },
+    {
       id: ix('int.cinderhollow.ore_vein'),
       kind: InteractableKind.GatheringNode,
       position: { x: -46, z: 18 },

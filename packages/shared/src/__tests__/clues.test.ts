@@ -10,6 +10,7 @@ describe('treasure clue catalog', () => {
     // is that a bearing never points at a zone the player cannot reach.
     const shipped = new Set([...ZONES_BY_ID.keys()].map((id) => id as string));
     expect(steps.filter((step) => !shipped.has(step.zoneId)).map((s) => s.zoneId)).toEqual([]);
+    expect(steps.some((step) => step.zoneId === 'zone.cinderhollow')).toBe(true);
   });
 
   it('places every bearing at a clue site that exists in that zone', () => {

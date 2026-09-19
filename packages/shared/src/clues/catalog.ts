@@ -64,6 +64,13 @@ export const TIDEGLASS_TRAIL = Object.freeze({
       position: { x: 1.4, z: -52.2 },
     },
     {
+      interactableId: 'int.clue.cinderhollow_brand' as InteractableId,
+      zoneId: 'zone.cinderhollow' as ZoneId,
+      title: 'Glass Beneath the Flame',
+      hint: 'The ridge mark points below, to a tideglass brand at Cinderhollow’s central fork.',
+      position: { x: -4.5, z: 3.8 },
+    },
+    {
       interactableId: 'int.clue.spire_marker' as InteractableId,
       zoneId: 'zone.snow' as ZoneId,
       title: 'The Coldest Bearing',

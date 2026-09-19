@@ -10,6 +10,13 @@ for the design; this file only records the state of this branch against it.
 - It guides mining, the Cinderbound Wisp, Cinderheart, and permanent Sigil proof; Brix supplies contextual guidance.
 - Reuses existing mobile UI and adds no assets, hosting, trading, presence, or client-authoritative progression.
 
+## G12 Cinderhollow exploration depth — Codex, 2026-09-19
+
+- Extended the existing server-authoritative Tideglass Trail through a new clue site at
+  Cinderhollow's central fork, giving the completed zone a hidden exploration beat.
+- Reused the existing clue ledger, tracker, reward, and rendering path; no migration, new asset,
+  extra reward, hosting change, or social surface was introduced.
+
 **Branch:** `Claudesep16`, cut from `main` on 2026-09-16 and admitted to `main` as G7-B after
 independent verification on 2026-09-18.
 **Owner instruction on this branch:** never push to `main` without explicit approval.
