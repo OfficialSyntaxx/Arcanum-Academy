@@ -491,6 +491,43 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
     group.add(embers);
   }
 
+  // Cinderhollow has no buildings or residents to frame its route. Small,
+  // emissive ember beacons make the outer gallery, ore rim, and crucible legible
+  // from a phone camera without adding lights, collision, or shipped assets.
+  if (zone.id === 'zone.cinderhollow') {
+    const beaconSites = [
+      { x: 0, z: -30, height: 2.3 },
+      { x: -42, z: 18, height: 3.1 },
+      { x: 0, z: 51, height: 3.6 },
+    ] as const;
+    const beaconStone = new InstancedMesh(
+      track(new CylinderGeometry(0.42, 0.62, 1, 6)),
+      stoneRaised,
+      beaconSites.length,
+    );
+    const beaconEmbers = new InstancedMesh(
+      track(new SphereGeometry(0.26, 8, 6)),
+      flame,
+      beaconSites.length,
+    );
+    beaconSites.forEach((site, index) => {
+      const y = heightAt(terrain, site);
+      scratchMatrix.compose(
+        new Vector3(site.x, y + site.height / 2, site.z),
+        scratchQuaternion.setFromAxisAngle(UP_AXIS, index * 0.8),
+        new Vector3(1, site.height, 1),
+      );
+      beaconStone.setMatrixAt(index, scratchMatrix);
+      scratchMatrix.makeTranslation(site.x, y + site.height + 0.18, site.z);
+      beaconEmbers.setMatrixAt(index, scratchMatrix);
+    });
+    beaconStone.instanceMatrix.needsUpdate = true;
+    beaconEmbers.instanceMatrix.needsUpdate = true;
+    beaconStone.raycast = () => {};
+    beaconEmbers.raycast = () => {};
+    group.add(beaconStone, beaconEmbers);
+  }
+
   // --- Interactable markers --------------------------------------------
   const markers = new Map<string, Object3D>();
   const markerRing = track(new RingGeometry(0.85, 1.15, 24));
@@ -651,6 +688,20 @@ function buildMarker(interactable: Interactable, parts: MarkerParts): Object3D {
     den.rotation.x = -Math.PI / 2;
     den.position.y = 0.012;
     marker.add(den);
+    if (interactable.id === 'int.combat.cinderheart') {
+      // The finale needs a silhouette of its own before its animated model is
+      // in range. This compact crucible stays visual-only: it changes neither
+      // the authored approach point nor the combat target's tap behaviour.
+      const crucible = new Mesh(parts.post, parts.campfireStone);
+      crucible.position.y = 0.42;
+      crucible.scale.set(1.7, 0.6, 1.7);
+      marker.add(crucible);
+      const core = new Mesh(parts.halo, parts.campfireFlameMaterial);
+      core.position.y = 0.95;
+      core.rotation.x = Math.PI / 2;
+      core.scale.setScalar(1.25);
+      marker.add(core);
+    }
   } else {
     const post = new Mesh(parts.post, parts.material);
     post.position.y = 0.7;

@@ -14,6 +14,7 @@ import { MOUNTAINS } from './mountains.js';
 import { SNOW } from './snow.js';
 import { SALTWAKE_RUINS } from './saltwake.js';
 import { CINDERHOLLOW } from './cinderhollow.js';
+import { ASHEN_OVERLOOK } from './ashen-overlook.js';
 import type { Zone } from './types.js';
 
 export const ZONES_BY_ID: ReadonlyMap<ZoneId, Zone> = new Map([
@@ -23,6 +24,7 @@ export const ZONES_BY_ID: ReadonlyMap<ZoneId, Zone> = new Map([
   [SNOW.id, SNOW],
   [SALTWAKE_RUINS.id, SALTWAKE_RUINS],
   [CINDERHOLLOW.id, CINDERHOLLOW],
+  [ASHEN_OVERLOOK.id, ASHEN_OVERLOOK],
 ]);
 
 /** Resolves a portal's `targetZone` to real zone data, or `null` if unknown. */

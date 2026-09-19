@@ -7,7 +7,7 @@
  */
 import type { InteractableId, WaypointId } from '../ids.js';
 import { InteractableKind, type Zone } from './types.js';
-import { CINDERHOLLOW_ZONE_ID, MOUNTAINS_ZONE_ID } from './zone-ids.js';
+import { ASHEN_OVERLOOK_ZONE_ID, CINDERHOLLOW_ZONE_ID, MOUNTAINS_ZONE_ID } from './zone-ids.js';
 
 const wp = (id: string): WaypointId => id as WaypointId;
 const ix = (id: string): InteractableId => id as InteractableId;
@@ -68,11 +68,29 @@ export const CINDERHOLLOW: Zone = {
       position: { x: 0, z: 51 },
       radius: 3,
       label: 'Crucible Chamber',
-      links: [wp('wp.cinderhollow.fork')],
+      links: [wp('wp.cinderhollow.fork'), wp('wp.cinderhollow.overlook')],
       tags: ['landmark'],
+    },
+    {
+      id: wp('wp.cinderhollow.overlook'),
+      position: { x: 25, z: 62 },
+      radius: 3,
+      label: 'Ashen Rise',
+      links: [wp('wp.cinderhollow.forge')],
+      tags: ['portal', 'landmark'],
     },
   ],
   interactables: [
+    {
+      id: ix('int.cinderhollow.overlook.portal'),
+      kind: InteractableKind.ZonePortal,
+      position: { x: 28, z: 64 },
+      approach: wp('wp.cinderhollow.overlook'),
+      facing: Math.PI * 0.5,
+      label: 'Path to the Ashen Overlook',
+      verb: 'Climb',
+      targetZone: ASHEN_OVERLOOK_ZONE_ID,
+    },
     {
       id: ix('int.clue.cinderhollow_brand'),
       kind: InteractableKind.ClueSite,

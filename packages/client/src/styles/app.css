@@ -1387,6 +1387,9 @@
   margin-top: 1rem;
 }
 .world-map__places button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 0.35rem;
   min-height: 48px;
   padding: 0.5rem;
   text-align: left;
@@ -1394,6 +1397,11 @@
 }
 .world-map__places span {
   color: var(--verdigris);
+}
+.world-map__places small {
+  grid-column: 2;
+  color: var(--haze-dim);
+  font-size: 0.7rem;
 }
 .skill-list h3 {
   margin: 0.5rem 0;

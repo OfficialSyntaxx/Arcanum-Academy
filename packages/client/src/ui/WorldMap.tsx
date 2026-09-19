@@ -14,6 +14,34 @@ export function isMapDestination(kind: InteractableKind): boolean {
   );
 }
 
+const MAP_MARKER_COLOURS: Readonly<Partial<Record<InteractableKind, string>>> = {
+  [InteractableKind.GatheringNode]: '#6fc3b1',
+  [InteractableKind.CraftingStation]: '#d8c3a0',
+  [InteractableKind.QuestBoard]: '#f1e6c8',
+  [InteractableKind.CombatEncounter]: '#e05a45',
+  [InteractableKind.ClueSite]: '#e4b95f',
+  [InteractableKind.ZonePortal]: '#8fd0ff',
+};
+
+export function mapDestinationType(kind: InteractableKind): string {
+  switch (kind) {
+    case InteractableKind.GatheringNode:
+      return 'Gathering';
+    case InteractableKind.CraftingStation:
+      return 'Crafting';
+    case InteractableKind.QuestBoard:
+      return 'Quest board';
+    case InteractableKind.CombatEncounter:
+      return 'Combat';
+    case InteractableKind.ClueSite:
+      return 'Tideglass clue';
+    case InteractableKind.ZonePortal:
+      return 'Route';
+    default:
+      return 'Destination';
+  }
+}
+
 /** Wayfinding only. Selecting a destination walks the real path; work still
  * starts at the resource or station, through the normal contextual action. */
 export function WorldMap({
@@ -78,7 +106,12 @@ export function WorldMap({
           ))}
         {places.map((place, index) => (
           <g key={place.id}>
-            <circle cx={x(place.position.x)} cy={y(place.position.z)} r="9" fill="#e7a23d" />
+            <circle
+              cx={x(place.position.x)}
+              cy={y(place.position.z)}
+              r="9"
+              fill={MAP_MARKER_COLOURS[place.kind] ?? '#e7a23d'}
+            />
             <text
               x={x(place.position.x)}
               y={y(place.position.z) + 4}
@@ -101,7 +134,9 @@ export function WorldMap({
               onClose();
             }}
           >
-            <span aria-hidden="true">{index + 1}</span> {place.label}
+            <span aria-hidden="true">{index + 1}</span>
+            <strong>{place.label}</strong>
+            <small>{mapDestinationType(place.kind)}</small>
           </button>
         ))}
       </div>

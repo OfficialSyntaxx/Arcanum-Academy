@@ -16,3 +16,4 @@ export const MOUNTAINS_ZONE_ID = 'zone.mountains' as ZoneId;
 export const SNOW_ZONE_ID = 'zone.snow' as ZoneId;
 export const SALTWAKE_ZONE_ID = 'zone.saltwake_ruins' as ZoneId;
 export const CINDERHOLLOW_ZONE_ID = 'zone.cinderhollow' as ZoneId;
+export const ASHEN_OVERLOOK_ZONE_ID = 'zone.ashen_overlook' as ZoneId;

@@ -7,6 +7,7 @@ import { MOUNTAINS } from '../world/mountains.js';
 import { SNOW } from '../world/snow.js';
 import { SALTWAKE_RUINS } from '../world/saltwake.js';
 import { CINDERHOLLOW } from '../world/cinderhollow.js';
+import { ASHEN_OVERLOOK } from '../world/ashen-overlook.js';
 import { zoneById, ZONES_BY_ID } from '../world/zone-catalog.js';
 import { heightAt, type Waypoint, type Zone } from '../world/types.js';
 import type { WaypointId, ZoneId } from '../ids.js';
@@ -55,6 +56,7 @@ describe('buildNavGraph', () => {
     ['Frostgate Reaches', SNOW],
     ['Saltwake Ruins', SALTWAKE_RUINS],
     ['Cinderhollow Caverns', CINDERHOLLOW],
+    ['Ashen Overlook', ASHEN_OVERLOOK],
   ])('compiles the %s without validation errors', (_name, zone) => {
     const result = buildNavGraph(zone);
     expect(result.ok, result.ok ? '' : result.error.detail).toBe(true);
@@ -70,17 +72,19 @@ describe('buildNavGraph', () => {
       'Cindermark Fork',
       'Ore Rim',
       'Crucible Chamber',
+      'Ashen Rise',
     ]);
   });
 
   it('resolves every real zone id through the catalog, and an unknown id to null', () => {
-    expect(ZONES_BY_ID.size).toBe(6);
+    expect(ZONES_BY_ID.size).toBe(7);
     expect(zoneById(COURTYARD.id)).toBe(COURTYARD);
     expect(zoneById(FOREST.id)).toBe(FOREST);
     expect(zoneById(MOUNTAINS.id)).toBe(MOUNTAINS);
     expect(zoneById(SNOW.id)).toBe(SNOW);
     expect(zoneById(SALTWAKE_RUINS.id)).toBe(SALTWAKE_RUINS);
     expect(zoneById(CINDERHOLLOW.id)).toBe(CINDERHOLLOW);
+    expect(zoneById(ASHEN_OVERLOOK.id)).toBe(ASHEN_OVERLOOK);
     expect(zoneById('zone.nonexistent' as ZoneId)).toBeNull();
   });
 

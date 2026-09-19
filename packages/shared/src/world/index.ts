@@ -6,4 +6,5 @@ export * from './mountains.js';
 export * from './snow.js';
 export * from './saltwake.js';
 export * from './cinderhollow.js';
+export * from './ashen-overlook.js';
 export * from './zone-catalog.js';

@@ -14,6 +14,13 @@ const headings: Readonly<Record<DiscoveryCategory, string>> = {
   [DiscoveryCategory.Dungeon]: 'Dungeon',
 };
 
+/** Copy stays world-wide as authored zones extend beyond the starting shore. */
+export const COLLECTION_LOG_COPY = {
+  eyebrow: 'Alderfell discoveries',
+  diariesLabel: 'Alderfell diaries',
+  hiddenHint: 'Keep exploring Alderfell.',
+} as const;
+
 /** Read-only ledger of milestones the server has already confirmed. */
 export function CollectionLog({ onClose }: { readonly onClose: () => void }) {
   const discoveries = useAppStore((state) => state.economy.discoveries);
@@ -28,7 +35,7 @@ export function CollectionLog({ onClose }: { readonly onClose: () => void }) {
     >
       <header className="quest-journal__head">
         <div>
-          <p className="panel__eyebrow">Shorelands discoveries</p>
+          <p className="panel__eyebrow">{COLLECTION_LOG_COPY.eyebrow}</p>
           <h2>Collection log</h2>
         </div>
         <button
@@ -44,8 +51,8 @@ export function CollectionLog({ onClose }: { readonly onClose: () => void }) {
         {complete}/{DISCOVERY_CATALOG.length} discoveries recorded. Progress is saved when the world
         confirms the action.
       </p>
-      <section className="collection-log__group" aria-label="Shorelands diaries">
-        <h3>Shorelands diaries</h3>
+      <section className="collection-log__group" aria-label={COLLECTION_LOG_COPY.diariesLabel}>
+        <h3>{COLLECTION_LOG_COPY.diariesLabel}</h3>
         <ul className="quest-journal__list">
           {DIARY_CATALOG.map((diary) => {
             const completed = diaryIsComplete(diary, discoveries);
@@ -85,7 +92,7 @@ export function CollectionLog({ onClose }: { readonly onClose: () => void }) {
                       <strong>{unlocked ? entry.title : 'Unknown discovery'}</strong>
                       <span>{unlocked ? 'Found' : 'Hidden'}</span>
                     </div>
-                    <p>{unlocked ? entry.description : 'Keep exploring Shorelands.'}</p>
+                    <p>{unlocked ? entry.description : COLLECTION_LOG_COPY.hiddenHint}</p>
                   </li>
                 );
               })}

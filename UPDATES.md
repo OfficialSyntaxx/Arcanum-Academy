@@ -4,6 +4,40 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G17 Cinderhollow ember beacons — staged release batch, 2026-09-19
+
+- Added three non-colliding procedural ember beacons at the outer gallery, ore rim, and crucible
+  route landmarks so the cavern reads as a destination rather than an unframed dark floor.
+- The beacons reuse existing materials and instanced geometry: no assets, lights, collision,
+  rewards, progression, social runtime, or hosting changes.
+
+## G18 Cinderheart crucible marker — staged release batch, 2026-09-19
+
+- Gave Cinderheart's existing combat spot a compact stone crucible and ember-core silhouette so
+  the Crucible Chamber reads as a finale before the animated target is close.
+- It is presentation-only and preserves targeting, range checks, deterministic combat, drops,
+  progression, assets, and hosting.
+
+## G19 world collection journal — staged release batch, 2026-09-19
+
+- Updated the existing Collection Log language from the starting-only Shorelands framing to
+  Alderfell-wide discoveries and diaries, matching Saltwake, Cinderhollow, and future regions.
+- Presentation only: no discovery, diary, reward, progression, persistence, asset, or hosting
+  change.
+
+## G20 local map destination types — staged release batch, 2026-09-19
+
+- The existing local map now uses authored marker colours and names each destination's type in the
+  numbered list, including the Tideglass clue sites introduced in G16.
+- This is mobile presentation only: route selection, interactions, rewards, progression, assets,
+  server runtime, and hosting remain unchanged.
+
+## G21 Ashen Overlook — staged release batch, 2026-09-19
+
+- Added a reciprocal, no-reward scenic branch beyond Cinderhollow: Ashen Overlook and its Ember
+  Vista. It uses the same low-cost world graph, atmosphere, minimap, and local-map paths.
+- No gathering, combat, items, discoveries, economy, social runtime, or new assets were added.
+
 ## G16 Tideglass clue wayfinding — Codex, 2026-09-19
 
 - Added authored clue sites to the existing local-map destination list, including Cinderhollow's
