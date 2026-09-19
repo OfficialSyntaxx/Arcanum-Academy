@@ -4,6 +4,14 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G13 mobile exploration clarity — Codex, 2026-09-19
+
+- The compact in-world Journey tracker now names the authored destination of its next active
+  objective, so a player can keep moving without opening another menu or relying on a map pin.
+- Every quest objective carries concise location context, including Cinderhollow and the Crucible
+  Chamber. This is presentation-only: rewards, combat, progression, persistence, assets, hosting,
+  and social surfaces are unchanged.
+
 ## G11 guided Cinderhollow expedition — Codex, 2026-09-19
 
 - Added **Heart of Cinderhollow** after The Foothill Forge and before The Long Winter.

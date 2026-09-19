@@ -9,6 +9,8 @@ export interface QuestItemObjectiveDefinition {
   readonly itemIds: readonly ItemDefinitionId[];
   readonly requiredQuantity: number;
   readonly label: string;
+  /** Short in-world destination shown by the compact mobile journey tracker. */
+  readonly location: string;
   /** Defaults true. Permanent proof items remain in the satchel on turn-in. */
   readonly consume?: boolean;
 }
@@ -18,6 +20,8 @@ export interface QuestKillObjectiveDefinition {
   readonly encounterIds: readonly InteractableId[];
   readonly requiredQuantity: number;
   readonly label: string;
+  /** Short in-world destination shown by the compact mobile journey tracker. */
+  readonly location: string;
 }
 export type QuestObjectiveDefinition = QuestItemObjectiveDefinition | QuestKillObjectiveDefinition;
 
@@ -50,6 +54,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         ],
         requiredQuantity: 3,
         label: 'Gather 3 Mystic Mushrooms',
+        location: 'Alchemy Gardens',
       },
     ],
     rewardCoins: 40,
@@ -68,6 +73,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         encounterIds: [asId<InteractableId>('int.combat.shore_wolf')],
         requiredQuantity: 2,
         label: 'Defeat 2 Shore Wolves',
+        location: 'Duelling Terrace',
       },
       {
         kind: 'ITEM',
@@ -75,6 +81,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.meat.cooked_shore_wolf')],
         requiredQuantity: 1,
         label: 'Cook 1 Shore Wolf Meat',
+        location: 'Terrace Campfire',
       },
     ],
     rewardCoins: 60,
@@ -93,6 +100,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.emberwood.branch')],
         requiredQuantity: 4,
         label: 'Gather 4 Emberwood Branches',
+        location: 'Emberwood Stand',
       },
       {
         kind: 'ITEM',
@@ -100,6 +108,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.crystal.shard')],
         requiredQuantity: 2,
         label: 'Mine 2 Crystal Shards',
+        location: 'Resonance Seam',
       },
     ],
     rewardCoins: 75,
@@ -118,6 +127,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.ink.azure')],
         requiredQuantity: 1,
         label: 'Distil 1 Azure Ink',
+        location: 'Scribing Hall',
       },
     ],
     rewardCoins: 35,
@@ -136,6 +146,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         encounterIds: [asId<InteractableId>('int.combat.drowned_sentinel')],
         requiredQuantity: 1,
         label: 'Defeat a Drowned Sentinel',
+        location: 'Saltwake Ruins',
       },
       {
         kind: 'KILL',
@@ -143,6 +154,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         encounterIds: [asId<InteractableId>('int.combat.drowned_warden')],
         requiredQuantity: 1,
         label: 'Defeat the Drowned Warden',
+        location: 'Saltwake Ruins',
       },
       {
         kind: 'ITEM',
@@ -150,6 +162,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.charm.tideglass')],
         requiredQuantity: 1,
         label: 'Claim the Tideglass Charm',
+        location: 'Tideglass Reliquary',
         consume: false,
       },
     ],
@@ -172,6 +185,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         ],
         requiredQuantity: 3,
         label: 'Defeat 3 Emberwood Wolves',
+        location: 'Emberwood Reach',
       },
       {
         kind: 'ITEM',
@@ -179,6 +193,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.emberwood.heartwood')],
         requiredQuantity: 3,
         label: 'Fell 3 Heartwood',
+        location: 'Emberwood Reach',
       },
     ],
     rewardCoins: 90,
@@ -200,6 +215,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         ],
         requiredQuantity: 2,
         label: 'Defeat 2 Ridge Wolves',
+        location: 'Cinderfell Ridge',
       },
       {
         kind: 'KILL',
@@ -207,6 +223,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         encounterIds: [asId<InteractableId>('int.combat.cinder_wisp')],
         requiredQuantity: 1,
         label: 'Defeat a Cinder Wisp',
+        location: 'Cinderfell Ridge',
       },
       {
         kind: 'ITEM',
@@ -214,6 +231,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.ingot.resonant')],
         requiredQuantity: 1,
         label: 'Smelt 1 Resonant Ingot',
+        location: 'Foothill Forge',
       },
     ],
     rewardCoins: 120,
@@ -232,6 +250,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.ore.cinder')],
         requiredQuantity: 6,
         label: 'Mine 6 Cinder Ore',
+        location: 'Cinderhollow',
       },
       {
         kind: 'KILL',
@@ -239,6 +258,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         encounterIds: [asId<InteractableId>('int.combat.cinderbound_wisp')],
         requiredQuantity: 1,
         label: 'Defeat a Cinderbound Wisp',
+        location: 'Cinderhollow',
       },
       {
         kind: 'KILL',
@@ -246,6 +266,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         encounterIds: [asId<InteractableId>('int.combat.cinderheart')],
         requiredQuantity: 1,
         label: 'Defeat Cinderheart',
+        location: 'Crucible Chamber',
       },
       {
         kind: 'ITEM',
@@ -253,6 +274,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.charm.cinderheart')],
         requiredQuantity: 1,
         label: 'Claim the Cinderheart Sigil',
+        location: 'Crucible Chamber',
         consume: false,
       },
     ],
@@ -275,6 +297,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         ],
         requiredQuantity: 2,
         label: 'Defeat 2 Frost Wolves',
+        location: 'Frostgate',
       },
       {
         kind: 'KILL',
@@ -282,6 +305,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         encounterIds: [asId<InteractableId>('int.combat.rime_wisp')],
         requiredQuantity: 1,
         label: 'Defeat a Rime Wisp',
+        location: 'Frostgate',
       },
       {
         kind: 'ITEM',
@@ -289,6 +313,7 @@ export const QUEST_CATALOG: readonly QuestDefinition[] = [
         itemIds: [asId<ItemDefinitionId>('item.food.berry_preserve')],
         requiredQuantity: 2,
         label: 'Put up 2 Berry Preserve',
+        location: 'Frostgate Workshop',
       },
     ],
     rewardCoins: 150,

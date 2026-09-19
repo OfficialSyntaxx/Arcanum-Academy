@@ -92,6 +92,7 @@ describe('resource quest catalog', () => {
         if (objective.kind === 'ITEM') expect(objective.itemIds.length).toBeGreaterThan(0);
         else expect(objective.encounterIds.length).toBeGreaterThan(0);
         expect(objective.requiredQuantity).toBeGreaterThan(0);
+        expect(objective.location.trim()).not.toBe('');
       }
     }
   });
@@ -102,6 +103,16 @@ describe('resource quest catalog', () => {
     expect(
       quest?.objectives.find((objective) => objective.id === 'cinderhollow.sigil'),
     ).toMatchObject({ consume: false });
+  });
+
+  it('gives every Cinderhollow objective a concise in-world destination', () => {
+    const quest = questById('quest.heart_of_cinderhollow');
+    expect(quest?.objectives.map((objective) => objective.location)).toEqual([
+      'Cinderhollow',
+      'Cinderhollow',
+      'Crucible Chamber',
+      'Crucible Chamber',
+    ]);
   });
 });
 

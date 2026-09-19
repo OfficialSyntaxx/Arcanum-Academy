@@ -128,6 +128,11 @@ export function JourneyTracker({ onOpenJournal }: { onOpenJournal: () => void })
   const nextStep = accepted
     ? (objective?.label ?? 'Return to the notice board to turn in your work.')
     : `Visit the Library notice board to begin ${quest.title}.`;
+  const eyebrow = accepted
+    ? objective === undefined
+      ? 'Journey'
+      : `Journey · ${objective.location}`
+    : 'Next';
 
   // One line, not a card: the world is what should fill the phone. Tapping
   // it opens the journal for the full objective list.
@@ -138,7 +143,7 @@ export function JourneyTracker({ onOpenJournal }: { onOpenJournal: () => void })
       onClick={onOpenJournal}
       aria-label="Open the quest journal"
     >
-      <span className="journey-tracker__eyebrow">{accepted ? 'Journey' : 'Next'}</span>
+      <span className="journey-tracker__eyebrow">{eyebrow}</span>
       <strong>{quest.title}</strong>
       <p>{nextStep}</p>
     </button>
