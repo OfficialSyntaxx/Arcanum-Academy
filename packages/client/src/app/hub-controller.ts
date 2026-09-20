@@ -305,6 +305,14 @@ export class HubController {
     }
   }
 
+  /** Walks to a named scenic waypoint without starting an interaction. */
+  navigateToWaypoint(id: string): void {
+    const target = this.world.zone.waypoints.find((waypoint) => waypoint.id === id);
+    if (!target?.tags?.includes('destination')) return;
+    this.beginTravel();
+    this.player.approach(target.id);
+  }
+
   /** Starts the available activity through its normal in-world prompt. */
   engagePrompt(): void {
     const prompt = useAppStore.getState().interactionPrompt;

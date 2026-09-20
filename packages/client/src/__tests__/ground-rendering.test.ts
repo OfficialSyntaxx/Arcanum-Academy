@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { InstancedMesh, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
-import { CINDERHOLLOW, COURTYARD } from '@alderfell/shared';
+import { ASHEN_OVERLOOK, CINDERHOLLOW, COURTYARD } from '@alderfell/shared';
 import { buildBaseGround, buildZoneGeometry } from '../world/scene-builder.js';
 
 const testQuality = {
@@ -32,6 +32,14 @@ describe('ground surface', () => {
     const paths = geometry.group.getObjectByName('authored-paths');
     expect(paths).toBeInstanceOf(InstancedMesh);
     expect((paths as InstancedMesh).count).toBe(5);
+    geometry.dispose();
+  });
+
+  it('gives every Ashen Overlook branch a distinct low-cost silhouette', () => {
+    const geometry = buildZoneGeometry(ASHEN_OVERLOOK, testQuality);
+    expect(geometry.group.getObjectByName('ashen-ember-crown')).toBeInstanceOf(InstancedMesh);
+    expect(geometry.group.getObjectByName('ashen-glasswind-shards')).toBeInstanceOf(InstancedMesh);
+    expect(geometry.group.getObjectByName('ashen-watcher-arch')).toBeDefined();
     geometry.dispose();
   });
 });

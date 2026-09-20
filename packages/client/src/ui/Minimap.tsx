@@ -99,6 +99,26 @@ export function Minimap({
                 />
               );
             })}
+          {zone.waypoints
+            .filter(
+              (waypoint) =>
+                waypoint.tags?.includes('destination') === true &&
+                nearby(waypoint.position.x, waypoint.position.z),
+            )
+            .map((waypoint) => {
+              const [cx, cy] = project(waypoint.position.x, waypoint.position.z);
+              return (
+                <circle
+                  key={waypoint.id}
+                  cx={cx}
+                  cy={cy}
+                  r="2.8"
+                  fill="#f0c58d"
+                  stroke={waypoint.id === focusedDestinationId ? '#fff6e6' : undefined}
+                  strokeWidth={waypoint.id === focusedDestinationId ? '2' : undefined}
+                />
+              );
+            })}
           <g transform={`rotate(${(-player.facing * 180) / Math.PI} ${half} ${half})`}>
             <path
               d={`M ${half} ${half - 7} L ${half + 4.5} ${half + 4} L ${half - 4.5} ${half + 4} Z`}

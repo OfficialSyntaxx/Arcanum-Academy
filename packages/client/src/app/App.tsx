@@ -117,6 +117,7 @@ export function App() {
           {hub !== null && isHubPhase(phase) ? (
             <HubScreen
               onNavigate={(id) => hub.navigateToInteractable(id)}
+              onNavigateWaypoint={(id) => hub.navigateToWaypoint(id)}
               onEngage={() => {
                 hub.engagePrompt();
               }}

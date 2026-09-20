@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { InteractableKind, zoneById, type ZoneId } from '@alderfell/shared';
+import { InteractableKind, zoneById, type Waypoint, type ZoneId } from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
 import { hasElevationChange } from '../core/elevation.js';
 import { mapRouteColour, mapSurfaceColour } from '../core/map-surface.js';
@@ -44,14 +44,20 @@ export function mapDestinationType(kind: InteractableKind): string {
   }
 }
 
+export function isScenicMapDestination(waypoint: Pick<Waypoint, 'label' | 'tags'>): boolean {
+  return waypoint.label !== undefined && waypoint.tags?.includes('destination') === true;
+}
+
 /** Wayfinding only. Selecting a destination walks the real path; work still
  * starts at the resource or station, through the normal contextual action. */
 export function WorldMap({
   onNavigate,
+  onNavigateWaypoint,
   onClose,
   selectedDestinationId,
 }: {
   onNavigate: (id: string) => void;
+  onNavigateWaypoint: (id: string) => void;
   onClose: () => void;
   selectedDestinationId: string | null;
 }) {
@@ -64,6 +70,7 @@ export function WorldMap({
   }, []);
   if (!zone) return null;
   const places = zone.interactables.filter((item) => isMapDestination(item.kind));
+  const scenicPlaces = zone.waypoints.filter(isScenicMapDestination);
   const width = zone.bounds.maxX - zone.bounds.minX;
   const height = zone.bounds.maxZ - zone.bounds.minZ;
   const x = (value: number) => ((value - zone.bounds.minX) / width) * 280 + 10;
@@ -152,6 +159,17 @@ export function WorldMap({
             </text>
           </g>
         ))}
+        {scenicPlaces.map((place) => (
+          <circle
+            key={place.id}
+            cx={x(place.position.x)}
+            cy={y(place.position.z)}
+            r="5"
+            fill="#f0c58d"
+            stroke={place.id === selectedDestinationId ? '#fff6e6' : '#5a3825'}
+            strokeWidth={place.id === selectedDestinationId ? '2.5' : '1.5'}
+          />
+        ))}
         <g transform={`rotate(${(player.facing * 180) / Math.PI} ${x(player.x)} ${y(player.z)})`}>
           <path
             d={`M ${x(player.x)} ${y(player.z) - 7} L ${x(player.x) + 4.5} ${y(player.z) + 4} L ${x(player.x) - 4.5} ${y(player.z) + 4} Z`}
@@ -176,6 +194,21 @@ export function WorldMap({
             <span aria-hidden="true">{index + 1}</span>
             <strong>{place.label}</strong>
             <small>{mapDestinationType(place.kind)}</small>
+          </button>
+        ))}
+        {scenicPlaces.map((place, index) => (
+          <button
+            key={place.id}
+            type="button"
+            aria-pressed={place.id === selectedDestinationId}
+            onClick={() => {
+              onNavigateWaypoint(place.id);
+              onClose();
+            }}
+          >
+            <span aria-hidden="true">{places.length + index + 1}</span>
+            <strong>{place.label}</strong>
+            <small>Scenic landmark</small>
           </button>
         ))}
       </div>

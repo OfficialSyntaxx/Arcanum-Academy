@@ -81,10 +81,17 @@ describe('buildNavGraph', () => {
       'Cliff Path',
       'Basalt Steps',
       'Basalt Steps',
+      'Ember Crossroads',
       'Ember Vista',
+      'Glasswind Shelf',
+      "Watcher's Crown",
     ]);
     expect(ASHEN_OVERLOOK.waypoints[0]!.links).toEqual([ASHEN_OVERLOOK.waypoints[1]!.id]);
-    expect(ASHEN_OVERLOOK.waypoints.at(-1)!.links).toEqual([ASHEN_OVERLOOK.waypoints[2]!.id]);
+    const crossroads = ASHEN_OVERLOOK.waypoints[3]!;
+    expect(crossroads.links).toHaveLength(4);
+    expect(
+      ASHEN_OVERLOOK.waypoints.filter((waypoint) => waypoint.tags?.includes('destination')),
+    ).toHaveLength(3);
   });
 
   it('resolves every real zone id through the catalog, and an unknown id to null', () => {

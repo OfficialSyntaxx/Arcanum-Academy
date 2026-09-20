@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ASHEN_OVERLOOK, COURTYARD, InteractableKind, TIDEGLASS_TRAIL } from '@alderfell/shared';
 import { clueProgressLabel } from '../ui/HubOverlay.js';
-import { isMapDestination, mapDestinationType } from '../ui/WorldMap.js';
+import { isMapDestination, isScenicMapDestination, mapDestinationType } from '../ui/WorldMap.js';
 import { hasElevationChange } from '../core/elevation.js';
 import { mapRouteColour, mapSurfaceColour } from '../core/map-surface.js';
 
@@ -9,6 +9,12 @@ describe('clue wayfinding', () => {
   it('includes authored clue sites among map destinations', () => {
     expect(isMapDestination(InteractableKind.ClueSite)).toBe(true);
     expect(isMapDestination(InteractableKind.MerchantStall)).toBe(false);
+  });
+
+  it('admits only explicitly named scenic waypoints as map destinations', () => {
+    expect(isScenicMapDestination({ label: 'Ember Vista', tags: ['destination'] })).toBe(true);
+    expect(isScenicMapDestination({ label: 'Crossroads', tags: ['landmark'] })).toBe(false);
+    expect(isScenicMapDestination({ tags: ['destination'] })).toBe(false);
   });
 
   it("keeps a clue's purpose visible in the map destination list", () => {

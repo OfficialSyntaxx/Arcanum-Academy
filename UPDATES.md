@@ -4,6 +4,27 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G53 Ashen destination silhouettes — staged release batch, 2026-09-20
+
+- Gave the overlook's three scenic branches distinct silhouettes: Ember Vista's basalt crown,
+  Glasswind Shelf's mineral fins, and Watcher's Crown's weathered arch.
+- Uses procedural geometry, shared materials, instancing, and no new downloads. The scenery is
+  non-colliding and changes no routes, interactions, rewards, progression, or server behavior.
+
+## G52 scenic map destinations — staged release batch, 2026-09-20
+
+- Added explicit local-map and minimap markers for authored scenic destinations, allowing a player
+  to tap a named vista and walk there through the normal route graph.
+- Scenic navigation starts no action and sends no command. Interaction, progression, persistence,
+  server authority, and existing map destinations remain unchanged.
+
+## G51 Ashen Overlook scenic routes — staged release batch, 2026-09-20
+
+- Expanded the optional overlook from one short spur into three named, connected scenic branches:
+  Ember Vista, Glasswind Shelf, and Watcher's Crown.
+- Exploration only: no rewards, encounters, resources, XP, persistence, server runtime, or hosting
+  behavior changed.
+
 ## G50 stable renderer add-on cache — staged release batch, 2026-09-20
 
 - Split the 52.7 KiB Three.js GLTF/Draco/skeleton add-on layer from the renderer bootstrap, reducing

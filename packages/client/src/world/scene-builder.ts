@@ -18,6 +18,7 @@ import {
   Color,
   ConeGeometry,
   CylinderGeometry,
+  Euler,
   Float32BufferAttribute,
   Group,
   InstancedMesh,
@@ -528,9 +529,9 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
   }
 
   if (zone.id === 'zone.ashen_overlook') {
-    // A small crown of basalt makes the optional vista read as a destination,
-    // not a blank extension of the cavern. It is non-colliding scenery built
-    // entirely from the existing low-poly material palette.
+    // A small crown of basalt makes Ember Vista read as a destination, not a
+    // blank extension of the cavern. It is non-colliding scenery built entirely
+    // from the existing low-poly material palette.
     const stones = [
       { x: -5.4, z: 22, height: 4.2 },
       { x: 0, z: 25, height: 5.4 },
@@ -549,7 +550,57 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
     });
     pillars.instanceMatrix.needsUpdate = true;
     pillars.raycast = () => {};
+    pillars.name = 'ashen-ember-crown';
     group.add(pillars);
+
+    // Pale mineral fins catch the ember sky at Glasswind Shelf. One instanced
+    // draw call gives the western branch a recognisable profile on low-tier
+    // phones without introducing an asset download or gameplay collision.
+    const shardSites = [
+      { x: -31, z: 26, height: 2.8, lean: -0.28 },
+      { x: -28, z: 29, height: 4.1, lean: 0.12 },
+      { x: -24.5, z: 27, height: 3.3, lean: 0.32 },
+      { x: -26.5, z: 22.5, height: 2.2, lean: -0.16 },
+    ] as const;
+    const shardGeometry = track(new ConeGeometry(0.48, 1, 5));
+    const shards = new InstancedMesh(shardGeometry, crystal, shardSites.length);
+    shardSites.forEach((site, index) => {
+      const y = heightAt(terrain, site);
+      scratchQuaternion.setFromEuler(new Euler(site.lean, index * 0.7, site.lean * 0.35, 'XYZ'));
+      scratchMatrix.compose(
+        new Vector3(site.x, y + site.height / 2, site.z),
+        scratchQuaternion,
+        new Vector3(1, site.height, 1),
+      );
+      shards.setMatrixAt(index, scratchMatrix);
+    });
+    shards.instanceMatrix.needsUpdate = true;
+    shards.raycast = () => {};
+    shards.name = 'ashen-glasswind-shards';
+    group.add(shards);
+
+    // Two weathered uprights and a lintel frame Watcher's Crown. The arch faces
+    // back toward the crossroads, composing the return route without becoming
+    // a portal or adding another interaction surface.
+    const watcherArch = new Group();
+    watcherArch.name = 'ashen-watcher-arch';
+    const watcherY = heightAt(terrain, { x: 27, z: 28 });
+    const watcherPillars = new InstancedMesh(
+      track(new BoxGeometry(0.9, 4.8, 1.05)),
+      stoneRaised,
+      2,
+    );
+    scratchMatrix.makeTranslation(24.8, watcherY + 2.4, 28);
+    watcherPillars.setMatrixAt(0, scratchMatrix);
+    scratchMatrix.makeTranslation(29.2, watcherY + 2.4, 28);
+    watcherPillars.setMatrixAt(1, scratchMatrix);
+    watcherPillars.instanceMatrix.needsUpdate = true;
+    watcherPillars.raycast = () => {};
+    const watcherLintel = new Mesh(track(new BoxGeometry(5.3, 0.8, 1.1)), stoneRaised);
+    watcherLintel.position.set(27, watcherY + 5.05, 28);
+    watcherLintel.raycast = () => {};
+    watcherArch.add(watcherPillars, watcherLintel);
+    group.add(watcherArch);
 
     // The playable terrace ends before the far skyline. A sparse outer rim
     // keeps the vista from reading as a raised square dropped into empty space;

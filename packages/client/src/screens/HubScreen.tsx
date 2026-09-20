@@ -47,6 +47,7 @@ const PublicProfile = lazy(async () => ({
 export interface HubScreenProps {
   readonly onEngage: () => void;
   readonly onNavigate: (id: string) => void;
+  readonly onNavigateWaypoint: (id: string) => void;
   readonly onCollect: () => void;
   readonly onStopGathering: () => void;
   readonly onCraft: (recipeId: string) => void;
@@ -89,6 +90,7 @@ export function HubScreen({
   onAcceptQuest,
   onCompleteQuest,
   onNavigate,
+  onNavigateWaypoint,
   onRecoverCombat,
   onReclaimCombatGrave,
   onEatCombatFood,
@@ -192,6 +194,10 @@ export function HubScreen({
             onNavigate={(id) => {
               setMapDestinationId(id);
               onNavigate(id);
+            }}
+            onNavigateWaypoint={(id) => {
+              setMapDestinationId(id);
+              onNavigateWaypoint(id);
             }}
             onClose={() => setMapOpen(false)}
           />
