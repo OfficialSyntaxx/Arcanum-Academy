@@ -1,6 +1,7 @@
 import { InteractableKind, zoneById, type ZoneId } from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
 import { hasElevationChange } from '../core/elevation.js';
+import { mapRouteColour, mapSurfaceColour } from '../core/map-surface.js';
 
 /** Metres from the player to the minimap's edge. */
 const RANGE = 26;
@@ -45,7 +46,7 @@ export function Minimap({ onOpenMap }: { readonly onOpenMap: () => void }) {
             <circle cx={half} cy={half} r={half - 1} />
           </clipPath>
         </defs>
-        <circle cx={half} cy={half} r={half - 1} fill="rgba(24, 40, 28, 0.82)" />
+        <circle cx={half} cy={half} r={half - 1} fill={mapSurfaceColour(zone.id)} />
         <g clipPath="url(#minimap-clip)" transform={rotate}>
           {zone.waypoints.flatMap((waypoint) =>
             waypoint.links
@@ -68,7 +69,7 @@ export function Minimap({ onOpenMap }: { readonly onOpenMap: () => void }) {
                     y1={y1}
                     x2={x2}
                     y2={y2}
-                    stroke="#c9b98f"
+                    stroke={mapRouteColour(zone.id)}
                     strokeWidth="3"
                     strokeOpacity="0.55"
                     strokeDasharray={climbs ? '5 3' : undefined}

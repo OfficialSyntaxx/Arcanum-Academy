@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ASHEN_OVERLOOK, InteractableKind, TIDEGLASS_TRAIL } from '@alderfell/shared';
+import { ASHEN_OVERLOOK, COURTYARD, InteractableKind, TIDEGLASS_TRAIL } from '@alderfell/shared';
 import { clueProgressLabel } from '../ui/HubOverlay.js';
 import { isMapDestination, mapDestinationType } from '../ui/WorldMap.js';
 import { hasElevationChange } from '../core/elevation.js';
+import { mapRouteColour, mapSurfaceColour } from '../core/map-surface.js';
 
 describe('clue wayfinding', () => {
   it('includes authored clue sites among map destinations', () => {
@@ -31,5 +32,15 @@ describe('clue wayfinding', () => {
         lower.position,
       ),
     ).toBe(false);
+  });
+
+  it('keeps volcanic maps distinct from the green starting grounds', () => {
+    expect(mapSurfaceColour(ASHEN_OVERLOOK.id)).toBe('#403037');
+    expect(mapSurfaceColour(ASHEN_OVERLOOK.id)).not.toBe(mapSurfaceColour(COURTYARD.id));
+  });
+
+  it('pairs each map surface with a readable regional route colour', () => {
+    expect(mapRouteColour(ASHEN_OVERLOOK.id)).toBe('#f0c58d');
+    expect(mapRouteColour(ASHEN_OVERLOOK.id)).not.toBe(mapSurfaceColour(ASHEN_OVERLOOK.id));
   });
 });

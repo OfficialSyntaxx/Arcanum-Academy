@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { InteractableKind, zoneById, type ZoneId } from '@alderfell/shared';
 import { useAppStore } from '../state/app-store.js';
 import { hasElevationChange } from '../core/elevation.js';
+import { mapRouteColour, mapSurfaceColour } from '../core/map-surface.js';
 
 /** Kinds that can be selected as a destination without starting their action. */
 export function isMapDestination(kind: InteractableKind): boolean {
@@ -80,8 +81,14 @@ export function WorldMap({
           Close
         </button>
       </div>
+      <p className="world-map__region">{zone.name}</p>
       <p>Choose a destination to walk there.</p>
-      <svg viewBox="0 0 300 200" role="img" aria-label="Paths between local landmarks">
+      <svg
+        viewBox="0 0 300 200"
+        role="img"
+        aria-label="Paths between local landmarks"
+        style={{ backgroundColor: mapSurfaceColour(zone.id) }}
+      >
         {zone.waypoints.flatMap((waypoint) =>
           waypoint.links
             .filter((id) => id > waypoint.id)
@@ -95,7 +102,7 @@ export function WorldMap({
                   y1={y(waypoint.position.z)}
                   x2={x(target.position.x)}
                   y2={y(target.position.z)}
-                  stroke="#b8a985"
+                  stroke={mapRouteColour(zone.id)}
                   strokeWidth="2"
                   strokeDasharray={climbs ? '5 3' : undefined}
                 />

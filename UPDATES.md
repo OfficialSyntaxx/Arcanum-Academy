@@ -4,6 +4,27 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G33 local map region context — staged release batch, 2026-09-20
+
+- Added the current authored region name to the local-map panel so a player can orient immediately
+  after travelling without giving up screen space to a second navigation control.
+- Mobile UI copy and styling only: map routing, movement, interactions, progression, assets,
+  server, social, and hosting remain unchanged.
+
+## G32 regional map contrast — staged release batch, 2026-09-20
+
+- Paired every map surface with an authored high-contrast route colour, keeping paths readable
+  against snow, volcanic ash, stone, forest, and shore backgrounds on a small screen.
+- Presentation data only: no route geometry, navigation, interaction, progression, asset, server,
+  social, or hosting change.
+
+## G31 regional map surfaces — staged release batch, 2026-09-20
+
+- Gave the local map and rotating minimap a small authored surface colour per region, so volcanic,
+  snowy, mountain, forest, and shore routes retain their identity outside the 3D view.
+- Presentation data only: no route, interaction, progression, asset, server, social, or hosting
+  change.
+
 ## G30 elevation route legend — staged release batch, 2026-09-19
 
 - Local maps with real terrain rises now explain their dashed route cue in compact mobile copy,

@@ -1364,6 +1364,12 @@
 .world-map p {
   margin: 0 0 0.65rem;
 }
+.world-map__region {
+  color: var(--haze-dim);
+  font: 0.8rem var(--font-label);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .world-map svg {
   display: block;
   width: 100%;
