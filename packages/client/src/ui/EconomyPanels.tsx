@@ -139,19 +139,26 @@ function QuantityActions({
     if (Number.isFinite(quantity) && quantity > 0) onChoose(Math.min(available, quantity));
     setCustom('');
   };
-  const quantities = [1, 5, 10].filter((quantity) => quantity <= available);
+  const quantities = quantityPresets(available);
+  const customQuantity = Math.floor(Number(custom));
+  const customIsValid = Number.isFinite(customQuantity) && customQuantity > 0;
   return (
     <div className="quantity-actions">
       {quantities.map((quantity) => (
-        <button type="button" key={quantity} onClick={() => onChoose(quantity)}>
-          {verb} {quantity}
+        <button
+          type="button"
+          key={quantity}
+          aria-label={`${verb} ${quantity}`}
+          onClick={() => onChoose(quantity)}
+        >
+          {quantity}
         </button>
       ))}
       <label>
-        <span className="sr-only">Custom quantity</span>
         <input
           type="number"
           inputMode="numeric"
+          aria-label={`${verb} custom quantity`}
           min="1"
           max={available}
           value={custom}
@@ -162,14 +169,28 @@ function QuantityActions({
           }}
         />
       </label>
-      <button type="button" disabled={custom.trim().length === 0} onClick={commitCustom}>
-        {verb} X
+      <button
+        type="button"
+        aria-label={`${verb} custom quantity entered above`}
+        disabled={!customIsValid}
+        onClick={commitCustom}
+      >
+        X
       </button>
-      <button type="button" onClick={() => onChoose(available)}>
-        {verb} all
+      <button
+        type="button"
+        aria-label={`${verb} all ${available}`}
+        onClick={() => onChoose(available)}
+      >
+        All
       </button>
     </div>
   );
+}
+
+/** Compact quantity choices shared by every economy transfer surface. */
+export function quantityPresets(available: number): readonly number[] {
+  return [1, 5, 10].filter((quantity) => quantity <= available);
 }
 
 /** The bag, grouped by item with a slot count against capacity. */
@@ -428,7 +449,7 @@ export function BankPanel({
           </ul>
         )}
       </section>
-      <button type="button" className="prompt__button" onClick={onClose}>
+      <button type="button" className="prompt__button bank-panel__close" onClick={onClose}>
         Close
       </button>
     </div>
@@ -555,62 +576,74 @@ export function MerchantPanel({
       <p className="bank-panel__hint">
         Sell materials for coins. Repairs cost 2 coins per durability.
       </p>
-      <section className="bank-panel__column">
+      <section className="bank-panel__column" aria-label="Sell from satchel">
         <h3>Sell from satchel</h3>
-        <ul className="bank-panel__list">
-          {economy.stacks.map((stack) => (
-            <li key={stack.definitionId}>
-              <span>
-                {itemName(stack.definitionId)} × {stack.quantity}
-              </span>
-              <QuantityActions
-                available={stack.quantity}
-                verb="Sell"
-                onChoose={(amount) => onSell(stack.definitionId, amount)}
-              />
-            </li>
-          ))}
-        </ul>
+        {economy.stacks.length === 0 ? (
+          <p className="inventory-panel__empty">Nothing to sell.</p>
+        ) : (
+          <ul className="bank-panel__list">
+            {economy.stacks.map((stack) => (
+              <li key={stack.definitionId}>
+                <span>
+                  {itemName(stack.definitionId)} × {stack.quantity}
+                </span>
+                <QuantityActions
+                  available={stack.quantity}
+                  verb="Sell"
+                  onChoose={(amount) => onSell(stack.definitionId, amount)}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
-      <section className="bank-panel__column">
+      <section className="bank-panel__column" aria-label="Repair tools">
         <h3>Repair tools</h3>
-        <ul className="bank-panel__list">
-          {Object.entries(economy.tools).map(([skillId, tool]) => (
-            <li key={skillId}>
-              <span>
-                {itemName(tool.definitionId)} · {tool.durability}
-              </span>
-              <button type="button" onClick={() => onRepair(skillId)}>
-                Repair
-              </button>
-            </li>
-          ))}
-        </ul>
+        {Object.keys(economy.tools).length === 0 ? (
+          <p className="inventory-panel__empty">No tools equipped.</p>
+        ) : (
+          <ul className="bank-panel__list">
+            {Object.entries(economy.tools).map(([skillId, tool]) => (
+              <li key={skillId}>
+                <span>
+                  {itemName(tool.definitionId)} · {tool.durability}
+                </span>
+                <button type="button" onClick={() => onRepair(skillId)}>
+                  Repair
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
-      <section className="bank-panel__column">
+      <section className="bank-panel__column" aria-label="Tool upgrades">
         <h3>Tool upgrades</h3>
-        {upgrades.map((tool) => {
-          const required = tool.tool!.requiredSkillLevel ?? 1;
-          const level = economy.skills[tool.tool!.boundSkillId]?.level ?? 1;
-          const affordable = economy.coins >= tool.baseValue;
-          return (
-            <div key={tool.id} className="merchant-upgrade">
-              <span>{tool.name}</span>
-              <small>
-                Level {required} · {tool.baseValue} coins · +40% yield
-              </small>
-              <button
-                type="button"
-                disabled={level < required || !affordable}
-                onClick={() => onUpgradeTool(tool.id)}
-              >
-                {level < required ? `Needs level ${required}` : `Equip for ${tool.baseValue}`}
-              </button>
-            </div>
-          );
-        })}
+        {upgrades.length === 0 ? (
+          <p className="inventory-panel__empty">No upgrades available.</p>
+        ) : (
+          upgrades.map((tool) => {
+            const required = tool.tool!.requiredSkillLevel ?? 1;
+            const level = economy.skills[tool.tool!.boundSkillId]?.level ?? 1;
+            const affordable = economy.coins >= tool.baseValue;
+            return (
+              <div key={tool.id} className="merchant-upgrade">
+                <span>{tool.name}</span>
+                <small>
+                  Level {required} · {tool.baseValue} coins · +40% yield
+                </small>
+                <button
+                  type="button"
+                  disabled={level < required || !affordable}
+                  onClick={() => onUpgradeTool(tool.id)}
+                >
+                  {level < required ? `Needs level ${required}` : `Equip for ${tool.baseValue}`}
+                </button>
+              </div>
+            );
+          })
+        )}
       </section>
-      <button type="button" className="prompt__button" onClick={onClose}>
+      <button type="button" className="prompt__button bank-panel__close" onClick={onClose}>
         Close
       </button>
     </div>

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EconomyController } from '../app/economy-controller.js';
 import { EMPTY_ECONOMY, useAppStore } from '../state/app-store.js';
 import type { Transport, TransportEvents } from '../net/transport.js';
-import { craftingPresentation } from '../ui/EconomyPanels.js';
+import { craftingPresentation, quantityPresets } from '../ui/EconomyPanels.js';
 
 function transportHarness(): {
   readonly transport: Transport;
@@ -19,6 +19,15 @@ function transportHarness(): {
     send,
   };
 }
+
+describe('economy quantity controls', () => {
+  it('only offers presets that fit the available stack', () => {
+    expect(quantityPresets(0)).toEqual([]);
+    expect(quantityPresets(4)).toEqual([1]);
+    expect(quantityPresets(7)).toEqual([1, 5]);
+    expect(quantityPresets(10)).toEqual([1, 5, 10]);
+  });
+});
 
 describe('EconomyController activity cleanup', () => {
   beforeEach(() => {

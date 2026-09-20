@@ -869,6 +869,14 @@
   font: var(--text-xs) var(--font-book);
 }
 
+.bank-panel__close {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  flex: none;
+  box-shadow: 0 -0.35rem 0.75rem var(--slate);
+}
+
 .bank-panel__column h3 {
   margin: 0 0 var(--space-1);
   font-size: var(--text-sm);
@@ -893,7 +901,8 @@
 }
 
 .bank-panel__list button {
-  min-height: 2.25rem;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
   border: var(--border-hairline);
   border-radius: var(--radius-sm);
   background: var(--slate-raised);
@@ -909,8 +918,8 @@
 
 .quantity-actions input {
   box-sizing: border-box;
-  width: 3.4rem;
-  min-height: 2.25rem;
+  width: var(--touch-min);
+  min-height: var(--touch-min);
   border: var(--border-hairline);
   border-radius: var(--radius-sm);
   background: var(--slate-raised);
@@ -920,7 +929,8 @@
 }
 
 .quantity-actions button {
-  padding: 0.35rem 0.5rem;
+  min-width: var(--touch-min);
+  padding: 0.35rem;
 }
 
 .quantity-actions button:disabled {

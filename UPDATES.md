@@ -4,6 +4,27 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G44 merchant empty-state clarity — staged release batch, 2026-09-20
+
+- Added explicit `Nothing to sell`, `No tools equipped`, and `No upgrades available` states to the
+  Quartermaster, preventing a valid empty section from reading as a failed or incomplete menu.
+- Added section labels for assistive navigation. No item eligibility, price, repair, upgrade,
+  inventory, progression, persistence, server, social, asset, or hosting behavior changed.
+
+## G43 reachable economy-panel exit — staged release batch, 2026-09-20
+
+- Pinned the existing Close action to the lower edge of scrolling bank and merchant panels, keeping
+  an explicit exit reachable with long inventories, short landscape screens, and enlarged text.
+- Local layout only: movement-away dismissal, economy commands, persistence, progression, server
+  authority, assets, social features, and hosting remain unchanged.
+
+## G42 touch-safe economy quantities — staged release batch, 2026-09-20
+
+- Replaced repeated long transfer verbs with compact `1`, `5`, `10`, `X`, and `All` controls while
+  retaining complete action-specific accessible names for bank and merchant operations.
+- Restored the global 48px touch floor to quantity buttons and numeric inputs, and disabled invalid
+  custom submissions before they can be tapped. Transfer rules and server authority are unchanged.
+
 ## G41 constrained-height map escape — staged release batch, 2026-09-20
 
 - Kept the local map title and Close control pinned while its content scrolls, so short-landscape
