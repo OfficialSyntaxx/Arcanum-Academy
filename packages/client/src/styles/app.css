@@ -255,6 +255,10 @@
    --------------------------------------------------------------------------- */
 
 .hub {
+  /* Exact distance from the viewport edge to the top of the one-row tab bar.
+     Bottom-anchored action surfaces share this reserve instead of duplicating
+     offsets that drift when safe areas or tab sizing change. */
+  --tab-bar-height: calc(var(--inset-bottom) + 0.5rem + 3rem + 0.6rem + 2px);
   position: absolute;
   inset: 0;
   /* The world canvas owns movement and camera gestures. Only visible hub
@@ -1212,7 +1216,7 @@
 }
 .gathering-hud {
   right: calc(var(--inset-right) + 0.75rem);
-  bottom: calc(var(--inset-bottom) + 9rem);
+  bottom: calc(var(--tab-bar-height) + 4.75rem);
 }
 .inventory-panel,
 .crafting-panel {
@@ -1349,7 +1353,7 @@
   }
   .gathering-hud {
     right: calc(var(--inset-right) + 9rem);
-    bottom: calc(var(--inset-bottom) + 1rem);
+    bottom: calc(var(--tab-bar-height) + 0.5rem);
     max-height: 65dvh;
     overflow-y: auto;
   }
@@ -1668,7 +1672,8 @@
   right: calc(var(--inset-right) + 0.5rem);
   bottom: calc(var(--inset-bottom) + 0.5rem);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  z-index: 6;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.3rem;
   padding: 0.3rem;
   border: 1px solid #9c6f2c;
@@ -1677,7 +1682,8 @@
   pointer-events: auto;
 }
 .tab-bar button {
-  min-height: 2.75rem;
+  min-width: 0;
+  min-height: 3rem;
   padding: 0;
   border-color: transparent;
   background: transparent;
@@ -1750,13 +1756,16 @@
   top: calc(var(--inset-top) + 8rem);
 }
 .hub .prompt {
-  bottom: calc(var(--inset-bottom) + 4.2rem);
+  z-index: 7;
+  bottom: calc(var(--tab-bar-height) + 0.5rem);
 }
 .hub .combat-hud:not(.combat-hud--grave) {
-  bottom: calc(var(--inset-bottom) + 4.2rem);
+  z-index: 7;
+  bottom: calc(var(--tab-bar-height) + 0.5rem);
 }
 .hub .combat-hud--grave {
-  bottom: calc(var(--inset-bottom) + 8.5rem);
+  z-index: 7;
+  bottom: calc(var(--tab-bar-height) + 4.8rem);
 }
 .hub .satchel-toggle,
 .hub .map-toggle,
@@ -1769,7 +1778,7 @@
   left: calc(var(--inset-left) + 0.75rem);
 }
 .hub[data-collapsed='true'] .combat-hud:not(.combat-hud--grave) {
-  bottom: calc(var(--inset-bottom) + 4.2rem);
+  bottom: calc(var(--tab-bar-height) + 0.5rem);
   left: 50%;
   right: auto;
   transform: translateX(-50%);

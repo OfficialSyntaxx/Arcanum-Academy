@@ -4,6 +4,15 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G54 mobile action-surface clearance — staged release batch, 2026-09-20
+
+- Fixed the five-button game-panel navigation to remain one 48px-minimum row instead of wrapping
+  Profile into a second row and covering the contextual action button.
+- Added a shared safe-area-aware tab reserve for the prompt, gathering, combat, and grave surfaces,
+  plus deliberate action-over-navigation stacking.
+- Added browser geometry and hit-testing coverage at 320, 360, 390, and 430px portrait widths and
+  844x390 landscape. Gameplay, movement, combat timing, progression, and server behavior are unchanged.
+
 ## G53 Ashen destination silhouettes — staged release batch, 2026-09-20
 
 - Gave the overlook's three scenic branches distinct silhouettes: Ember Vista's basalt crown,

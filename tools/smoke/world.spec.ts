@@ -110,6 +110,56 @@ test('phone: walk to a resource, earn XP, inspect skills, and reach a crafting s
   });
 });
 
+test('mobile: keeps five panel tabs on one row and the contextual action tappable', async ({
+  page,
+}, info) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.locator('.status-bar__toggle')).toHaveAttribute('aria-label', /Connected/);
+  await page.getByRole('button', { name: 'Map', exact: true }).click();
+  await page.getByRole('button', { name: 'Resonance Seam' }).click();
+  await expect(page.locator('.prompt__label')).toHaveText('Resonance Seam', { timeout: 60_000 });
+
+  for (const [name, width, height] of [
+    ['phone-320', 320, 844],
+    ['phone-360', 360, 844],
+    ['phone-390', 390, 844],
+    ['phone-430', 430, 932],
+    ['phone-landscape', 844, 390],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    const tabs = page.locator('.tab-bar button');
+    await expect(tabs).toHaveCount(5);
+    const tabBoxes = await tabs.evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+      }),
+    );
+    expect(
+      Math.max(...tabBoxes.map((box) => box.y)) - Math.min(...tabBoxes.map((box) => box.y)),
+    ).toBeLessThan(1);
+    expect(Math.min(...tabBoxes.map((box) => box.height))).toBeGreaterThanOrEqual(48);
+
+    const nav = (await page.locator('.tab-bar').boundingBox())!;
+    const action = (await page.getByRole('button', { name: 'Mine', exact: true }).boundingBox())!;
+    expect(action.y + action.height <= nav.y).toBe(true);
+    const actionOwnsItsCenter = await page
+      .getByRole('button', { name: 'Mine', exact: true })
+      .evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        return hit === button || button.contains(hit);
+      });
+    expect(actionOwnsItsCenter).toBe(true);
+    await info.attach(`${name}-action-clearance`, {
+      body: await page.screenshot(),
+      contentType: 'image/png',
+    });
+  }
+});
+
 test('phone: travel to the Shore Wolf and receive authoritative combat HUD feedback', async ({
   page,
 }, info) => {
