@@ -1,10 +1,10 @@
 /**
- * The one glTF loader the character and creature models are read through.
+ * The one glTF loader used by world scenery, characters, and creatures.
  *
  * Every model the build pipeline emits is Draco-compressed, so a loader
  * without the decoder attached fails on them. Sharing a single loader also
- * shares its one decoder worker: a second DRACOLoader would spin up a second
- * WASM instance for no benefit.
+ * shares its one decoder worker: creating loaders per zone would add worker
+ * and WASM churn on the phones this client targets.
  */
 
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';

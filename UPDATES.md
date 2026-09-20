@@ -4,6 +4,27 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G47 production deploy-map cleanup — staged release batch, 2026-09-20
+
+- Stopped emitting public client and service-worker source maps in production, removing roughly
+  3.8 MiB of unused deploy output that had no configured source-map consumer.
+- Local typechecking, development tooling, structured diagnostics, and in-game support reporting
+  remain intact. No runtime logic, gameplay, persistence, server, asset, social, or hosting changed.
+
+## G46 deferred later-encounter models — staged release batch, 2026-09-20
+
+- Removed the Armabee, Drowned Sentinel, and Drowned Warden GLBs from first-install precaching;
+  each remains a hashed local asset and enters a bounded 30-day cache on its first real use.
+- Player/NPC rigs, shared animations, scenery, Draco, and the first Shore Wolf remain precached.
+  No encounter availability, combat, asset provenance, progression, server, or hosting changed.
+
+## G45 shared scenery decoder — staged release batch, 2026-09-20
+
+- Routed environment GLBs through the same lazy, single-worker Draco loader already shared by
+  player, NPC, and combat models instead of creating and destroying a second worker per zone.
+- Runtime architecture only: scenery models, procedural fallbacks, placement, collision, quality
+  tiers, gameplay, persistence, network behavior, assets, server runtime, and hosting are unchanged.
+
 ## G44 merchant empty-state clarity — staged release batch, 2026-09-20
 
 - Added explicit `Nothing to sell`, `No tools equipped`, and `No upgrades available` states to the

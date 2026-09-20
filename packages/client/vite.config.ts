@@ -17,7 +17,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig({
   build: {
     target: 'es2022',
-    sourcemap: true,
+    // No source-map consumer is configured in production. Shipping public maps
+    // adds several MiB to every deploy without improving the in-game diagnostic
+    // report, while local typecheck and dev tooling retain their normal maps.
+    sourcemap: false,
     // TypeScript emits project-reference artefacts here before Vite runs.
     // Always clear them, along with obsolete hashed chunks, before bundling.
     emptyOutDir: true,
@@ -59,8 +62,26 @@ export default defineConfig({
         ],
       },
       workbox: {
+        sourcemap: false,
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,glb,wasm}'],
+        // Later-zone encounter models are not part of the first Shorelands
+        // session. Cache them after their first real use instead of delaying
+        // service-worker installation for every new player.
+        globIgnores: [
+          '**/assets/armabee-*.glb',
+          '**/assets/ghost-*.glb',
+          '**/assets/ghost-skull-*.glb',
+        ],
         runtimeCaching: [
+          {
+            urlPattern: /\/assets\/(?:armabee|ghost|ghost-skull)-[^/]+\.glb$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'encounter-models',
+              cacheableResponse: { statuses: [200] },
+              expiration: { maxEntries: 3, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
           {
             urlPattern: /\/(healthz|version|metrics)$/,
             handler: 'NetworkFirst',

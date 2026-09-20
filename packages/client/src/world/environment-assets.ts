@@ -16,10 +16,9 @@ import {
   type Material,
   type Texture,
 } from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { heightAt, type Zone } from '@alderfell/shared';
 import type { QualitySettings } from '../core/device.js';
+import { gltfLoader } from './gltf-loader.js';
 
 /** How far each region pulls the shared scenery models toward its own colour. */
 const SCENERY_GRADE: Readonly<Record<string, { readonly tint: number; readonly amount: number }>> =
@@ -223,8 +222,6 @@ export function buildEnvironment(
   const resources = new Set<BufferGeometry | Material>();
   const textures = new Set<Texture>();
   const instances: InstancedMesh[] = [];
-  const decoder = new DRACOLoader().setDecoderPath('/assets/draco/').setWorkerLimit(1);
-  const loader = new GLTFLoader().setDRACOLoader(decoder);
   let disposed = false;
   const dummy = new Object3D();
 
@@ -263,7 +260,7 @@ export function buildEnvironment(
   function upgrade(name: string, placements: Placement[], fallback: Group) {
     if (placements.length === 0) return;
     group.add(fallback);
-    void loader
+    void gltfLoader()
       .loadAsync(`/assets/environment/${name}.glb`)
       .then(({ scene }) => {
         scene.updateMatrixWorld(true);
@@ -376,7 +373,6 @@ export function buildEnvironment(
     group,
     dispose() {
       disposed = true;
-      decoder.dispose();
       disposeResources();
       group.clear();
     },

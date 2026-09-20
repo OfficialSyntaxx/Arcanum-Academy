@@ -22,7 +22,7 @@ import {
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js';
 
-import { gltfLoader } from '../assets/gltf-loader.js';
+import { gltfLoader } from '../world/gltf-loader.js';
 import {
   combatEncounterByInteractable,
   heightAt,
