@@ -4,6 +4,28 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G50 stable renderer add-on cache — staged release batch, 2026-09-20
+
+- Split the 52.7 KiB Three.js GLTF/Draco/skeleton add-on layer from the renderer bootstrap, reducing
+  that application-owned chunk from 170.6 KiB to roughly 118 KiB without increasing delivery
+  materially.
+- This improves cache reuse across routine releases. Rendering, decoding, assets, quality tiers,
+  gameplay, persistence, server runtime, social features, and hosting remain unchanged.
+
+## G49 on-demand reference panels — staged release batch, 2026-09-20
+
+- Moved the local map, quest journal, collection log, and public profile behind accessible lazy
+  boundaries so unopened reference panels are not parsed during world startup.
+- Kept HUD, movement, combat, economy, and contextual interaction UI eager. Panel state, travel
+  dismissal, profile privacy, gameplay, persistence, network behavior, and server authority remain.
+
+## G48 boot-before-renderer startup — staged release batch, 2026-09-20
+
+- Moved the renderer composition graph behind an asynchronous bootstrap boundary so React can paint
+  the existing lightweight boot screen before downloading and evaluating Three.js on a cold phone.
+- Preserved bootstrap step order, teardown, fault handling, service ownership, gameplay, assets,
+  persistence, network behavior, server runtime, social features, and hosting.
+
 ## G47 production deploy-map cleanup — staged release batch, 2026-09-20
 
 - Stopped emitting public client and service-worker source maps in production, removing roughly

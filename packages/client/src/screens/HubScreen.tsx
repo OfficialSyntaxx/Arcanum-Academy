@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { WorldMap } from '../ui/WorldMap.js';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ClueTracker, HubHud, InteractionPrompt, JourneyTracker } from '../ui/HubOverlay.js';
 import {
   CommandError,
@@ -15,11 +14,19 @@ import { useAppStore } from '../state/app-store.js';
 import { NoticeBoard } from '../ui/NoticeBoard.js';
 import { NpcDialogue } from '../ui/NpcDialogue.js';
 import { CombatHud, DungeonHud, GravestoneHud } from '../ui/CombatHud.js';
-import { QuestJournal } from '../ui/QuestJournal.js';
-import { CollectionLog } from '../ui/CollectionLog.js';
 import { Minimap } from '../ui/Minimap.js';
-import { PublicProfile } from '../ui/PublicProfile.js';
 import { clearPublicProfileLink, publicProfileIdFromUrl } from '../ui/public-profile-link.js';
+
+const WorldMap = lazy(async () => ({ default: (await import('../ui/WorldMap.js')).WorldMap }));
+const QuestJournal = lazy(async () => ({
+  default: (await import('../ui/QuestJournal.js')).QuestJournal,
+}));
+const CollectionLog = lazy(async () => ({
+  default: (await import('../ui/CollectionLog.js')).CollectionLog,
+}));
+const PublicProfile = lazy(async () => ({
+  default: (await import('../ui/PublicProfile.js')).PublicProfile,
+}));
 
 /**
  * The hub overlay.
@@ -172,26 +179,34 @@ export function HubScreen({
       {!hudCollapsed && (
         <Minimap focusedDestinationId={mapDestinationId} onOpenMap={() => setMapOpen(true)} />
       )}
-      {mapOpen && (
-        <WorldMap
-          selectedDestinationId={mapDestinationId}
-          onNavigate={(id) => {
-            setMapDestinationId(id);
-            onNavigate(id);
-          }}
-          onClose={() => setMapOpen(false)}
-        />
-      )}
-      {journalOpen && <QuestJournal onClose={() => setJournalOpen(false)} />}
-      {collectionOpen && <CollectionLog onClose={() => setCollectionOpen(false)} />}
-      {profileOpen && (
-        <PublicProfile
-          serverUrl={serverUrl}
-          onUpdate={onUpdateProfile}
-          initialPublicId={sharedProfileId}
-          onClose={closeProfile}
-        />
-      )}
+      <Suspense
+        fallback={
+          <div className="panel panel-loading" role="status">
+            Opening panel…
+          </div>
+        }
+      >
+        {mapOpen && (
+          <WorldMap
+            selectedDestinationId={mapDestinationId}
+            onNavigate={(id) => {
+              setMapDestinationId(id);
+              onNavigate(id);
+            }}
+            onClose={() => setMapOpen(false)}
+          />
+        )}
+        {journalOpen && <QuestJournal onClose={() => setJournalOpen(false)} />}
+        {collectionOpen && <CollectionLog onClose={() => setCollectionOpen(false)} />}
+        {profileOpen && (
+          <PublicProfile
+            serverUrl={serverUrl}
+            onUpdate={onUpdateProfile}
+            initialPublicId={sharedProfileId}
+            onClose={closeProfile}
+          />
+        )}
+      </Suspense>
       {!inCombat && <InteractionPrompt onEngage={onEngage} />}
       <GatheringHud onCollect={onCollect} onStop={onStopGathering} />
       <CollectionToast />

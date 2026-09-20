@@ -7,9 +7,9 @@ import { VitePWA } from 'vite-plugin-pwa';
  *
  * Two decisions worth stating:
  *
- * 1. Manual chunks split three.js away from the UI bundle. The deck builder,
- *    market and collection screens are 2D; a player who opens the app to check
- *    a crafting queue should not pay for the renderer.
+ * 1. Manual chunks split Three.js and its slower-changing loader add-ons away
+ *    from the UI and renderer bootstrap. Routine application releases can then
+ *    reuse those cached vendor layers instead of replacing one monolithic file.
  * 2. The service worker uses `injectManifest`-free `generateSW` with a network-
  *    first policy for the API and cache-first for hashed assets, so a returning
  *    player on a poor connection still gets a shell instantly.
@@ -26,9 +26,16 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          three: ['three'],
-          react: ['react', 'react-dom'],
+        manualChunks(id) {
+          if (id.includes('/node_modules/three/examples/jsm/')) return 'three-addons';
+          if (id.includes('/node_modules/three/')) return 'three';
+          if (
+            id.includes('/node_modules/react/') ||
+            id.includes('/node_modules/react-dom/') ||
+            id.includes('/node_modules/scheduler/')
+          )
+            return 'react';
+          return undefined;
         },
       },
     },

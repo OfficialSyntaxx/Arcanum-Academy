@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../state/app-store.js';
-import { bootstrap } from './bootstrap.js';
 import { isHubPhase, resolveScreen } from '../screens/registry.js';
 import { HubScreen } from '../screens/HubScreen.js';
 import type { HubController } from './hub-controller.js';
@@ -70,27 +69,33 @@ export function App() {
     let disposed = false;
     let dispose: (() => Promise<void>) | null = null;
 
-    void bootstrap({
-      canvas,
-      serverUrl,
-      debug: import.meta.env.DEV,
-    })
-      .then((container) => {
-        if (disposed) {
-          void container.dispose();
-          return;
-        }
-        setHub(container.resolve('hub'));
-        // The controller syncs itself once the gateway accepts a handshake;
-        // asking here would race that and be refused.
-        setEconomy(container.resolve('economy'));
-        setAccount(container.resolve('account'));
-        dispose = () => container.dispose();
-      })
-      .catch((error: unknown) => {
+    void (async () => {
+      // Let React paint the lightweight boot UI before fetching and evaluating
+      // the renderer graph. On a cold phone this keeps the first response out
+      // of the 3D engine's critical path without changing bootstrap order.
+      const { bootstrap } = await import('./bootstrap.js');
+      if (disposed) return;
+      const container = await bootstrap({
+        canvas,
+        serverUrl,
+        debug: import.meta.env.DEV,
+      });
+      if (disposed) {
+        await container.dispose();
+        return;
+      }
+      setHub(container.resolve('hub'));
+      // The controller syncs itself once the gateway accepts a handshake;
+      // asking here would race that and be refused.
+      setEconomy(container.resolve('economy'));
+      setAccount(container.resolve('account'));
+      dispose = () => container.dispose();
+    })().catch((error: unknown) => {
+      if (!disposed) {
         setPhase(GamePhase.Fault);
         setFault(error instanceof Error ? error.message : String(error));
-      });
+      }
+    });
 
     return () => {
       disposed = true;
