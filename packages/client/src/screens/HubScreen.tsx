@@ -97,6 +97,7 @@ export function HubScreen({
   const openNoticeId = useAppStore((state) => state.openNoticeId);
   const openDialogue = useAppStore((state) => state.openDialogue);
   const travelRevision = useAppStore((state) => state.travelRevision);
+  const currentZoneId = useAppStore((state) => state.currentZoneId);
   const setOpenStation = useAppStore((state) => state.setOpenStation);
   const setOpenBank = useAppStore((state) => state.setOpenBank);
   const setOpenMerchant = useAppStore((state) => state.setOpenMerchant);
@@ -110,6 +111,7 @@ export function HubScreen({
   // live in the app store. They all subscribe to the same travel boundary.
   const [satchelView, setSatchelView] = useState<'inventory' | 'equipment' | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [mapDestinationId, setMapDestinationId] = useState<string | null>(null);
   const [journalOpen, setJournalOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [sharedProfileId, setSharedProfileId] = useState(() =>
@@ -134,6 +136,13 @@ export function HubScreen({
     setSharedProfileId(null);
     setProfileOpen(false);
   }, [travelRevision]);
+
+  // A map route starts moving immediately, so its local focus must survive the
+  // same travel boundary that dismisses panels. Zone travel is the reliable
+  // point where an old-zone destination can no longer be meaningful.
+  useEffect(() => {
+    setMapDestinationId(null);
+  }, [currentZoneId]);
 
   useEffect(() => {
     if (gatheringNodeId === null) return;
@@ -160,8 +169,19 @@ export function HubScreen({
       </button>
       {!hudCollapsed && <JourneyTracker onOpenJournal={() => setJournalOpen(true)} />}
       {!hudCollapsed && <ClueTracker />}
-      {!hudCollapsed && <Minimap onOpenMap={() => setMapOpen(true)} />}
-      {mapOpen && <WorldMap onNavigate={onNavigate} onClose={() => setMapOpen(false)} />}
+      {!hudCollapsed && (
+        <Minimap focusedDestinationId={mapDestinationId} onOpenMap={() => setMapOpen(true)} />
+      )}
+      {mapOpen && (
+        <WorldMap
+          selectedDestinationId={mapDestinationId}
+          onNavigate={(id) => {
+            setMapDestinationId(id);
+            onNavigate(id);
+          }}
+          onClose={() => setMapOpen(false)}
+        />
+      )}
       {journalOpen && <QuestJournal onClose={() => setJournalOpen(false)} />}
       {collectionOpen && <CollectionLog onClose={() => setCollectionOpen(false)} />}
       {profileOpen && (

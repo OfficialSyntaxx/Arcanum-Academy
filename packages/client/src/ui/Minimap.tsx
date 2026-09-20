@@ -23,7 +23,13 @@ const DOT_COLOURS: Readonly<Record<string, string>> = {
  * turned with the camera so up on the map is forward on screen. Tapping it
  * opens the full local map. Drawn from zone data, never from the renderer.
  */
-export function Minimap({ onOpenMap }: { readonly onOpenMap: () => void }) {
+export function Minimap({
+  onOpenMap,
+  focusedDestinationId,
+}: {
+  readonly onOpenMap: () => void;
+  readonly focusedDestinationId: string | null;
+}) {
   const zoneId = useAppStore((state) => state.currentZoneId);
   const player = useAppStore((state) => state.playerPosition);
   const yaw = useAppStore((state) => state.cameraYaw);
@@ -88,6 +94,8 @@ export function Minimap({ onOpenMap }: { readonly onOpenMap: () => void }) {
                   cy={cy}
                   r="3.2"
                   fill={DOT_COLOURS[place.kind] ?? '#fff'}
+                  stroke={place.id === focusedDestinationId ? '#fff6e6' : undefined}
+                  strokeWidth={place.id === focusedDestinationId ? '2' : undefined}
                 />
               );
             })}

@@ -4,6 +4,27 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G38 minimap route focus — staged release batch, 2026-09-20
+
+- Reused the existing local map destination focus on the rotating minimap, outlining the active
+  target while the player is walking in the same zone.
+- Local presentation only: no movement, route planning, persistence, network, progression, asset,
+  server, social, or hosting change.
+
+## G37 route-focus lifecycle — staged release batch, 2026-09-20
+
+- Kept local map route focus through the immediately-started local walk and clear it only on a zone
+  change, so the selected target remains useful if a player reopens the map mid-route.
+- Local UI lifecycle only: no movement, route planning, persistence, network, progression, asset,
+  server, social, or hosting behavior changed.
+
+## G36 local map route focus — staged release batch, 2026-09-20
+
+- The last destination chosen from the local map is retained only in the Hub UI until travel starts
+  and is outlined when the map is reopened, making an active route easy to verify.
+- No movement, route planning, persistence, network, progression, asset, server, social, or hosting
+  behavior changed.
+
 ## G34–G35 full-map navigation context — staged release batch, 2026-09-20
 
 - The full local map now shows the player's local position and facing with the existing minimap

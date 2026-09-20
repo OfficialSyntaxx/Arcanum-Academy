@@ -49,9 +49,11 @@ export function mapDestinationType(kind: InteractableKind): string {
 export function WorldMap({
   onNavigate,
   onClose,
+  selectedDestinationId,
 }: {
   onNavigate: (id: string) => void;
   onClose: () => void;
+  selectedDestinationId: string | null;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const zoneId = useAppStore((state) => state.currentZoneId);
@@ -136,6 +138,8 @@ export function WorldMap({
               cy={y(place.position.z)}
               r="9"
               fill={MAP_MARKER_COLOURS[place.kind] ?? '#e7a23d'}
+              stroke={place.id === selectedDestinationId ? '#fff6e6' : undefined}
+              strokeWidth={place.id === selectedDestinationId ? '2.5' : undefined}
             />
             <text
               x={x(place.position.x)}
@@ -163,6 +167,7 @@ export function WorldMap({
           <button
             key={place.id}
             type="button"
+            aria-pressed={place.id === selectedDestinationId}
             onClick={() => {
               onNavigate(place.id);
               onClose();
