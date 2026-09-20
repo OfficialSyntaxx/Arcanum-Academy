@@ -4,6 +4,13 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G34–G35 full-map navigation context — staged release batch, 2026-09-20
+
+- The full local map now shows the player's local position and facing with the existing minimap
+  arrow language, and includes a compact fixed north cue for its world-aligned orientation.
+- Local presentation only: no tracking, persistence, network payload, route, interaction,
+  progression, asset, server, social, or hosting change.
+
 ## G33 local map region context — staged release batch, 2026-09-20
 
 - Added the current authored region name to the local-map panel so a player can orient immediately

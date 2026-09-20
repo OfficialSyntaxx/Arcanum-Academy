@@ -1386,6 +1386,14 @@
   stroke-width: 1.5px;
   stroke-linejoin: round;
 }
+.world-map__north {
+  fill: #fff6e6;
+  font: 700 8px var(--font-label);
+  paint-order: stroke;
+  stroke: #17130f;
+  stroke-width: 1px;
+  stroke-linejoin: round;
+}
 .world-map__legend {
   margin-top: 0.45rem !important;
   color: var(--haze-dim);

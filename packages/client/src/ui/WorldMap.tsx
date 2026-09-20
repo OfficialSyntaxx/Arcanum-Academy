@@ -55,6 +55,7 @@ export function WorldMap({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const zoneId = useAppStore((state) => state.currentZoneId);
+  const player = useAppStore((state) => state.playerPosition);
   const zone = zoneById(zoneId as ZoneId);
   useEffect(() => {
     dialog.current?.showModal();
@@ -86,9 +87,15 @@ export function WorldMap({
       <svg
         viewBox="0 0 300 200"
         role="img"
-        aria-label="Paths between local landmarks"
+        aria-label="Local routes, landmarks, and player position"
         style={{ backgroundColor: mapSurfaceColour(zone.id) }}
       >
+        <g className="world-map__north" aria-hidden="true">
+          <path d="M 282 12 L 288 26 L 282 22 L 276 26 Z" />
+          <text x="282" y="38" textAnchor="middle">
+            N
+          </text>
+        </g>
         {zone.waypoints.flatMap((waypoint) =>
           waypoint.links
             .filter((id) => id > waypoint.id)
@@ -141,6 +148,14 @@ export function WorldMap({
             </text>
           </g>
         ))}
+        <g transform={`rotate(${(player.facing * 180) / Math.PI} ${x(player.x)} ${y(player.z)})`}>
+          <path
+            d={`M ${x(player.x)} ${y(player.z) - 7} L ${x(player.x) + 4.5} ${y(player.z) + 4} L ${x(player.x) - 4.5} ${y(player.z) + 4} Z`}
+            fill="#fff6e6"
+            stroke="#17130f"
+            strokeWidth="1.5"
+          />
+        </g>
       </svg>
       {hasClimb && <p className="world-map__legend">Dashed paths climb or descend.</p>}
       <div className="world-map__places">
