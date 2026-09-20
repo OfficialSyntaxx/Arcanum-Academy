@@ -4,6 +4,27 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G41 constrained-height map escape — staged release batch, 2026-09-20
+
+- Kept the local map title and Close control pinned while its content scrolls, so short-landscape
+  and large-text phone layouts never require scrolling back to the top to leave the modal.
+- Preserved a 48px Close target. This is local presentation only: no map data, navigation,
+  movement, persistence, network, progression, asset, server, social, or hosting change.
+
+## G39 narrow-phone local map layout — staged release batch, 2026-09-20
+
+- Added a dedicated 320–360px layout for the local map: destination controls become a single
+  column while retaining 48px targets and the map keeps a bounded readable canvas.
+- CSS-only mobile layout: no map data, route, movement, persistence, network, progression, asset,
+  server, social, or hosting change.
+
+## G40 narrow-phone top HUD clearance — staged release batch, 2026-09-20
+
+- Removed the 320–360px overlap between the zone strip, overlay-fold control, and minimap by
+  assigning each a bounded lane while retaining a 48px fold target and a readable 88px minimap.
+- CSS-only responsive layout: no world, input, map, movement, persistence, network, progression,
+  asset, server, social, or hosting change.
+
 ## G38 minimap route focus — staged release batch, 2026-09-20
 
 - Reused the existing local map destination focus on the rotating minimap, outlining the active

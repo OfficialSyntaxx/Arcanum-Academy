@@ -1355,10 +1355,19 @@
   background: rgba(12, 10, 8, 0.55);
 }
 .world-map__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  padding-bottom: 0.35rem;
+  background: var(--slate);
+}
+.world-map__head button {
+  min-width: 48px;
+  min-height: 48px;
 }
 .world-map h2,
 .world-map p {
@@ -1421,6 +1430,34 @@
   grid-column: 2;
   color: var(--haze-dim);
   font-size: 0.7rem;
+}
+@media (max-width: 360px) {
+  .world-map {
+    width: calc(100vw - 1rem);
+  }
+  .world-map svg {
+    max-height: 190px;
+  }
+  .world-map__places {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .hub .hub-hud {
+    max-width: calc(100vw - var(--inset-left) - var(--inset-right) - 9.25rem);
+  }
+  .hub .hud-fold {
+    right: calc(var(--inset-right) + 0.75rem + 5.75rem);
+    min-width: 48px;
+    min-height: 48px;
+  }
+  .minimap {
+    width: 88px;
+    height: 88px;
+  }
+  .hub .journey-tracker {
+    width: min(15.5rem, calc(100vw - var(--inset-left) - var(--inset-right) - 6.75rem));
+  }
 }
 .skill-list h3 {
   margin: 0.5rem 0;
