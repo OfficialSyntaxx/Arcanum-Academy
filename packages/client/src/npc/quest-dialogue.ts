@@ -75,6 +75,11 @@ export function questDialogueForNpc(npcId: string, quests: QuestRecord, fallback
       )
         return 'The forge is breathing again. Read the board before you follow that heat beneath the ridge.';
       return fallback;
+    case 'npc.wynn':
+      if (active(quests, 'quest.the_long_winter')) {
+        return 'The Frostgate map has marked the workshop and the shelf beyond the Spire. Take the survey route before the weather closes it.';
+      }
+      return 'Beyond the Spire clearing, the Aurora Shelf gives a clear view of every trail through the reach. It is marked on your local map.';
     default:
       return fallback;
   }

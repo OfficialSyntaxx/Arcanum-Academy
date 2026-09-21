@@ -332,13 +332,13 @@ export const SNOW: Zone = {
       homeZone: SNOW_ZONE_ID,
       appearance: 'robe.frost',
       schedule: [
-        { startMinute: 6 * 60, waypoint: wp('wp.spire.clearing'), activity: NpcActivity.Study },
+        { startMinute: 6 * 60, waypoint: wp('wp.frost.aurora_shelf'), activity: NpcActivity.Study },
         { startMinute: 13 * 60, waypoint: wp('wp.outpost.board'), activity: NpcActivity.Study },
         { startMinute: 19 * 60, waypoint: wp('wp.frostgate.camp'), activity: NpcActivity.Idle },
       ],
       barks: [
         'The spire predates every record the Archive holds of this reach.',
-        'Onn in the Courtyard thinks his stacks are old. He should stand here at dawn.',
+        'At dawn, the Aurora Shelf makes the whole reach read like an open page.',
       ],
     },
   ],

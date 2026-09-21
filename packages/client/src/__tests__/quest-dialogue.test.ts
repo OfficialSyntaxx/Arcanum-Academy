@@ -48,6 +48,17 @@ describe('quest-aware NPC dialogue', () => {
         'Fallback',
       ),
     ).toContain('Cinderheart');
+    expect(
+      questDialogueForNpc(
+        'npc.wynn',
+        { 'quest.the_long_winter': quest(QuestStatus.Active) },
+        'Fallback',
+      ),
+    ).toContain('workshop');
+  });
+
+  it('gives Frostgate explorers a map-readable Aurora Shelf direction', () => {
+    expect(questDialogueForNpc('npc.wynn', {}, 'Fallback')).toContain('Aurora Shelf');
   });
 
   it('preserves authored barks where no quest response applies', () => {
