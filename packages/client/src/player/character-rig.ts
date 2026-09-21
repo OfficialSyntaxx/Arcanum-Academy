@@ -40,6 +40,7 @@ import peasantMaleUrl from '../../../../assets/derived/characters/peasant-m.glb?
 import peasantFemaleUrl from '../../../../assets/derived/characters/peasant-f.glb?url';
 import rangerMaleUrl from '../../../../assets/derived/characters/ranger-m.glb?url';
 import animationsUrl from '../../../../assets/derived/characters/animations.glb?url';
+import { advanceStridePhase, turnVisualFacing } from './locomotion-presentation.js';
 
 export type CharacterOutfit = 'peasant-m' | 'peasant-f' | 'ranger-m';
 
@@ -71,8 +72,6 @@ const CLIP_FOR_ACTION: Readonly<Record<Exclude<CharacterAction, 'none'>, readonl
 
 const LOOPING_ACTIONS: ReadonlySet<CharacterAction> = new Set(['chop', 'harvest']);
 
-/** Strides per second at full run; the swing amplitude scales with gait. */
-const RUN_STRIDE_HZ = 2.3;
 /** Seconds to blend between the procedural pose and a clip, either way. */
 const BLEND_SECONDS = 0.12;
 
@@ -123,6 +122,10 @@ export class CharacterRig {
   /** 0 = fully procedural, 1 = fully the clip. */
   private clipWeight = 0;
   private phase = 0;
+  private idlePhase = 0;
+  private visualFacing: number | null = null;
+  private readonly previousPosition = new Vector3();
+  private hasPreviousPosition = false;
   private loaded = false;
   private disposed = false;
   private readonly scratchQ = new Quaternion();
@@ -174,12 +177,28 @@ export class CharacterRig {
     action: CharacterAction,
   ): void {
     if (!this.loaded || this.disposed || this.mixer === null) return;
+
+    let distance = 0;
+    let targetFacing = facing;
+    if (this.hasPreviousPosition) {
+      const dx = position.x - this.previousPosition.x;
+      const dz = position.z - this.previousPosition.z;
+      distance = Math.hypot(dx, dz);
+      // Keep authority in the simulation while visually facing actual travel.
+      if (distance > 0.001 && gait > 0.02) targetFacing = Math.atan2(dx, dz);
+    }
+    this.previousPosition.set(position.x, position.y, position.z);
+    this.hasPreviousPosition = true;
+    this.visualFacing ??= targetFacing;
+    this.visualFacing = turnVisualFacing(this.visualFacing, targetFacing, dtSeconds);
+
     this.root.position.set(position.x, position.y, position.z);
-    this.root.rotation.y = facing;
+    this.root.rotation.y = this.visualFacing;
 
     this.syncAction(action);
-    this.phase += dtSeconds * RUN_STRIDE_HZ * Math.PI * 2 * Math.max(0.35, gait);
-    this.posePrecedural(gait, dtSeconds);
+    this.phase = advanceStridePhase(this.phase, distance, gait);
+    this.idlePhase = (this.idlePhase + dtSeconds * Math.PI * 0.7) % (Math.PI * 2);
+    this.posePrecedural(gait);
 
     const targetWeight = this.current === null ? 0 : 1;
     const step = dtSeconds / BLEND_SECONDS;
@@ -298,27 +317,26 @@ export class CharacterRig {
    * current orientation, so the maths never has to know how the rig authored
    * its bone axes.
    */
-  private posePrecedural(gait: number, dtSeconds: number): void {
+  private posePrecedural(gait: number): void {
     const swing = Math.sin(this.phase);
     const lift = Math.max(0, Math.sin(this.phase - 0.9));
     const liftOpposite = Math.max(0, Math.sin(this.phase - 0.9 + Math.PI));
-    const legAmplitude = 0.62 * gait;
-    const armAmplitude = 0.55 * gait;
-    const breath = Math.sin(this.phase * 0.28) * 0.025 * (1 - gait);
-    const armHang = 1.28 - 0.08 * gait;
-    const elbow = 0.35 + 0.75 * gait;
+    const legAmplitude = 0.43 * gait;
+    const armAmplitude = 0.34 * gait;
+    const breath = Math.sin(this.idlePhase) * 0.025 * (1 - gait);
+    const armHang = 1.24 - 0.05 * gait;
+    const elbow = 0.35 + 0.35 * gait;
 
     this.pose('spine_02', X, 0.06 * gait + breath);
     this.pose('spine_03', X, 0.05 * gait);
     this.pose('thigh_l', X, swing * legAmplitude);
     this.pose('thigh_r', X, -swing * legAmplitude);
-    this.pose('calf_l', X, -liftOpposite * 1.15 * gait - 0.04);
-    this.pose('calf_r', X, -lift * 1.15 * gait - 0.04);
+    this.pose('calf_l', X, -liftOpposite * 0.72 * gait - 0.04);
+    this.pose('calf_r', X, -lift * 0.72 * gait - 0.04);
     this.pose('upperarm_l', Z, -armHang, X, -swing * armAmplitude - 0.15);
     this.pose('upperarm_r', Z, armHang, X, swing * armAmplitude - 0.15);
     this.pose('lowerarm_l', X, elbow);
     this.pose('lowerarm_r', X, elbow);
-    void dtSeconds;
   }
 
   /** local' = (P⁻¹ · R · P) · bind, with P the parent's orientation in model space. */
