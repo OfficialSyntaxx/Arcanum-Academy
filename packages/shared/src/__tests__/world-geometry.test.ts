@@ -4,7 +4,7 @@ import { COURTYARD } from '../world/courtyard.js';
 import { FOREST } from '../world/forest.js';
 import { MOUNTAINS } from '../world/mountains.js';
 import { SNOW } from '../world/snow.js';
-import { distance, type Zone } from '../world/types.js';
+import { distance, heightAt, type Zone } from '../world/types.js';
 
 /**
  * Placement sanity checks, over and above what `buildNavGraph` validates.
@@ -45,6 +45,16 @@ function withinBounds(
 }
 
 describe('zone geometry placement', () => {
+  it('keeps the Frostgate Aurora Shelf above the Frozen Spire clearing', () => {
+    const shelf = SNOW.waypoints.find((waypoint) => waypoint.id === 'wp.frost.aurora_shelf');
+    const clearing = SNOW.waypoints.find((waypoint) => waypoint.id === 'wp.spire.clearing');
+    expect(shelf).toBeDefined();
+    expect(clearing).toBeDefined();
+    expect(heightAt(SNOW.terrain, shelf!.position)).toBeGreaterThan(
+      heightAt(SNOW.terrain, clearing!.position),
+    );
+  });
+
   for (const [name, zone] of ZONES) {
     describe(name, () => {
       it('places every interactable within the zone bounds', () => {

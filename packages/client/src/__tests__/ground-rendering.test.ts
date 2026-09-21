@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { InstancedMesh, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
-import { ASHEN_OVERLOOK, CINDERHOLLOW, COURTYARD } from '@alderfell/shared';
+import { ASHEN_OVERLOOK, CINDERHOLLOW, COURTYARD, SNOW } from '@alderfell/shared';
 import { buildBaseGround, buildZoneGeometry } from '../world/scene-builder.js';
 
 const testQuality = {
@@ -40,6 +40,14 @@ describe('ground surface', () => {
     expect(geometry.group.getObjectByName('ashen-ember-crown')).toBeInstanceOf(InstancedMesh);
     expect(geometry.group.getObjectByName('ashen-glasswind-shards')).toBeInstanceOf(InstancedMesh);
     expect(geometry.group.getObjectByName('ashen-watcher-arch')).toBeDefined();
+    geometry.dispose();
+  });
+
+  it('marks the Frostgate Aurora Shelf with a low-cost cairn', () => {
+    const geometry = buildZoneGeometry(SNOW, testQuality);
+    const cairns = geometry.group.getObjectByName('frostgate-aurora-cairns');
+    expect(cairns).toBeInstanceOf(InstancedMesh);
+    expect((cairns as InstancedMesh).count).toBe(3);
     geometry.dispose();
   });
 });
