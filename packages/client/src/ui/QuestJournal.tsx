@@ -30,6 +30,27 @@ export function QuestJournal({ onClose }: { onClose: () => void }) {
         Progress is recorded when the world confirms your work. Visit the Library notice board to
         accept or turn in a quest.
       </p>
+      <section className="quest-journal__routes" aria-labelledby="outer-routes-title">
+        <h3 id="outer-routes-title">Outer-world routes</h3>
+        <ul>
+          <li>
+            <strong>Frostgate Reaches</strong>
+            <span>Aurora Shelf beyond the Frozen Spire.</span>
+          </li>
+          <li>
+            <strong>Saltwake Ruins</strong>
+            <span>Broken Gallery through to the Tideglass Vault.</span>
+          </li>
+          <li>
+            <strong>Cinderhollow Caverns</strong>
+            <span>Ember Gallery, Ore Rim, and Crucible Chamber.</span>
+          </li>
+          <li>
+            <strong>Ashen Overlook</strong>
+            <span>Three scenic branches above Ashen Rise.</span>
+          </li>
+        </ul>
+      </section>
       <ol className="quest-journal__list">
         {QUEST_CATALOG.map((quest) => {
           const progress = economy.quests[quest.id];
