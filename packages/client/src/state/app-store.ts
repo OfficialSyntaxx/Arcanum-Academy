@@ -40,6 +40,8 @@ export interface InteractionPromptState {
   readonly approach: string;
   /** Set only for a ZonePortal prompt: the zone it leads to. */
   readonly targetZone?: string;
+  /** Other authored interactions sharing the current approach point. */
+  readonly alternatives?: readonly InteractionPromptState[];
 }
 
 /** A short, authored in-world exchange with a named NPC. */

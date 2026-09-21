@@ -41,6 +41,8 @@ export const SNOW: Zone = {
       { minX: -16.2, maxX: 16.2, minZ: 0, maxZ: 21.6, height: 0.3 },
       // A shallow bank along the creek.
       { minX: 37.8, maxX: 59.4, minZ: -5.4, maxZ: 27, height: 0.15 },
+      // An aurora-worn shelf beyond the Spire, clearly above the clearing.
+      { minX: -91.8, maxX: -59.4, minZ: 10.8, maxZ: 48.6, height: 0.65 },
     ],
     canals: [
       // The frozen creek — still and ice-bound, not yet flowing.
@@ -63,8 +65,21 @@ export const SNOW: Zone = {
       id: wp('wp.frostgate.camp'),
       position: { x: 0, z: -48.6 },
       radius: 3.5,
-      links: [wp('wp.snow.gate'), wp('wp.spire.path'), wp('wp.frost.path'), wp('wp.outpost.path')],
+      links: [
+        wp('wp.snow.gate'),
+        wp('wp.spire.path'),
+        wp('wp.frost.path'),
+        wp('wp.outpost.path'),
+        wp('wp.frostgate.workshop'),
+      ],
       tags: ['plaza', 'social', 'spawn', 'crafting'],
+    },
+    {
+      id: wp('wp.frostgate.workshop'),
+      position: { x: 2.5, z: -40.8 },
+      radius: 2,
+      links: [wp('wp.frostgate.camp')],
+      tags: ['crafting'],
     },
 
     // --- Frozen Spire (west) --------------------------------------------------
@@ -78,8 +93,15 @@ export const SNOW: Zone = {
       id: wp('wp.spire.clearing'),
       position: { x: -48.6, z: 5.4 },
       radius: 3.5,
-      links: [wp('wp.spire.path')],
-      tags: ['mystic', 'shrine'],
+      links: [wp('wp.spire.path'), wp('wp.frost.aurora_shelf')],
+      tags: ['shrine'],
+    },
+    {
+      id: wp('wp.frost.aurora_shelf'),
+      position: { x: -75.6, z: 27 },
+      radius: 2.5,
+      links: [wp('wp.spire.clearing')],
+      tags: ['mystic', 'destination'],
     },
 
     // --- Frost Creek (east) -----------------------------------------------------
@@ -179,8 +201,8 @@ export const SNOW: Zone = {
     {
       id: ix('int.frostgate.workshop'),
       kind: InteractableKind.CraftingStation,
-      position: { x: 4.3, z: -48.6 },
-      approach: wp('wp.frostgate.camp'),
+      position: { x: 4.3, z: -40.8 },
+      approach: wp('wp.frostgate.workshop'),
       facing: Math.PI * 1.5,
       label: 'Frost Workshop',
       verb: 'Craft',

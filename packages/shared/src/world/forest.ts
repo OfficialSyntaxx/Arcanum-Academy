@@ -122,7 +122,19 @@ export const FOREST: Zone = {
       id: wp('wp.timber.camp'),
       position: { x: 54, z: 0 },
       radius: 2.5,
-      links: [wp('wp.grove.eastpath'), wp('wp.timber.stand'), wp('wp.timber.market')],
+      links: [
+        wp('wp.grove.eastpath'),
+        wp('wp.timber.saw'),
+        wp('wp.timber.stand'),
+        wp('wp.timber.market'),
+      ],
+      tags: ['crafting'],
+    },
+    {
+      id: wp('wp.timber.saw'),
+      position: { x: 40.8, z: 0 },
+      radius: 2,
+      links: [wp('wp.timber.camp')],
       tags: ['crafting'],
     },
     {
@@ -189,7 +201,7 @@ export const FOREST: Zone = {
     },
     {
       id: wp('wp.mushroom.bog'),
-      position: { x: -54, z: 0 },
+      position: { x: -49, z: 0 },
       radius: 2.8,
       links: [wp('wp.grove.westpath'), wp('wp.mushroom.deep'), wp('wp.mushroom.spring')],
       tags: ['gathering'],
@@ -242,8 +254,8 @@ export const FOREST: Zone = {
     {
       id: ix('int.timber.saw'),
       kind: InteractableKind.CraftingStation,
-      position: { x: 54, z: 2.4 },
-      approach: wp('wp.timber.camp'),
+      position: { x: 42.8, z: 0 },
+      approach: wp('wp.timber.saw'),
       facing: Math.PI * 1.5,
       label: 'Lumber Mill',
       verb: 'Mill',

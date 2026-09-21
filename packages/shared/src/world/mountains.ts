@@ -78,7 +78,7 @@ export const MOUNTAINS: Zone = {
     },
     {
       id: wp('wp.foothill.forge'),
-      position: { x: 19.2, z: -52.8 },
+      position: { x: 19.2, z: -41.8 },
       radius: 2,
       links: [wp('wp.foothill.camp')],
       tags: ['crafting'],
@@ -209,7 +209,7 @@ export const MOUNTAINS: Zone = {
     {
       id: ix('int.foothill.forge'),
       kind: InteractableKind.CraftingStation,
-      position: { x: 23, z: -52.8 },
+      position: { x: 21, z: -42.8 },
       approach: wp('wp.foothill.forge'),
       facing: Math.PI * 1.5,
       label: 'Highland Forge',

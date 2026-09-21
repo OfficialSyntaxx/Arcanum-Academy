@@ -563,6 +563,23 @@
   filter: brightness(0.88);
 }
 
+.prompt__alternatives {
+  display: grid;
+  gap: var(--space-2);
+  width: min(16rem, calc(100vw - var(--inset-left) - var(--inset-right) - var(--space-8)));
+}
+
+.prompt__alternative {
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-3);
+  color: var(--haze);
+  font: inherit;
+  text-align: right;
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--verdigris) 55%, transparent);
+  border-radius: var(--radius-sm);
+}
+
 /* Landscape on a short screen: pull the HUD tight against the top edge. */
 @media (orientation: landscape) and (max-height: 480px) {
   .hub-hud {
