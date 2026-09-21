@@ -55,6 +55,16 @@ describe('quest-aware NPC dialogue', () => {
         'Fallback',
       ),
     ).toContain('workshop');
+    expect(
+      questDialogueForNpc(
+        'npc.brix',
+        {
+          'quest.the_foothill_forge': quest(QuestStatus.Completed),
+          'quest.heart_of_cinderhollow': quest(QuestStatus.Completed),
+        },
+        'Fallback',
+      ),
+    ).toContain('Ashen Rise');
   });
 
   it('gives Frostgate explorers a map-readable Aurora Shelf direction', () => {

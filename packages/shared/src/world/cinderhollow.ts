@@ -45,7 +45,7 @@ export const CINDERHOLLOW: Zone = {
       radius: 3.2,
       label: 'Ember Gallery',
       links: [wp('wp.cinderhollow.mouth'), wp('wp.cinderhollow.fork')],
-      tags: ['landmark'],
+      tags: ['landmark', 'destination'],
     },
     {
       id: wp('wp.cinderhollow.fork'),
@@ -61,7 +61,7 @@ export const CINDERHOLLOW: Zone = {
       radius: 2.8,
       label: 'Ore Rim',
       links: [wp('wp.cinderhollow.fork')],
-      tags: ['landmark'],
+      tags: ['landmark', 'destination'],
     },
     {
       id: wp('wp.cinderhollow.forge'),
@@ -69,7 +69,7 @@ export const CINDERHOLLOW: Zone = {
       radius: 3,
       label: 'Crucible Chamber',
       links: [wp('wp.cinderhollow.fork'), wp('wp.cinderhollow.overlook')],
-      tags: ['landmark'],
+      tags: ['landmark', 'destination'],
     },
     {
       id: wp('wp.cinderhollow.overlook'),
@@ -77,7 +77,7 @@ export const CINDERHOLLOW: Zone = {
       radius: 3,
       label: 'Ashen Rise',
       links: [wp('wp.cinderhollow.forge')],
-      tags: ['portal', 'landmark'],
+      tags: ['portal', 'landmark', 'destination'],
     },
   ],
   interactables: [

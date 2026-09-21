@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   ASHEN_OVERLOOK,
+  CINDERHOLLOW,
   COURTYARD,
   InteractableKind,
+  SALTWAKE_RUINS,
   SNOW,
   TIDEGLASS_TRAIL,
 } from '@alderfell/shared';
@@ -28,6 +30,19 @@ describe('clue wayfinding', () => {
     expect(shelf).toBeDefined();
     expect(isScenicMapDestination(shelf!)).toBe(true);
     expect(shelf!.label).toBe('Aurora Shelf');
+  });
+
+  it('exposes named outer-world landmarks through the same map route contract', () => {
+    const cinderDestinations = CINDERHOLLOW.waypoints.filter(isScenicMapDestination);
+    expect(cinderDestinations.map((waypoint) => waypoint.label)).toEqual([
+      'Ember Gallery',
+      'Ore Rim',
+      'Crucible Chamber',
+      'Ashen Rise',
+    ]);
+    const vault = SALTWAKE_RUINS.waypoints.find((waypoint) => waypoint.id === 'wp.saltwake.vault');
+    expect(vault).toBeDefined();
+    expect(isScenicMapDestination(vault!)).toBe(true);
   });
 
   it("keeps a clue's purpose visible in the map destination list", () => {

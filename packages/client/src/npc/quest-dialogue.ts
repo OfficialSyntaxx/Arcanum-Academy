@@ -74,6 +74,8 @@ export function questDialogueForNpc(npcId: string, quests: QuestRecord, fallback
         !complete(quests, 'quest.heart_of_cinderhollow')
       )
         return 'The forge is breathing again. Read the board before you follow that heat beneath the ridge.';
+      if (complete(quests, 'quest.heart_of_cinderhollow'))
+        return 'The Cinderhollow map now marks the Ore Rim, Crucible Chamber, and Ashen Rise. The last path climbs to the Overlook.';
       return fallback;
     case 'npc.wynn':
       if (active(quests, 'quest.the_long_winter')) {
