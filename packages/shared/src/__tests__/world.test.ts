@@ -9,7 +9,7 @@ import { SALTWAKE_RUINS } from '../world/saltwake.js';
 import { CINDERHOLLOW } from '../world/cinderhollow.js';
 import { ASHEN_OVERLOOK } from '../world/ashen-overlook.js';
 import { zoneById, ZONES_BY_ID } from '../world/zone-catalog.js';
-import { heightAt, type Waypoint, type Zone } from '../world/types.js';
+import { heightAt, InteractableKind, type Waypoint, type Zone } from '../world/types.js';
 import type { WaypointId, ZoneId } from '../ids.js';
 
 function waypoint(id: string, x: number, z: number, links: string[]): Waypoint {
@@ -36,6 +36,16 @@ function zoneWith(waypoints: Waypoint[], spawn = 'a'): Zone {
     atmosphere: 'test',
   };
 }
+
+const SHIPPED_ZONES: readonly Zone[] = [
+  COURTYARD,
+  FOREST,
+  MOUNTAINS,
+  SNOW,
+  SALTWAKE_RUINS,
+  CINDERHOLLOW,
+  ASHEN_OVERLOOK,
+];
 
 describe('buildNavGraph', () => {
   it('compiles the shipped courtyard without validation errors', () => {
@@ -147,6 +157,40 @@ describe('buildNavGraph', () => {
     );
     if (!result.ok) throw new Error(result.error.detail);
     expect(result.value.nodes[result.value.nearest({ x: 9, z: 1 })]!.id).toBe('b');
+  });
+});
+
+describe('shipped interaction contracts', () => {
+  it('gives every action a unique id, usable copy, and a local approach point', () => {
+    const seen = new Set<string>();
+    for (const zone of SHIPPED_ZONES) {
+      const waypoints = new Set(zone.waypoints.map((waypoint) => waypoint.id));
+      for (const interactable of zone.interactables) {
+        expect(seen.has(interactable.id), `${interactable.id} is defined more than once`).toBe(
+          false,
+        );
+        seen.add(interactable.id);
+        expect(interactable.label.trim(), `${interactable.id} has a label`).not.toBe('');
+        expect(interactable.verb.trim(), `${interactable.id} has an action verb`).not.toBe('');
+        expect(
+          waypoints.has(interactable.approach),
+          `${interactable.id} has a local approach`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('routes every authored portal to a known zone and keeps other actions local', () => {
+    for (const zone of SHIPPED_ZONES) {
+      for (const interactable of zone.interactables) {
+        if (interactable.kind === InteractableKind.ZonePortal) {
+          expect(interactable.targetZone, `${interactable.id} names a target zone`).toBeDefined();
+          expect(zoneById(interactable.targetZone!)).not.toBeNull();
+        } else {
+          expect(interactable.targetZone, `${interactable.id} is not a portal`).toBeUndefined();
+        }
+      }
+    }
   });
 });
 
