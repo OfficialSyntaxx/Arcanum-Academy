@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { CINDERHOLLOW } from '../world/cinderhollow.js';
 import { COURTYARD } from '../world/courtyard.js';
 import { FOREST } from '../world/forest.js';
 import { MOUNTAINS } from '../world/mountains.js';
+import { SALTWAKE_RUINS } from '../world/saltwake.js';
 import { SNOW } from '../world/snow.js';
 import { distance, heightAt, type Zone } from '../world/types.js';
 
@@ -23,6 +25,8 @@ const ZONES: ReadonlyArray<readonly [string, Zone]> = [
   ['Emberwood Reach', FOREST],
   ['Cindermark Heights', MOUNTAINS],
   ['Frostgate Reaches', SNOW],
+  ['Cinderhollow', CINDERHOLLOW],
+  ['Saltwake Ruins', SALTWAKE_RUINS],
 ];
 
 // An interactable is drawn a short offset from the waypoint a player stands
