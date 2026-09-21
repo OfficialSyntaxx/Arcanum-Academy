@@ -45,7 +45,7 @@ const PublicProfile = lazy(async () => ({
  * the screen layer never depends on the composition root.
  */
 export interface HubScreenProps {
-  readonly onEngage: () => void;
+  readonly onEngage: (id?: string) => void;
   readonly onNavigate: (id: string) => void;
   readonly onNavigateWaypoint: (id: string) => void;
   readonly onCollect: () => void;

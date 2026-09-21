@@ -314,18 +314,28 @@ export class WorldService {
    * they clip the corner of a stall.
    */
   nearestInteractable(position: Vec2, radius: number): NearestInteractable | null {
-    let best: NearestInteractable | null = null;
+    return this.interactablesInRange(position, radius)[0] ?? null;
+  }
+
+  /** Every interactable reachable from `position`, closest approach first. */
+  interactablesInRange(position: Vec2, radius: number): readonly NearestInteractable[] {
     const limit = radius * radius;
+    const matches: NearestInteractable[] = [];
     for (const interactable of this.zone.interactables) {
       const node = this.graph.nodes[this.graph.indexOf(interactable.approach)];
       if (node === undefined) continue;
       const d2 = distanceSquared(position, node.position);
       if (d2 > limit) continue;
-      if (best === null || d2 < best.distance * best.distance) {
-        best = { interactable, distance: Math.sqrt(d2) };
-      }
+      matches.push({ interactable, distance: Math.sqrt(d2) });
     }
-    return best;
+    return matches.sort((left, right) => left.distance - right.distance);
+  }
+
+  /** True when this exact authored target is in its own approach range. */
+  isWithinInteractableRange(id: string, position: Vec2, radius: number): boolean {
+    return this.interactablesInRange(position, radius).some(
+      (entry) => entry.interactable.id === id,
+    );
   }
 
   /** Resolves an object hit by a raycast to its authored world interaction. */

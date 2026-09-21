@@ -19,16 +19,35 @@ import {
  * "Interact", because a player glancing at the button should learn what is in
  * front of them without reading the label above it.
  */
-export function InteractionPrompt({ onEngage }: { onEngage: () => void }) {
+export function InteractionPrompt({ onEngage }: { onEngage: (id?: string) => void }) {
   const prompt = useAppStore((state) => state.interactionPrompt);
   if (prompt === null) return null;
 
   return (
     <div className="prompt">
       <span className="prompt__label">{prompt.label}</span>
-      <button type="button" className="prompt__button" onClick={onEngage} data-kind={prompt.kind}>
+      <button
+        type="button"
+        className="prompt__button"
+        onClick={() => onEngage()}
+        data-kind={prompt.kind}
+      >
         {prompt.verb}
       </button>
+      {prompt.alternatives !== undefined && (
+        <div className="prompt__alternatives" aria-label="Other nearby actions">
+          {prompt.alternatives.map((alternative) => (
+            <button
+              key={alternative.id}
+              type="button"
+              className="prompt__alternative"
+              onClick={() => onEngage(alternative.id)}
+            >
+              {alternative.verb}: {alternative.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -445,6 +445,39 @@ export function buildZoneGeometry(zone: Zone, quality: QualitySettings): ZoneGeo
     group.add(spires);
   }
 
+  // The Aurora Shelf is a destination rather than another generic mystic
+  // marker. A small cairn makes the elevated path read from the clearing
+  // without adding a dynamic light or a new material to the mobile budget.
+  const auroraShelf =
+    zone.id === 'zone.snow'
+      ? zone.waypoints.find((waypoint) => waypoint.id === 'wp.frost.aurora_shelf')
+      : undefined;
+  if (auroraShelf !== undefined) {
+    const y = heightAt(terrain, auroraShelf.position);
+    const cairnGeometry = track(new ConeGeometry(0.34, 1.35, 5));
+    const cairns = new InstancedMesh(cairnGeometry, crystal, 3);
+    cairns.name = 'frostgate-aurora-cairns';
+    cairns.castShadow = quality.shadowsEnabled;
+    const stones = [
+      new Vector3(auroraShelf.position.x - 2.1, y + 0.68, auroraShelf.position.z - 0.4),
+      new Vector3(auroraShelf.position.x - 1.45, y + 0.45, auroraShelf.position.z - 1.15),
+      new Vector3(auroraShelf.position.x - 0.8, y + 0.31, auroraShelf.position.z - 0.25),
+    ];
+    stones.forEach((position, index) => {
+      scratchQuaternion.setFromEuler(
+        new Euler(0.05 * index, index * 0.7, 0.08 * (index - 1), 'XYZ'),
+      );
+      scratchMatrix.compose(
+        position,
+        scratchQuaternion,
+        new Vector3(1 - index * 0.12, 1, 1 - index * 0.12),
+      );
+      cairns.setMatrixAt(index, scratchMatrix);
+    });
+    cairns.instanceMatrix.needsUpdate = true;
+    group.add(cairns);
+  }
+
   // --- Lighting decor -----------------------------------------------------
   // Emissive-only glow, not dynamic point lights: a lantern on every column and
   // a torch at every gate reads as lit without one `PointLight` per fixture,

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import { ASHEN_OVERLOOK } from '../world/ashen-overlook.js';
+import { CINDERHOLLOW } from '../world/cinderhollow.js';
 import { COURTYARD } from '../world/courtyard.js';
 import { FOREST } from '../world/forest.js';
 import { MOUNTAINS } from '../world/mountains.js';
+import { SALTWAKE_RUINS } from '../world/saltwake.js';
 import { SNOW } from '../world/snow.js';
-import { distance, type Zone } from '../world/types.js';
+import { distance, heightAt, type Zone } from '../world/types.js';
 
 /**
  * Placement sanity checks, over and above what `buildNavGraph` validates.
@@ -23,6 +26,9 @@ const ZONES: ReadonlyArray<readonly [string, Zone]> = [
   ['Emberwood Reach', FOREST],
   ['Cindermark Heights', MOUNTAINS],
   ['Frostgate Reaches', SNOW],
+  ['Cinderhollow', CINDERHOLLOW],
+  ['Saltwake Ruins', SALTWAKE_RUINS],
+  ['Ashen Overlook', ASHEN_OVERLOOK],
 ];
 
 // An interactable is drawn a short offset from the waypoint a player stands
@@ -45,6 +51,16 @@ function withinBounds(
 }
 
 describe('zone geometry placement', () => {
+  it('keeps the Frostgate Aurora Shelf above the Frozen Spire clearing', () => {
+    const shelf = SNOW.waypoints.find((waypoint) => waypoint.id === 'wp.frost.aurora_shelf');
+    const clearing = SNOW.waypoints.find((waypoint) => waypoint.id === 'wp.spire.clearing');
+    expect(shelf).toBeDefined();
+    expect(clearing).toBeDefined();
+    expect(heightAt(SNOW.terrain, shelf!.position)).toBeGreaterThan(
+      heightAt(SNOW.terrain, clearing!.position),
+    );
+  });
+
   for (const [name, zone] of ZONES) {
     describe(name, () => {
       it('places every interactable within the zone bounds', () => {

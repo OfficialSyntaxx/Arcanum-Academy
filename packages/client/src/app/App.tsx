@@ -118,8 +118,8 @@ export function App() {
             <HubScreen
               onNavigate={(id) => hub.navigateToInteractable(id)}
               onNavigateWaypoint={(id) => hub.navigateToWaypoint(id)}
-              onEngage={() => {
-                hub.engagePrompt();
+              onEngage={(id) => {
+                hub.engagePrompt(id);
               }}
               onCollect={() => economy?.collect()}
               onStopGathering={() => economy?.stopGathering()}

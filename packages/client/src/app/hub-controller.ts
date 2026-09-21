@@ -314,7 +314,7 @@ export class HubController {
   }
 
   /** Starts the available activity through its normal in-world prompt. */
-  engagePrompt(): void {
+  engagePrompt(interactableId?: string): void {
     const prompt = useAppStore.getState().interactionPrompt;
     if (prompt === null) {
       useAppStore.getState().recordDiagnostic({
@@ -324,8 +324,20 @@ export class HubController {
       });
       return;
     }
-    if (prompt.kind === 'npc') {
-      const npc = this.npcs.namedById(prompt.id);
+    const selected =
+      interactableId === undefined
+        ? prompt
+        : prompt.alternatives?.find((item) => item.id === interactableId);
+    if (selected === undefined) {
+      useAppStore.getState().recordDiagnostic({
+        level: 'warn',
+        source: 'world',
+        message: `Interact target unavailable: ${interactableId}`,
+      });
+      return;
+    }
+    if (selected.kind === 'npc') {
+      const npc = this.npcs.namedById(selected.id);
       if (!npc) return;
       const minute = Math.floor(
         ((this.now() % this.options.tunables.world.worldDayLengthMs) /
@@ -345,28 +357,28 @@ export class HubController {
     useAppStore.getState().recordDiagnostic({
       level: 'info',
       source: 'world',
-      message: `${prompt.verb} → ${prompt.label} (${prompt.id})`,
+      message: `${selected.verb} → ${selected.label} (${selected.id})`,
     });
-    this.player.approach(prompt.approach);
+    this.player.approach(selected.approach);
     // The prompt only appears inside the interaction radius, so the player is
     // already in range: the walk is presentational and the command need not
     // wait for it to finish.
-    if (prompt.kind === InteractableKind.GatheringNode) {
-      this.options.onEngageGatheringNode?.(prompt.id);
-    } else if (prompt.kind === InteractableKind.CraftingStation) {
-      this.options.onEngageCraftingStation?.(prompt.id);
-    } else if (prompt.kind === InteractableKind.BankChest) {
-      this.options.onEngageBankChest?.(prompt.id);
-    } else if (prompt.kind === InteractableKind.MerchantStall) {
-      this.options.onEngageMerchantStall?.(prompt.id);
-    } else if (prompt.kind === InteractableKind.QuestBoard) {
-      this.options.onEngageQuestBoard?.(prompt.id);
-    } else if (prompt.kind === InteractableKind.CombatEncounter) {
-      this.options.onEngageCombatEncounter?.(prompt.id);
-    } else if (prompt.kind === InteractableKind.ClueSite) {
-      this.options.onEngageClueSite?.(prompt.id);
-    } else if (prompt.kind === InteractableKind.ZonePortal && prompt.targetZone) {
-      this.options.onEngageZonePortal?.(prompt.targetZone);
+    if (selected.kind === InteractableKind.GatheringNode) {
+      this.options.onEngageGatheringNode?.(selected.id);
+    } else if (selected.kind === InteractableKind.CraftingStation) {
+      this.options.onEngageCraftingStation?.(selected.id);
+    } else if (selected.kind === InteractableKind.BankChest) {
+      this.options.onEngageBankChest?.(selected.id);
+    } else if (selected.kind === InteractableKind.MerchantStall) {
+      this.options.onEngageMerchantStall?.(selected.id);
+    } else if (selected.kind === InteractableKind.QuestBoard) {
+      this.options.onEngageQuestBoard?.(selected.id);
+    } else if (selected.kind === InteractableKind.CombatEncounter) {
+      this.options.onEngageCombatEncounter?.(selected.id);
+    } else if (selected.kind === InteractableKind.ClueSite) {
+      this.options.onEngageClueSite?.(selected.id);
+    } else if (selected.kind === InteractableKind.ZonePortal && selected.targetZone) {
+      this.options.onEngageZonePortal?.(selected.targetZone);
     }
   }
 
@@ -729,11 +741,13 @@ export class HubController {
     this.pendingInteractionId = null;
     const target = this.world.zone.interactables.find((interactable) => interactable.id === id);
     if (!target) return;
-    const reached = this.world.nearestInteractable(
-      this.player.position,
-      this.options.tunables.world.interactionRadius,
-    );
-    if (reached?.interactable.id !== target.id) {
+    if (
+      !this.world.isWithinInteractableRange(
+        target.id,
+        this.player.position,
+        this.options.tunables.world.interactionRadius,
+      )
+    ) {
       useAppStore.getState().recordDiagnostic({
         level: 'warn',
         source: 'world',
@@ -793,13 +807,14 @@ export class HubController {
     this.syncPresence();
 
     const store = useAppStore.getState();
-    const nearest = this.player.isTravelling
-      ? null
-      : this.world.nearestInteractable(
+    const nearby = this.player.isTravelling
+      ? []
+      : this.world.interactablesInRange(
           this.player.position,
           this.options.tunables.world.interactionRadius,
         );
 
+    const nearest = nearby[0] ?? null;
     const nearbyNpc = nearest
       ? null
       : this.npcs.nearestNamed(
@@ -811,16 +826,22 @@ export class HubController {
     if (promptId !== this.lastPromptId) {
       this.lastPromptId = promptId;
       const prompt: InteractionPromptState | null = nearest
-        ? {
-            id: nearest.interactable.id,
-            label: nearest.interactable.label,
-            verb: nearest.interactable.verb,
-            kind: nearest.interactable.kind,
-            approach: nearest.interactable.approach,
-            ...(nearest.interactable.targetZone !== undefined
-              ? { targetZone: nearest.interactable.targetZone }
-              : {}),
-          }
+        ? (() => {
+            const toPrompt = (entry: (typeof nearby)[number]): InteractionPromptState => ({
+              id: entry.interactable.id,
+              label: entry.interactable.label,
+              verb: entry.interactable.verb,
+              kind: entry.interactable.kind,
+              approach: entry.interactable.approach,
+              ...(entry.interactable.targetZone !== undefined
+                ? { targetZone: entry.interactable.targetZone }
+                : {}),
+            });
+            const primary = toPrompt(nearest);
+            return nearby.length > 1
+              ? { ...primary, alternatives: nearby.slice(1).map(toPrompt) }
+              : primary;
+          })()
         : nearbyNpc
           ? {
               id: nearbyNpc.id,

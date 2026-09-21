@@ -4,6 +4,13 @@ Running log of what this branch changed, why, and where it stopped. Written for 
 picks the work up next, human or agent. `AI_HANDOVER.md` remains the single source of truth
 for the design; this file only records the state of this branch against it.
 
+## G56–G61 — Mobile world reliability batch (pending consolidated release)
+
+- Moved several world-interaction approach points out of obstructing buildings and water.
+- Added the Frostgate Aurora Shelf destination and exterior workshop approach.
+- Made overlapping nearby interactions explicit and target-accurate.
+- No server runtime change and no production deployment in this batch.
+
 ## G54 mobile action-surface clearance — staged release batch, 2026-09-20
 
 - Fixed the five-button game-panel navigation to remain one 48px-minimum row instead of wrapping
