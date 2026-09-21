@@ -100,6 +100,7 @@ export const SNOW: Zone = {
       id: wp('wp.frost.aurora_shelf'),
       position: { x: -75.6, z: 27 },
       radius: 2.5,
+      label: 'Aurora Shelf',
       links: [wp('wp.spire.clearing')],
       tags: ['mystic', 'destination'],
     },

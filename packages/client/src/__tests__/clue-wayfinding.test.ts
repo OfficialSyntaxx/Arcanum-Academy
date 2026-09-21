@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ASHEN_OVERLOOK, COURTYARD, InteractableKind, TIDEGLASS_TRAIL } from '@alderfell/shared';
+import {
+  ASHEN_OVERLOOK,
+  COURTYARD,
+  InteractableKind,
+  SNOW,
+  TIDEGLASS_TRAIL,
+} from '@alderfell/shared';
 import { clueProgressLabel } from '../ui/HubOverlay.js';
 import { isMapDestination, isScenicMapDestination, mapDestinationType } from '../ui/WorldMap.js';
 import { hasElevationChange } from '../core/elevation.js';
@@ -15,6 +21,13 @@ describe('clue wayfinding', () => {
     expect(isScenicMapDestination({ label: 'Ember Vista', tags: ['destination'] })).toBe(true);
     expect(isScenicMapDestination({ label: 'Crossroads', tags: ['landmark'] })).toBe(false);
     expect(isScenicMapDestination({ tags: ['destination'] })).toBe(false);
+  });
+
+  it('makes the Frostgate Aurora Shelf discoverable as a scenic destination', () => {
+    const shelf = SNOW.waypoints.find((waypoint) => waypoint.id === 'wp.frost.aurora_shelf');
+    expect(shelf).toBeDefined();
+    expect(isScenicMapDestination(shelf!)).toBe(true);
+    expect(shelf!.label).toBe('Aurora Shelf');
   });
 
   it("keeps a clue's purpose visible in the map destination list", () => {
