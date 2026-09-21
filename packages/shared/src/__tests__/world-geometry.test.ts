@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ASHEN_OVERLOOK } from '../world/ashen-overlook.js';
 import { CINDERHOLLOW } from '../world/cinderhollow.js';
 import { COURTYARD } from '../world/courtyard.js';
 import { FOREST } from '../world/forest.js';
@@ -27,6 +28,7 @@ const ZONES: ReadonlyArray<readonly [string, Zone]> = [
   ['Frostgate Reaches', SNOW],
   ['Cinderhollow', CINDERHOLLOW],
   ['Saltwake Ruins', SALTWAKE_RUINS],
+  ['Ashen Overlook', ASHEN_OVERLOOK],
 ];
 
 // An interactable is drawn a short offset from the waypoint a player stands
